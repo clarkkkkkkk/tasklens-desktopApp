@@ -4,6 +4,7 @@ import { snapshotSchema } from '../src/types/action';
 async function start(page: Page) {
   await page.clock.setFixedTime(new Date('2026-10-08T09:00:00+08:00'));
   await page.goto('/');
+  await page.getByRole('button', { name: 'Skip tour', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Inbox', exact: true })).toBeVisible();
 }
 async function demo(page: Page) {

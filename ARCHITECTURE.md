@@ -32,3 +32,10 @@ ReminderScheduler currently computes upcoming enabled configurations. It does no
 
 ## Security and offline behavior
 Bundled fonts/assets only; no runtime external network calls. Tauri CSP restricts connections to its IPC origin and local development websocket in dev mode. Browser file APIs support chosen/dropped/pasted images; native drag interception is disabled so the webview receives HTML drag/drop. No filesystem-wide capabilities, remote URLs, authentication, telemetry or secrets.
+
+## Versioned onboarding
+Settings now include `onboardingCompletedVersion`, a nonnegative integer defaulting to 0 when absent in legacy data. This additive migration retains the `tasklens:data:v1` envelope and all existing preferences/actions. `CURRENT_ONBOARDING_VERSION` is 1; release-step selection is separate from presentation so later releases can offer only their new steps. Completion never downgrades a higher version.
+
+App waits for repository loading before deciding between onboarding and the workspace. Load failures retain recovery/export behavior. Settings replay does not reset completion: the existing workspace stays mounted but hidden/inert, workspace search and paste are suspended, and dirty editors must be resolved before replay. Exit restores Settings focus; completion opens Inbox. First-run completion has a six-second dismissible dropzone hint.
+
+Onboarding preferences use the existing saveSettings operation immediately, serialize user interaction while pending, and report failures inline. Finish/Skip wait for a successful completion write. The demo uses the injected extraction service and existing screenshot fixture, cancels on departure, retains successful results across steps, and edits location only in memory. No onboarding path calls saveAction.

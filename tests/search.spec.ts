@@ -32,7 +32,7 @@ const actions = [
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(
     (snapshot) => localStorage.setItem('tasklens:data:v1', JSON.stringify(snapshot)),
-    { version: 1, actions, settings: defaultSettings },
+    { version: 1, actions, settings: { ...defaultSettings, onboardingCompletedVersion: 1 } },
   );
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Inbox', exact: true })).toBeVisible();

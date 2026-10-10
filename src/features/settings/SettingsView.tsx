@@ -5,7 +5,7 @@ import { Button, ErrorState } from '../../components/ui';
 import { downloadText } from '../../lib/images';
 import { presets } from '../../services/reminders/ReminderScheduler';
 import type { Settings } from '../../types/action';
-export function SettingsView() {
+export function SettingsView({ onReplay }: { onReplay: () => void }) {
   const { snapshot, saveSettings, services } = useApp();
   const [error, setError] = useState(''),
     [pending, setPending] = useState(false);
@@ -42,6 +42,15 @@ export function SettingsView() {
           <Monitor size={18} />
           General
         </h2>
+        <div className="setting-row">
+          <div>
+            <h3>Take another look</h3>
+            <p>A short introduction to your workspace.</p>
+          </div>
+          <Button onClick={onReplay} disabled={pending}>
+            Replay onboarding
+          </Button>
+        </div>
         <div className="setting-row">
           <div>
             <h3>Launch at startup</h3>

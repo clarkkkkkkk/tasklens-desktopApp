@@ -39,3 +39,6 @@ Stable typed interfaces, validation at boundaries, no silent data loss, no hidde
 - 2026-10-08: Updated test tooling to remove reported npm dependency advisories; lockfiles are included.
 
 - Final frontend checks: TypeScript/lint/format/build pass; 14 unit tests and 9 browser tests pass, plus targeted final regressions. Zero axe violations in the inspected screens. Native build remains blocked.
+
+## Onboarding — 2026-10-10
+Onboarding version persistence, legacy settings defaults, immediate preference saves, startup gate, Settings replay and persistence/state tests are implemented. Completion preserves higher versions and demo results never enter task storage. Browser verification is recorded in TASK_TRACKER.md.

@@ -144,3 +144,109 @@ Native execution remains separately blocked; browser-process restart coverage is
   - Dependency: Existing local search selector and TaskLens design tokens
   - Definition of done: Reference-inspired compact panel, blurred backdrop, restrained motion, cross-workspace results, keyboard selection/open/dismiss, focus containment/restoration, and preservation of unsaved edits.
   - Validation: Build, strict TypeScript, lint and 14 unit tests pass. All 8 existing workflow tests passed with the new interaction. All 3 dedicated search tests pass after correcting selection-transition contrast; axe checks report zero violations for empty input, results and no matches. Narrow layouts, reduced motion, both shortcut modifiers, backdrop dismissal and unsaved-editor protection are covered. The design contract documents the search-specific dimensions and motion exception.
+
+## Onboarding Experience - Added: 2026-10-10
+
+### P0 — Phase 1
+
+- [x] Build first-launch onboarding shell
+  - Owner: Developer 1
+  - Priority: P0
+  - Done when: onboarding follows DESIGN_SKILL.md and works at all supported window sizes
+
+- [x] Welcome screen
+  - Owner: Developer 1
+  - Includes:
+    - existing TaskLens logo
+    - “Turn information into action. Privately.”
+    - concise privacy/local-first explanation
+
+- [x] Interactive workflow explanation
+  - Owner: Developer 1
+  - Flow:
+    - Capture
+    - Review
+    - Remember
+  - Animation must respect prefers-reduced-motion
+
+- [x] Reminder preference screen
+  - Owner: Developer 1 + Developer 2
+  - Options:
+    - night before
+    - 1 hour before
+    - 15 minutes before
+  - Preferences must persist locally
+
+- [x] Interactive demo extraction
+  - Owner: Developer 1
+  - Use existing MockExtractionService
+  - Clearly label extraction as demo/mock during Phase 1
+  - Do not hardcode extraction data inside the onboarding component
+
+- [x] Persist onboarding completion
+  - Owner: Developer 2
+  - Store:
+    onboardingCompletedVersion: 1
+
+- [x] Add onboarding versioning
+  - Owner: Developer 2
+  - Current version: 1
+  - Do not show full onboarding again after completion
+  - Future versions may trigger a smaller “What’s New” experience
+
+- [x] Add “Replay onboarding”
+  - Owner: Developer 1 + Developer 2
+  - Location:
+    Settings → General → Replay onboarding
+
+- [x] Handle Skip
+  - Owner: Developer 2
+  - Skip should mark onboarding version 1 as completed
+
+- [x] First-run handoff to Inbox
+  - Owner: Developer 1
+  - After onboarding:
+    - open Inbox
+    - briefly emphasize screenshot dropzone
+    - no extra modal
+
+
+- [x] Subtle progress indicator, 300ms motion and reduced-motion support — Developer 1
+- [x] Keyboard focus and responsive layouts — Developer 1
+- [x] Persistence/state and browser regression tests — Developer 2
+- [x] Focused architecture/design/ownership documentation — Developer 1 + Developer 2
+
+### P1 — Native Follow-up
+
+- [ ] Ask for notification permission contextually
+  - Owner: Developer 2
+  - Only after native notifications are implemented
+  - Never request permission immediately on app launch
+
+- [ ] Add launch-at-startup preference
+  - Owner: Developer 2
+  - Only after native startup registration works
+
+### Acceptance Criteria
+
+- [x] First launch shows onboarding
+- [x] Returning users go directly to TaskLens
+- [x] Skip works
+- [x] Back/Continue work
+- [x] Keyboard navigation works
+- [x] Reminder preferences persist
+- [x] Replay onboarding works from Settings
+- [x] Existing TaskLens logo is used unchanged
+- [x] UI strictly follows DESIGN_SKILL.md
+- [x] Reduced-motion preference is respected
+- [x] No cloud service is required
+- [x] Phase 1 does not falsely claim real AI processing
+
+### Onboarding validation — 2026-10-10
+- DONE: `npm run check` (TypeScript + lint), `npm run format:check`, `npm test` (16 tests), `npm run build`.
+- DONE: `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/google-chrome npm run test:e2e -- --workers=1` — all 17 browser tests pass, including five onboarding scenarios and existing workflow/search/restart regressions.
+- DONE: axe audits in onboarding and workspace checks; visual review at 1440×920 and 900×640, automated 600px resilience and reduced-motion checks.
+- Fixed during verification: the first-capture hint originally dismissed on pointer-down and moved the sample button before its click; dismissal now happens after click dispatch. Highlight helper text also uses accessible contrast.
+- Original logo verified byte-identical. No sample tasks are saved by onboarding.
+- Packaged native WebView acceptance remains unverified for this feature; do not infer a native pass from browser results.
+- Full file inventory and behavior report: ONBOARDING_REPORT.md.

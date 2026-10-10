@@ -19,11 +19,15 @@ import type { ExtractedAction } from '../../types/action';
 import { extractionSteps } from '../../services/extraction/ExtractionService';
 export function Inbox({
   active,
+  captureHint = false,
+  onCaptureInteraction,
   locked,
   onResult,
   onRemove,
 }: {
   active: boolean;
+  captureHint?: boolean;
+  onCaptureInteraction?: () => void;
   locked: boolean;
   onResult: (a: ExtractedAction) => void;
   onRemove: () => void;
@@ -89,6 +93,7 @@ export function Inbox({
   const accept = useCallback(
     async (file: File) => {
       if (busyRef.current || locked) return;
+      onCaptureInteraction?.();
       const version = ++inputVersion.current;
       busyRef.current = true;
       setBusy(true);
@@ -108,7 +113,7 @@ export function Inbox({
         }
       }
     },
-    [process, locked],
+    [process, locked, onCaptureInteraction],
   );
   useEffect(() => {
     if (!active) return;
@@ -148,7 +153,17 @@ export function Inbox({
     }
   }
   return (
-    <section hidden={!active} className="inbox-view">
+    <section
+      hidden={!active}
+      className={`inbox-view ${captureHint ? 'capture-emphasis' : ''}`}
+      onClick={onCaptureInteraction}
+      onKeyUp={onCaptureInteraction}
+    >
+      {captureHint && (
+        <p className="first-capture-hint" role="status">
+          Drop your first screenshot here
+        </p>
+      )}
       <div className="page-heading">
         <div className="eyebrow">YOUR SPACE TO START</div>
         <h1>Inbox</h1>

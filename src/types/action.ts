@@ -78,12 +78,14 @@ export type ActionType = z.infer<typeof actionSchema>['type'];
 export type Reminder = z.infer<typeof reminderSchema>;
 export type ExtractedAction = z.infer<typeof actionSchema>;
 export const settingsSchema = z.object({
+  onboardingCompletedVersion: z.number().int().nonnegative().default(0),
   remindersEnabled: z.boolean(),
   defaultReminders: z.array(z.enum(['night', 'hour', 'quarter'])),
   theme: z.literal('light'),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 export const defaultSettings: Settings = {
+  onboardingCompletedVersion: 0,
   remindersEnabled: true,
   defaultReminders: ['night', 'hour', 'quarter'],
   theme: 'light',

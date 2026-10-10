@@ -13,6 +13,7 @@ test('saved data survives closing and reopening the browser process', async () =
   try {
     let page = await context.newPage();
     await page.goto('http://127.0.0.1:1420');
+    await page.getByRole('button', { name: 'Skip tour' }).click();
     await page.getByRole('button', { name: 'New item' }).click();
     await page.getByLabel('Title', { exact: true }).fill('Survives restart');
     await page.getByRole('button', { name: 'Save item', exact: true }).click();

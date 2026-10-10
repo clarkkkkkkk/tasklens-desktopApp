@@ -37,3 +37,6 @@ Working implementation, faithful design tokens and logo, meaningful accessible n
 - Final check evidence and remaining platform limitations are recorded in TASK_TRACKER.md.
 
 - Final frontend checks: TypeScript/lint/format/build pass; 14 unit tests and 9 browser tests pass, plus targeted final regressions. Zero axe violations in the inspected screens. Native build remains blocked.
+
+## Onboarding — 2026-10-10
+Onboarding layout, four steps, restrained transitions, interactive demo presentation, responsive stacking, Inbox handoff and keyboard accessibility are implemented. Original public/TaskLens.png is unchanged. Browser verification is recorded in TASK_TRACKER.md.
