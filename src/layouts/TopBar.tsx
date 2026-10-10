@@ -1,45 +1,28 @@
-import { Search, Plus, X, ShieldCheck } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { Search, Plus, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/ui';
 export function TopBar({
-  search,
-  setSearch,
+  onSearch,
   onNew,
+  searchOpen,
 }: {
-  search: string;
-  setSearch: (s: string) => void;
+  onSearch: () => void;
   onNew: () => void;
+  searchOpen: boolean;
 }) {
-  const input = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        input.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
+  const shortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K';
   return (
     <header className="topbar">
-      <div className="search-bar">
+      <button
+        className="search-bar search-trigger"
+        aria-label="Search your workspace"
+        aria-haspopup="dialog"
+        aria-expanded={searchOpen}
+        onClick={onSearch}
+      >
         <Search size={17} />
-        <input
-          ref={input}
-          aria-label="Search all items"
-          placeholder="Search your workspace"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        {search ? (
-          <button aria-label="Clear search" onClick={() => setSearch('')} className="icon-button">
-            <X size={14} />
-          </button>
-        ) : (
-          <kbd>Ctrl K</kbd>
-        )}
-      </div>
+        <span>Search your workspace</span>
+        <kbd>{shortcut}</kbd>
+      </button>
       <div className="topbar-actions">
         <span className="private-label">
           <ShieldCheck size={15} /> Local workspace

@@ -134,3 +134,13 @@ No frontend implementation tasks remain in progress. Native acceptance is explic
 Browser tests cover actual file selection, HTML drag/drop and clipboard image events; invalid files; removal/cancellation; all requested navigation; manual creation and type filters; review/edit/confirm; draft persistence; Today/Upcoming/Calendar; completion/restoration; source preview after reload; search; deletion; settings; quota failure with edit retention; corrupt data preservation; unsaved-edit guards; reminder rebasing; offline workflow; focus and accessibility.
 
 Native execution remains separately blocked; browser-process restart coverage is not a native restart claim. Final implementation/file inventory and limitations are in DEVELOPMENT_REPORT.md.
+
+## Workspace search update — 2026-10-10
+
+- [x] Replace page-level search with a smooth floating search dialog.
+  - Owner: Developer 1
+  - Priority: P1
+  - Status: DONE
+  - Dependency: Existing local search selector and TaskLens design tokens
+  - Definition of done: Reference-inspired compact panel, blurred backdrop, restrained motion, cross-workspace results, keyboard selection/open/dismiss, focus containment/restoration, and preservation of unsaved edits.
+  - Validation: Build, strict TypeScript, lint and 14 unit tests pass. All 8 existing workflow tests passed with the new interaction. All 3 dedicated search tests pass after correcting selection-transition contrast; axe checks report zero violations for empty input, results and no matches. Narrow layouts, reduced motion, both shortcut modifiers, backdrop dismissal and unsaved-editor protection are covered. The design contract documents the search-specific dimensions and motion exception.

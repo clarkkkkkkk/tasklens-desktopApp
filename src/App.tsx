@@ -1,8 +1,9 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, Download, RefreshCw } from 'lucide-react';
 import { useApp } from './app/context';
 import { Sidebar } from './layouts/Sidebar';
 import { TopBar } from './layouts/TopBar';
+import { SearchDialog } from './features/search/SearchDialog';
 import { Inbox } from './features/inbox/Inbox';
 import { TaskViews } from './features/tasks/TaskViews';
 import { CalendarView } from './features/calendar/CalendarView';
@@ -15,7 +16,7 @@ import type { ExtractedAction, View } from './types/action';
 export default function App() {
   const { snapshot, loading, loadError, reload, notice, services, announce } = useApp();
   const [view, setView] = useState<View>('inbox'),
-    [search, setSearch] = useState(''),
+    [searchOpen, setSearchOpen] = useState(false),
     [selection, setSelection] = useState<ExtractedAction | null>(null),
     [calendarDate, setCalendarDate] = useState<string>(),
     [dirty, setDirty] = useState(false);
@@ -40,7 +41,17 @@ export default function App() {
   const selected = selection
     ? snapshot.actions.find((a) => a.id === selection.id) || selection
     : null;
-  const showInbox = view === 'inbox' && !search.trim();
+  const showInbox = view === 'inbox';
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
   function backup() {
     try {
       downloadText(services.repository.exportRaw(), 'tasklens-recovery.json');
@@ -62,12 +73,15 @@ export default function App() {
           }
           onClose();
           setView(v);
-          setSearch('');
         }}
         actions={snapshot.actions}
       />
       <div className="app-body">
-        <TopBar search={search} setSearch={setSearch} onNew={() => onOpen(newAction())} />
+        <TopBar
+          onSearch={() => setSearchOpen(true)}
+          searchOpen={searchOpen}
+          onNew={() => onOpen(newAction())}
+        />
         <main
           id="main-content"
           tabIndex={-1}
@@ -103,14 +117,7 @@ export default function App() {
                   }}
                 />
                 {!showInbox &&
-                  (search.trim() ? (
-                    <TaskViews
-                      view="all"
-                      search={search}
-                      onOpen={onOpen}
-                      onNew={() => onOpen(newAction())}
-                    />
-                  ) : view === 'settings' ? (
+                  (view === 'settings' ? (
                     <SettingsView />
                   ) : view === 'calendar' ? (
                     <CalendarView
@@ -141,7 +148,6 @@ export default function App() {
                 onCalendar={(a) => {
                   setCalendarDate(a.date);
                   setView('calendar');
-                  setSearch('');
                   onClose();
                 }}
               />
@@ -150,6 +156,15 @@ export default function App() {
             ) : null)}
         </main>
       </div>
+      {searchOpen && (
+        <SearchDialog
+          actions={snapshot.actions}
+          loading={loading}
+          error={loadError}
+          onClose={() => setSearchOpen(false)}
+          onSelect={onOpen}
+        />
+      )}
       <div className={`toast ${notice ? 'visible' : ''}`} role="status" aria-live="polite">
         {notice && (
           <>

@@ -43,6 +43,15 @@
   --shadow-sm: 0 2px 8px rgb(23 26 31 / 4%);
   --shadow-overlay: 0 8px 32px rgb(23 26 31 / 8%);
   --duration: 140ms;
+  --search-width: 712px;
+  --search-top-offset: 16vh;
+  --search-top-max: 160px;
+  --search-blur: 12px;
+  --search-enter-duration: 160ms;
+  --search-exit-duration: 120ms;
+  --search-travel: 6px;
+  --search-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --shadow-search: 0 24px 64px rgb(23 26 31 / 8%), 0 4px 16px rgb(23 26 31 / 6%);
   --sidebar-width: 224px;
   --detail-width: 352px;
   --topbar-height: 72px;

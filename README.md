@@ -37,7 +37,7 @@ Linux needs GTK 3, WebKitGTK 4.1/JavaScriptCoreGTK 4.1, libsoup 3 and the usual 
 
 The fixed fixture is **Thursday, October 8, 2026**, arrival **1:30 PM**, Campus, black pants/no jeans. Every uploaded image returns that same sample; no pixels are analyzed. Upcoming includes today and future dates. When demonstrating after October 8, edit the date to a future day first. Use **New item** to create your own tasks, events and deadlines without the demo.
 
-Search titles, locations, notes and requirements using the topbar (**Ctrl/Cmd K**). **Escape** closes the detail panel; unsaved editor changes require an explicit discard. Delete actions have an inline confirmation.
+Click **Search your workspace** or press **Ctrl/Cmd K** to open the floating search panel. Search titles, locations, notes and requirements across all saved items. Use **Up/Down** to select and **Enter** to open an item; **Escape** or a backdrop click closes search and returns focus to its opener. Search preserves the current view and any unsaved editor. Outside search, **Escape** closes the detail panel; unsaved editor changes require an explicit discard. Delete actions have an inline confirmation.
 
 ## Local data and reminders
 

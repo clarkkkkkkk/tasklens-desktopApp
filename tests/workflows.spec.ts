@@ -52,11 +52,14 @@ test('drafts, search across content, deletion and preferences persist', async ({
   await page.getByRole('button', { name: 'Close details' }).click();
   await page.getByRole('button', { name: /Needs Review/ }).click();
   await expect(page.getByText('Pictorial', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Search your workspace', exact: true }).click();
   await page.getByLabel('Search all items').fill('No jeans');
-  await expect(page.getByText('Pictorial', { exact: true })).toBeVisible();
+  await expect(page.getByRole('option').filter({ hasText: 'Pictorial' })).toBeVisible();
   await page.getByLabel('Search all items').fill('no such thing');
   await expect(page.getByText('No matches just yet.')).toBeVisible();
   await page.getByRole('button', { name: 'Clear search' }).click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).not.toBeVisible();
   await nav(page, 'Settings');
   await page.getByLabel('Enable reminders', { exact: true }).uncheck();
   await page.reload();
@@ -164,7 +167,8 @@ test('keyboard access, accessibility, offline operation and narrow desktop layou
   await start(page);
   await page.keyboard.press('Control+k');
   await expect(page.getByLabel('Search all items')).toBeFocused();
-  await page.getByLabel('Search all items').blur();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).not.toBeVisible();
   await page.getByRole('button', { name: 'New item' }).hover();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await context.setOffline(true);
@@ -200,6 +204,7 @@ test('unsaved edits are protected, reminder changes persist, search ignores list
   await page.getByRole('button', { name: 'Close details' }).click();
   await page.getByRole('button', { name: /All Tasks/ }).click();
   await page.getByRole('button', { name: 'Tasks', exact: true }).click();
+  await page.getByRole('button', { name: 'Search your workspace', exact: true }).click();
   await page.getByLabel('Search all items').fill('Keep these edits');
   await expect(page.getByText('Keep these edits', { exact: true })).toBeVisible();
   const snapshot = snapshotSchema.parse(

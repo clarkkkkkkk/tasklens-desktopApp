@@ -337,12 +337,6 @@
     flex: 1;
     color: var(--text-secondary);
   }
-  .search-bar input:not([type='checkbox']) {
-    border: 0;
-    background: transparent;
-    padding: var(--space-2) 0;
-    font-size: var(--text-control);
-  }
   .search-bar kbd {
     font-family: inherit;
     font-size: var(--text-xs);
