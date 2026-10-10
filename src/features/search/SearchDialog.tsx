@@ -8,7 +8,7 @@ import {
   CalendarDays,
   ListTodo,
   Flag,
-} from 'lucide-react';
+} from '../../components/icons';
 import type { ExtractedAction } from '../../types/action';
 import { matchesSearch, needsReview } from '../../lib/actions';
 import { displayDate, displayTime } from '../../lib/dates';

@@ -1,4 +1,4 @@
-import { Search, Plus, ShieldCheck } from 'lucide-react';
+import { Search, Plus, ShieldCheck } from '../components/icons';
 import { Button } from '../components/ui';
 export function TopBar({
   onSearch,

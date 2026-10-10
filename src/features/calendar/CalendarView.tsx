@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from '../../components/icons';
 import { useApp } from '../../app/context';
 import { selectActions } from '../../lib/actions';
 import { displayDate, localDate, monthCells, parseLocalDate } from '../../lib/dates';

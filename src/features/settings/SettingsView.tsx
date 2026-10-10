@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Download, HardDrive, Monitor, ShieldCheck, Sparkles } from 'lucide-react';
+import { Bell, Download, HardDrive, Monitor, ShieldCheck, Sparkles } from '../../components/icons';
 import { useApp } from '../../app/context';
 import { Button, ErrorState } from '../../components/ui';
 import { downloadText } from '../../lib/images';
@@ -177,6 +177,20 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
           Keep exports somewhere safe. Backup import and SQLite migration are future work.
         </p>
       </section>
+      <p className="field-help">
+        Icons: Solar by{' '}
+        <a
+          href="https://www.figma.com/community/file/1166831539721848736"
+          target="_blank"
+          rel="noreferrer"
+        >
+          480 Design
+        </a>{' '}
+        ·{' '}
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">
+          CC BY 4.0
+        </a>
+      </p>
       <div className="privacy-note">
         <ShieldCheck size={16} />
         <p>Turn information into action. Privately.</p>

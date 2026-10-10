@@ -8,7 +8,7 @@ import {
   CircleHelp,
   Settings,
   ShieldCheck,
-} from 'lucide-react';
+} from '../components/icons';
 import type { ExtractedAction, View } from '../types/action';
 import { needsReview } from '../lib/actions';
 import { localDate } from '../lib/dates';

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Check, FileImage, CalendarDays, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Check, FileImage, CalendarDays, ShieldCheck } from '../../components/icons';
 import { useApp } from '../../app/context';
 import { Button, ConfidenceBadge, ErrorState } from '../../components/ui';
 import { createDemoScreenshot } from '../../services/extraction/demoSource';

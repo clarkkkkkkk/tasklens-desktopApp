@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Save, Check, Bell } from 'lucide-react';
+import { Save, Check, Bell } from '../../components/icons';
 import { actionSchema, type ExtractedAction, type Settings } from '../../types/action';
 import { confirmAction } from '../../lib/actions';
 import { buildReminders, rebaseReminders } from '../../services/reminders/ReminderScheduler';

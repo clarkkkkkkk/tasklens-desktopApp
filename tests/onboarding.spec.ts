@@ -28,6 +28,11 @@ test('first launch, back, preferences, demo and completion preserve data', async
   await button(page, 'Back').click();
   await button(page, 'Continue').click();
   await expect(page.getByLabel('Sample location')).toHaveValue('North campus');
+  await page.locator('.onboarding-step').evaluate(async (element) => {
+    await Promise.all(
+      element.getAnimations({ subtree: true }).map((animation) => animation.finished),
+    );
+  });
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await button(page, 'Start using TaskLens').click();
   await expect(page.getByRole('heading', { name: 'Inbox', exact: true })).toBeVisible();
@@ -73,6 +78,11 @@ test('responsive layouts and reduced motion remain accessible', async ({ page })
   expect(
     await page.locator('.onboarding-step').evaluate((e) => getComputedStyle(e).animationName),
   ).toBe('none');
+  await page.locator('.onboarding-step').evaluate(async (element) => {
+    await Promise.all(
+      element.getAnimations({ subtree: true }).map((animation) => animation.finished),
+    );
+  });
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.keyboard.press('Tab');
   await expect(button(page, 'Skip tour')).toBeFocused();

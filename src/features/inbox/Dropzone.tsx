@@ -1,5 +1,5 @@
 import { useRef, useState, type DragEvent } from 'react';
-import { ImagePlus, ArrowUpFromLine } from 'lucide-react';
+import { ImagePlus, ArrowUpFromLine } from '../../components/icons';
 import { Button } from '../../components/ui';
 export function Dropzone({
   onFile,

@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   Trash2,
   X,
-} from 'lucide-react';
+} from '../../components/icons';
 import { useApp } from '../../app/context';
 import { Button, ConfidenceBadge, ErrorState } from '../../components/ui';
 import { confirmAction } from '../../lib/actions';

@@ -1,4 +1,4 @@
-import { AlertCircle, Check, CircleHelp, Inbox, LoaderCircle, Sparkles } from 'lucide-react';
+import { AlertCircle, Check, CircleHelp, Inbox, LoaderCircle, Sparkles } from './icons';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import type { ConfidenceLevel } from '../types/action';
 export function Button({

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CircleCheck, Plus } from 'lucide-react';
+import { CircleCheck, Plus } from '../../components/icons';
 import { useApp } from '../../app/context';
 import { selectActions } from '../../lib/actions';
 import { displayDate, localDate } from '../../lib/dates';

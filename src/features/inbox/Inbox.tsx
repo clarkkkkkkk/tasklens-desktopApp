@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   Sparkles,
   Trash2,
-} from 'lucide-react';
+} from '../../components/icons';
 import { useApp } from '../../app/context';
 import { Button, ErrorState } from '../../components/ui';
 import { Dropzone } from './Dropzone';

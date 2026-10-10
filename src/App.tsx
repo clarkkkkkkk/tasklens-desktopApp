@@ -1,7 +1,7 @@
 import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
 import { CURRENT_ONBOARDING_VERSION } from './features/onboarding/onboarding.constants';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Download, RefreshCw } from 'lucide-react';
+import { Check, Download, RefreshCw } from './components/icons';
 import { useApp } from './app/context';
 import { Sidebar } from './layouts/Sidebar';
 import { TopBar } from './layouts/TopBar';

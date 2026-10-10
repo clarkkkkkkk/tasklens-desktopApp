@@ -1,4 +1,12 @@
-import { CalendarDays, Check, Circle, Clock3, ListChecks, MapPin, RotateCcw } from 'lucide-react';
+import {
+  CalendarDays,
+  Check,
+  Circle,
+  Clock3,
+  ListChecks,
+  MapPin,
+  RotateCcw,
+} from '../../components/icons';
 import { useState } from 'react';
 import type { ExtractedAction } from '../../types/action';
 import { useApp } from '../../app/context';

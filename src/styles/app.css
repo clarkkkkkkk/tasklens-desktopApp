@@ -72,7 +72,6 @@
   }
   svg {
     flex-shrink: 0;
-    stroke-width: 1.7;
   }
   input:not([type='checkbox']):not([type='file']),
   select,
@@ -272,7 +271,7 @@
     font-weight: 500;
   }
   .nav-item.selected > svg {
-    stroke: var(--accent-hover);
+    color: var(--accent-hover);
   }
   .nav-count {
     margin-left: auto;
