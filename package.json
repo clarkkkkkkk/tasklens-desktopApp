@@ -13,9 +13,10 @@
     "check": "npm run typecheck && npm run lint",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:native:win": "node scripts/windows-native-acceptance.mjs",
     "tauri": "tauri",
-    "format": "prettier --write src tests *.ts *.js *.json",
-    "format:check": "prettier --check src tests *.ts *.js *.json"
+    "format": "prettier --write src tests scripts *.ts *.js *.json",
+    "format:check": "prettier --check src tests scripts *.ts *.js *.json"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.0",

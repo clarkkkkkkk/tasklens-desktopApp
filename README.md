@@ -24,7 +24,7 @@ npm run tauri dev
 npm run tauri build
 ```
 
-Linux needs GTK 3, WebKitGTK 4.1/JavaScriptCoreGTK 4.1, libsoup 3 and the usual compiler/package prerequisites. On this Fedora development host, the frontend is verified but the native build is blocked by missing WebKitGTK/JavaScriptCoreGTK 4.1 and libsoup development metadata. Installing those system packages and testing a packaged desktop app is the next handoff step. macOS and Windows packages are not yet verified.
+Linux needs GTK 3, WebKitGTK 4.1/JavaScriptCoreGTK 4.1, libsoup 3 and the usual compiler/package prerequisites. On this Fedora development host, the frontend is verified but the native build is blocked by missing WebKitGTK/JavaScriptCoreGTK 4.1 and libsoup development metadata. Installing those system packages and testing a packaged desktop app is the next handoff step. Windows 11 packages are verified by `npm run test:native:win` (Smart App Control must be off for Rust builds); macOS packages are not yet verified.
 
 ## Try the complete flow
 
@@ -59,6 +59,8 @@ npm run test:e2e       # real-browser workflows + axe accessibility checks
 npm run build          # frontend production bundle
 cargo fmt --manifest-path src-tauri/Cargo.toml --check
 cargo check --manifest-path src-tauri/Cargo.toml
+npm run tauri build      # Windows: MSI + NSIS installers
+npm run test:native:win  # Windows: drives the real app window (needs no existing TaskLens data)
 ```
 
 To use an existing Chrome installation for tests, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to its executable path. The test configuration starts Vite automatically when needed. Tests use isolated browser contexts and a fixed October 8, 2026 date; they do not modify your normal browser data.
