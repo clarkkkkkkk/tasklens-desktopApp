@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CircleCheck, Plus } from '../../components/icons';
 import { useApp } from '../../app/context';
-import { selectActions } from '../../lib/actions';
+import { isOverdue, selectActions } from '../../lib/actions';
 import { displayDate, localDate } from '../../lib/dates';
 import { Button, EmptyState } from '../../components/ui';
 import { TaskList } from './TaskList';
@@ -11,7 +11,7 @@ const copy: Record<string, { title: string; subtitle: string; empty: string; hin
     title: 'Today',
     subtitle: 'A little focus for the day ahead.',
     empty: 'Your day has room to breathe.',
-    hint: 'Confirmed items scheduled for today will appear here.',
+    hint: 'Confirmed items scheduled for today, and anything overdue, will appear here.',
   },
   upcoming: {
     title: 'Upcoming',
@@ -63,6 +63,9 @@ export function TaskViews({
   const items = selectActions(snapshot.actions, isSearch ? 'all' : view, search).filter(
     (a) => isSearch || view !== 'all' || filter === 'all' || a.type === filter,
   );
+  const today = localDate();
+  const overdue = view === 'today' && !isSearch ? items.filter((a) => isOverdue(a, today)) : [];
+  const listed = overdue.length ? items.filter((a) => !isOverdue(a, today)) : items;
   const groups =
     view === 'upcoming' && !isSearch
       ? items.reduce<Record<string, ExtractedAction[]>>((acc, a) => {
@@ -120,7 +123,7 @@ export function TaskViews({
           <div className="agenda-group" key={date}>
             <div className="section-heading">
               <h2>
-                {date === localDate()
+                {date === today
                   ? 'Today'
                   : displayDate(date, { weekday: 'long', month: 'long', day: 'numeric' })}
               </h2>
@@ -131,21 +134,36 @@ export function TaskViews({
         ))
       ) : (
         <>
-          <div className="section-heading">
-            <h2>
-              {isSearch
-                ? 'Matches'
-                : view === 'today'
-                  ? 'Your plan'
-                  : view === 'review'
-                    ? 'Waiting for your review'
-                    : 'Your items'}
-            </h2>
-            <span>
-              {items.length} {items.length === 1 ? 'ITEM' : 'ITEMS'}
-            </span>
-          </div>
-          <TaskList items={items} onOpen={onOpen} />
+          {overdue.length > 0 && (
+            <div className="agenda-group">
+              <div className="section-heading">
+                <h2>Overdue</h2>
+                <span>
+                  {overdue.length} {overdue.length === 1 ? 'ITEM' : 'ITEMS'}
+                </span>
+              </div>
+              <TaskList items={overdue} onOpen={onOpen} />
+            </div>
+          )}
+          {listed.length > 0 && (
+            <>
+              <div className="section-heading">
+                <h2>
+                  {isSearch
+                    ? 'Matches'
+                    : view === 'today'
+                      ? 'Your plan'
+                      : view === 'review'
+                        ? 'Waiting for your review'
+                        : 'Your items'}
+                </h2>
+                <span>
+                  {listed.length} {listed.length === 1 ? 'ITEM' : 'ITEMS'}
+                </span>
+              </div>
+              <TaskList items={listed} onOpen={onOpen} />
+            </>
+          )}
         </>
       )}
     </section>

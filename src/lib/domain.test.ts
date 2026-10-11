@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { actionSchema, defaultSettings } from '../types/action';
-import { confirmAction, matchesSearch, newAction, selectActions, needsReview } from './actions';
+import {
+  confirmAction,
+  isOverdue,
+  matchesSearch,
+  newAction,
+  selectActions,
+  needsReview,
+} from './actions';
 import {
   buildReminders,
   ConfigurationReminderScheduler,
@@ -64,6 +71,26 @@ describe('selectors', () => {
     expect(selectActions(all, 'completed')).toHaveLength(1);
     expect(selectActions(all, 'review')).toHaveLength(1);
     expect(selectActions(all, 'calendar')).toHaveLength(3);
+  });
+  it('carries confirmed overdue items into Today, oldest first, but never drafts or completed', () => {
+    const all = [
+      item(),
+      { ...item(), id: 'late', date: '2026-10-06' },
+      { ...item(), id: 'later', date: '2026-10-07' },
+      { ...item(), id: 'late-draft', date: '2026-10-06', status: 'needs_review' as const },
+      { ...item(), id: 'late-done', date: '2026-10-06', status: 'completed' as const },
+      { ...item(), id: 'undated', date: undefined, arrivalTime: undefined },
+    ];
+    expect(selectActions(all, 'today', '', '2026-10-08').map((a) => a.id)).toEqual([
+      'late',
+      'later',
+      all[0].id,
+    ]);
+    expect(selectActions(all, 'upcoming', '', '2026-10-08').map((a) => a.id)).toEqual([all[0].id]);
+    expect(all.filter((a) => isOverdue(a, '2026-10-08')).map((a) => a.id)).toEqual([
+      'late',
+      'later',
+    ]);
   });
   it('uses local calendar days and handles month boundaries and leap years', () => {
     expect(localDate(new Date(2026, 9, 8, 0, 1))).toBe('2026-10-08');

@@ -6,6 +6,10 @@ export function needsReview(item: ExtractedAction): boolean {
     (item.status === 'needs_review' || Object.values(item.confidence).includes('needs_review'))
   );
 }
+/** A confirmed item whose local date has passed. Completed and draft items are never overdue. */
+export function isOverdue(item: ExtractedAction, today = localDate()): boolean {
+  return item.status === 'confirmed' && !!item.date && item.date < today;
+}
 export function confirmAction(item: ExtractedAction): ExtractedAction {
   const confidence = { ...item.confidence, overall: 'confirmed' as const };
   for (const key of ['date', 'time', 'location', 'requirements'] as const)
@@ -31,7 +35,8 @@ export function selectActions(
   return items
     .filter((item) => {
       if (!matchesSearch(item, query)) return false;
-      if (view === 'today') return item.status === 'confirmed' && item.date === today;
+      if (view === 'today')
+        return item.status === 'confirmed' && (item.date === today || isOverdue(item, today));
       if (view === 'upcoming')
         return item.status === 'confirmed' && !!item.date && item.date >= today;
       if (view === 'completed') return item.status === 'completed';

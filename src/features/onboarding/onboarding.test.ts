@@ -14,6 +14,7 @@ it('migrates legacy preferences without resetting choices and persists completio
       expect(key).toBe(STORAGE_KEY);
       raw = value;
     },
+    removeItem: () => {},
   });
   const before = await repo.load();
   expect(before.settings.onboardingCompletedVersion).toBe(0);

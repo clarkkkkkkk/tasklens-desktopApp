@@ -112,6 +112,19 @@ No frontend implementation tasks remain in progress. Native acceptance is explic
   - Dependency: Completed frontend implementation
   - Definition of done: Build, lint, typecheck, format, unit/browser tests pass; original logo verified; accurate limitations and handoff report included.
 
+- [x] Keep overdue confirmed items in Today until completed.
+  - Owner: Developer 2 (selector), UI section with Developer 1 review
+  - Priority: P0
+  - Status: DONE (2026-10-11)
+  - Dependency: Selectors
+  - Definition of done: Past-dated confirmed items appear in an Overdue section in Today and in its sidebar count; drafts and completed items are excluded. Covered by unit and browser tests.
+- [x] Add a versioned schema migration pipeline.
+  - Owner: Developer 2
+  - Priority: P0
+  - Status: DONE (2026-10-11)
+  - Dependency: Snapshot schema
+  - Definition of done: Ordered pure steps upgrade old data in memory; newer, unsupported and corrupt data stay intact with distinct messages; first upgraded write keeps a best-effort pre-migration backup. Prerequisite for the SQLite migration and backup import.
+
 ## Verification evidence — 2026-10-08
 
 | Check | Result |

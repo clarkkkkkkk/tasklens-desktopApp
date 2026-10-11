@@ -14,6 +14,8 @@ Phase 1 contracts, durable local data, mock extraction, reminder data model and 
 - [x] Implement reminder presets, rebasing and configuration-only scheduler. P1 · DONE · dependency: date model · done when selected reminders track edited dates/arrival times and completed/disabled items are excluded.
 - [x] Implement file validation and bounded local thumbnails. P0 · DONE · dependency: browser file APIs · done when supported images preview and unsupported inputs fail safely.
 - [x] Add Tauri config, Rust entry point, constrained CSP and original-logo desktop icons. P0 · DONE · dependency: original branding · done when native project/config exists with no unnecessary capabilities.
+- [x] Keep overdue items visible. P0 · DONE · dependency: selectors · done when confirmed past-dated items stay in Today (own section, sidebar count) until completed, and drafts/completed items never count as overdue.
+- [x] Add versioned schema migration pipeline. P0 · DONE · dependency: snapshot schema · done when ordered `N → N + 1` steps upgrade stored data in memory, newer/unsupported/corrupt data is kept intact with distinct messages, and the first upgraded write keeps a pre-migration backup.
 - [ ] Build and launch native Linux package. P0 · BLOCKED · dependency: WebKitGTK/JavaScriptCoreGTK 4.1 and libsoup 3 development packages · done when cargo and Tauri builds succeed and the capture workflow survives an actual native restart.
 - [x] Run Windows native acceptance. P1 · DONE · dependency: equipped Windows host · done when platform builds and smoke checks pass. Evidence: `npm run test:native:win` (8/8) on the release exe and the NSIS-installed app.
 - [ ] Run macOS native acceptance. P1 · BACKLOG · dependency: equipped macOS host · done when platform builds and smoke checks pass.
@@ -45,6 +47,14 @@ Stable typed interfaces, validation at boundaries, no silent data loss, no hidde
 
 ## Onboarding — 2026-10-10
 Onboarding version persistence, legacy settings defaults, immediate preference saves, startup gate, Settings replay and persistence/state tests are implemented. Completion preserves higher versions and demo results never enter task storage. Browser verification is recorded in TASK_TRACKER.md.
+
+## Overdue items and schema migration — 2026-10-11
+- `isOverdue` in `src/lib/actions.ts` is the single overdue rule (confirmed, dated before the local day). The `today` selector, sidebar count and task-row label all use it. Today renders an Overdue section above "Your plan". Previously a confirmed item one day late appeared only in All Tasks and Calendar.
+- `SNAPSHOT_VERSION` + `src/repositories/migrations.ts`: ordered, pure upgrade steps, final validation against the current schema and classified read errors (newer / unsupported / corrupt). See ARCHITECTURE.md → Schema migration for the procedure to add a version.
+- Repository storage contract now includes `removeItem` (used to roll back a pre-migration backup when the upgraded write fails). `LocalStorageRepository` accepts migrations as an optional constructor argument for tests.
+- No schema change in this work: `SNAPSHOT_VERSION` stays 1 and existing data loads unchanged.
+- Checks: typecheck, lint, format, build pass; 27 unit tests (11 new) and 18 browser tests (1 new overdue workflow) pass.
+- Observed flake (pre-existing, not changed): `HTML drag/drop and paste accept actual image files` timed out once in a loaded full run and once in 3 repeats, waiting ~2 s of mock extraction against a 5 s expect timeout; 10/10 isolated repeats passed with and without these changes.
 
 ## Windows host setup — 2026-10-11
 - Set up a Windows 11 host: `npm ci` (0 vulnerabilities), Playwright Chromium, Rust 1.99 stable-msvc, VS 2022 Build Tools.

@@ -90,8 +90,10 @@ export const defaultSettings: Settings = {
   defaultReminders: ['night', 'hour', 'quarter'],
   theme: 'light',
 };
+/** Stored envelope version. Bump it only together with a step in repositories/migrations.ts. */
+export const SNAPSHOT_VERSION = 1;
 export const snapshotSchema = z.object({
-  version: z.literal(1),
+  version: z.literal(SNAPSHOT_VERSION),
   actions: z.array(actionSchema),
   settings: settingsSchema,
 });

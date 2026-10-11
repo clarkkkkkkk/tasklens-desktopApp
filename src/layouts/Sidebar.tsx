@@ -10,8 +10,7 @@ import {
   ShieldCheck,
 } from '../components/icons';
 import type { ExtractedAction, View } from '../types/action';
-import { needsReview } from '../lib/actions';
-import { localDate } from '../lib/dates';
+import { needsReview, selectActions } from '../lib/actions';
 const navigation = [
   { id: 'inbox', label: 'Inbox', icon: Inbox },
   { id: 'today', label: 'Today', icon: Sun },
@@ -32,8 +31,7 @@ export function Sidebar({
 }) {
   function count(id: View) {
     if (id === 'review') return actions.filter(needsReview).length;
-    if (id === 'today')
-      return actions.filter((a) => a.status === 'confirmed' && a.date === localDate()).length;
+    if (id === 'today') return selectActions(actions, 'today').length;
     if (id === 'all') return actions.length;
     return 0;
   }
