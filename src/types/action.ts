@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { transcriptSchema } from '../services/voice/types';
 
 export const dateSchema = z
   .string()
@@ -46,7 +47,12 @@ export const actionSchema = z
     }),
     reminders: z.array(reminderSchema).max(20),
     source: z.object({
-      type: z.enum(['image', 'text']),
+      type: z.enum(['image', 'text', 'voice']),
+      text: z.string().max(100000).optional(),
+      transcript: transcriptSchema.optional(),
+      capturedAt: z.string().datetime().optional(),
+      recordingDate: dateSchema.optional(),
+      timezone: z.string().max(100).optional(),
       extractionMode: z.enum(['mock', 'local']).optional(),
       fileName: z.string().optional(),
       previewUrl: z
@@ -55,6 +61,27 @@ export const actionSchema = z
         .refine((v) => /^data:image\/(png|jpeg|webp);base64,/.test(v), 'Invalid source preview')
         .optional(),
     }),
+    evidence: z
+      .array(
+        z.object({
+          field: z.enum([
+            'title',
+            'date',
+            'time',
+            'arrivalTime',
+            'location',
+            'requirements',
+            'notes',
+            'reminders',
+          ]),
+          segmentIds: z.array(z.string()).min(1).max(100),
+          quote: z.string().min(1).max(10000),
+          value: z.string().max(10000),
+        }),
+      )
+      .max(100)
+      .optional(),
+    ambiguities: z.array(z.string().max(2000)).max(30).optional(),
     status: z.enum(['needs_review', 'confirmed', 'completed']),
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),

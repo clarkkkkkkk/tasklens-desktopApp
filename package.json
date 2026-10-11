@@ -16,11 +16,13 @@
     "test:native:win": "node scripts/windows-native-acceptance.mjs",
     "tauri": "tauri",
     "format": "prettier --write src tests scripts *.ts *.js *.json",
-    "format:check": "prettier --check src tests scripts *.ts *.js *.json"
+    "format:check": "prettier --check src tests scripts *.ts *.js *.json",
+    "build:runtimes": "node scripts/build-local-runtimes.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.0",
     "@solar-icons/react": "^2.3.2",
+    "@tauri-apps/api": "^2.12.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zod": "^3.24.0"

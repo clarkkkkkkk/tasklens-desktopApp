@@ -11,9 +11,9 @@ it('returns a valid marked review fixture and ordered progress without analyzing
     );
     await vi.runAllTimersAsync();
     const result = await promise;
-    expect(actionSchema.safeParse(result[0]).success).toBe(true);
-    expect(result[0].title).toBe('Pictorial');
-    expect(result[0].status).toBe('needs_review');
+    expect(actionSchema.safeParse(result.actions[0]).success).toBe(true);
+    expect(result.actions[0].title).toBe('Pictorial');
+    expect(result.actions[0].status).toBe('needs_review');
     expect(onProgress.mock.calls.map((c) => c[0])).toEqual([0, 1, 2]);
   } finally {
     vi.useRealTimers();

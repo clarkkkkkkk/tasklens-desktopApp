@@ -27,32 +27,35 @@ export class MockExtractionService implements ExtractionService {
       await delay(650, signal);
     }
     const now = new Date().toISOString();
-    return [
-      actionSchema.parse({
-        id: crypto.randomUUID(),
-        type: 'event',
-        title: 'Pictorial',
-        date: '2026-10-08',
-        arrivalTime: '13:30',
-        location: 'Campus',
-        requirements: ['Wear black pants', 'No jeans'],
-        notes: [
-          'Exact pictorial time is still unconfirmed.',
-          'Further information may be announced later.',
-        ],
-        confidence: {
-          overall: 'needs_review',
-          date: 'inferred',
-          time: 'needs_review',
-          location: 'inferred',
-          requirements: 'inferred',
-        },
-        reminders: buildReminders('2026-10-08', '13:30', ['night', 'hour', 'quarter']),
-        source: { ...input, extractionMode: 'mock' },
-        status: 'needs_review',
-        createdAt: now,
-        updatedAt: now,
-      }),
-    ];
+    return {
+      actions: [
+        actionSchema.parse({
+          id: crypto.randomUUID(),
+          type: 'event',
+          title: 'Pictorial',
+          date: '2026-10-08',
+          arrivalTime: '13:30',
+          location: 'Campus',
+          requirements: ['Wear black pants', 'No jeans'],
+          notes: [
+            'Exact pictorial time is still unconfirmed.',
+            'Further information may be announced later.',
+          ],
+          confidence: {
+            overall: 'needs_review',
+            date: 'inferred',
+            time: 'needs_review',
+            location: 'inferred',
+            requirements: 'inferred',
+          },
+          reminders: buildReminders('2026-10-08', '13:30', ['night', 'hour', 'quarter']),
+          source: { ...input, extractionMode: 'mock' },
+          status: 'needs_review',
+          createdAt: now,
+          updatedAt: now,
+        }),
+      ],
+      ambiguities: [],
+    };
   }
 }

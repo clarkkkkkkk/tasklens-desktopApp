@@ -1,3 +1,4 @@
+import { VoiceCapture } from '../voice/VoiceCapture';
 import { MotionHeading } from '../../components/motion/MotionHeading';
 import { createDemoScreenshot } from '../../services/extraction/demoSource';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -26,6 +27,8 @@ export function Inbox({
   locked,
   onResult,
   onRemove,
+  onBundle,
+  onVoiceGuard,
 }: {
   active: boolean;
   suspendPaste?: boolean;
@@ -34,6 +37,8 @@ export function Inbox({
   locked: boolean;
   onResult: (a: ExtractedAction) => void;
   onRemove: () => void;
+  onBundle: (actions: ExtractedAction[]) => void;
+  onVoiceGuard: (cancel: (() => Promise<void>) | null) => void;
 }) {
   const { services, snapshot } = useApp();
   const [source, setSource] = useState<ExtractedAction['source'] | null>(null),
@@ -68,10 +73,11 @@ export function Inbox({
           onProgress: setStep,
         });
         if (abort.signal.aborted) return;
-        if (!results.length) throw new Error('No actions were returned. Try processing again.');
+        if (!results.actions.length)
+          throw new Error('No actions were returned. Try processing again.');
         const first = {
-          ...results[0],
-          reminders: results[0].reminders.map((r) => ({
+          ...results.actions[0],
+          reminders: results.actions[0].reminders.map((r) => ({
             ...r,
             enabled: snapshot.settings.defaultReminders.some((p) => p === r.id),
           })),
@@ -172,6 +178,7 @@ export function Inbox({
         <MotionHeading>Inbox</MotionHeading>
         <p>Turn screenshots and information into organized actions.</p>
       </div>
+      <VoiceCapture locked={locked || busy} onResult={onBundle} onGuardChange={onVoiceGuard} />
       {error && (
         <ErrorState message={error}>
           {source && (
