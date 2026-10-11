@@ -1,7 +1,9 @@
+import { MotionToast } from './components/motion/MotionToast';
+import { animateMotion, prepareExit, useEntrance } from './components/motion/motion';
 import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
 import { CURRENT_ONBOARDING_VERSION } from './features/onboarding/onboarding.constants';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Download, RefreshCw } from './components/icons';
+import { Download, RefreshCw } from './components/icons';
 import { useApp } from './app/context';
 import { Sidebar } from './layouts/Sidebar';
 import { TopBar } from './layouts/TopBar';
@@ -10,7 +12,7 @@ import { Inbox } from './features/inbox/Inbox';
 import { TaskViews } from './features/tasks/TaskViews';
 import { CalendarView } from './features/calendar/CalendarView';
 import { SettingsView } from './features/settings/SettingsView';
-import { DetailsPanel, DetailsPlaceholder } from './features/extraction/DetailsPanel';
+import { DetailsPanel } from './features/extraction/DetailsPanel';
 import { Button, ErrorState, LoadingState } from './components/ui';
 import { newAction } from './lib/actions';
 import { downloadText } from './lib/images';
@@ -24,14 +26,20 @@ export default function App() {
     [dirty, setDirty] = useState(false);
   const [replay, setReplay] = useState(false),
     [captureHint, setCaptureHint] = useState(false);
+  const [finishingTour, setFinishingTour] = useState(false);
+  const [floatingResult, setFloatingResult] = useState(false);
+  const pageContent = useRef<HTMLDivElement>(null);
   const replayOpener = useRef<HTMLElement | null>(null);
   const needsOnboarding =
     !loading &&
     !loadError &&
     snapshot.settings.onboardingCompletedVersion < CURRENT_ONBOARDING_VERSION;
-  const touring = replay || needsOnboarding;
+  const touring = !loadError && (replay || needsOnboarding || finishingTour);
+  useEntrance(pageContent, view, 'page', !touring && !loading);
   const exitReplay = useCallback(() => {
+    prepareExit(document.querySelector('.onboarding'), 160)();
     setReplay(false);
+    setFinishingTour(false);
     requestAnimationFrame(() => replayOpener.current?.focus());
   }, []);
   useEffect(() => {
@@ -40,27 +48,44 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [captureHint]);
   const opener = useRef<HTMLElement | null>(null);
+  const focusVersion = useRef(0);
   const onOpen = useCallback(
-    (a: ExtractedAction) => {
+    (a: ExtractedAction, floating = false) => {
       if (dirty) {
         announce('Save or close your current edits before opening another item.');
         return;
       }
+      focusVersion.current++;
+      document.querySelectorAll('.motion-exit-snapshot').forEach((node) => node.remove());
       opener.current =
         document.activeElement instanceof HTMLElement ? document.activeElement : null;
       setSelection(a);
+      setFloatingResult(floating);
     },
     [dirty, announce],
   );
   const onClose = useCallback(() => {
+    const version = ++focusVersion.current;
+    prepareExit(
+      document.querySelector('.inbox-result-dialog[open]:not(.motion-exit-snapshot)') ||
+        document.querySelector('.details-panel:not(.motion-exit-snapshot)'),
+    )();
     setSelection(null);
     setDirty(false);
-    requestAnimationFrame(() => opener.current?.isConnected && opener.current.focus());
+    requestAnimationFrame(() => {
+      if (focusVersion.current !== version) return;
+      const target =
+        opener.current?.isConnected && opener.current !== document.body
+          ? opener.current
+          : document.querySelector<HTMLElement>('.inbox-view:not([hidden]) [data-open-result]');
+      target?.focus({ preventScroll: true });
+    });
   }, []);
   const selected = selection
     ? snapshot.actions.find((a) => a.id === selection.id) || selection
     : null;
   const showInbox = view === 'inbox';
+  const resultDialogOpen = showInbox && floatingResult && !!selected;
   useEffect(() => {
     if (touring || loading || loadError) return;
     const handler = (event: KeyboardEvent) => {
@@ -85,8 +110,16 @@ export default function App() {
       {touring && (
         <OnboardingFlow
           replay={replay}
+          onFinishingChange={setFinishingTour}
           onExit={exitReplay}
-          onFinish={() => {
+          onFinish={async () => {
+            const tour = document.querySelector<HTMLElement>('.onboarding');
+            if (tour) {
+              tour.inert = true;
+              tour.setAttribute('aria-hidden', 'true');
+              await animateMotion(tour, 'fade', 0, true);
+            }
+            setFinishingTour(false);
             setView('inbox');
             setReplay(false);
             if (!replay) setCaptureHint(true);
@@ -105,6 +138,7 @@ export default function App() {
               announce('Save or close your current edits before changing views.');
               return;
             }
+            document.querySelectorAll('.motion-exit-snapshot').forEach((node) => node.remove());
             onClose();
             setCaptureHint(false);
             setView(v);
@@ -120,9 +154,9 @@ export default function App() {
           <main
             id="main-content"
             tabIndex={-1}
-            className={`workspace ${selected ? 'with-details' : ''}`}
+            className={`workspace ${selected && !resultDialogOpen ? 'with-details' : ''}`}
           >
-            <div className="main-content">
+            <div ref={pageContent} className="main-content">
               {loading ? (
                 <LoadingState />
               ) : loadError ? (
@@ -144,10 +178,11 @@ export default function App() {
                 <>
                   <Inbox
                     active={showInbox && !touring}
+                    suspendPaste={resultDialogOpen || searchOpen}
                     captureHint={captureHint}
                     onCaptureInteraction={() => setCaptureHint(false)}
                     locked={dirty}
-                    onResult={onOpen}
+                    onResult={(action) => onOpen(action, true)}
                     onRemove={() => {
                       if (selection && !snapshot.actions.some((a) => a.id === selection.id))
                         onClose();
@@ -186,24 +221,21 @@ export default function App() {
                 </>
               )}
             </div>
-            {!loading &&
-              !loadError &&
-              (selected ? (
-                <DetailsPanel
-                  key={selected.id}
-                  action={selected}
-                  onClose={onClose}
-                  onSaved={setSelection}
-                  onDirtyChange={setDirty}
-                  onCalendar={(a) => {
-                    setCalendarDate(a.date);
-                    setView('calendar');
-                    onClose();
-                  }}
-                />
-              ) : showInbox ? (
-                <DetailsPlaceholder />
-              ) : null)}
+            {!loading && !loadError && selected && (
+              <DetailsPanel
+                key={selected.id}
+                action={selected}
+                floating={resultDialogOpen}
+                onClose={onClose}
+                onSaved={setSelection}
+                onDirtyChange={setDirty}
+                onCalendar={(a) => {
+                  setCalendarDate(a.date);
+                  setView('calendar');
+                  onClose();
+                }}
+              />
+            )}
           </main>
         </div>
         {searchOpen && !touring && (
@@ -215,14 +247,7 @@ export default function App() {
             onSelect={onOpen}
           />
         )}
-        <div className={`toast ${notice ? 'visible' : ''}`} role="status" aria-live="polite">
-          {notice && (
-            <>
-              <Check size={16} />
-              {notice}
-            </>
-          )}
-        </div>
+        <MotionToast message={notice} />
       </div>
     </>
   );

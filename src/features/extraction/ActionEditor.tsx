@@ -10,12 +10,14 @@ export function ActionEditor({
   onSave,
   onCancel,
   onDirty,
+  onPendingChange,
 }: {
   action: ExtractedAction;
   defaults: Settings['defaultReminders'];
   onSave: (a: ExtractedAction) => Promise<void>;
   onCancel: () => void;
   onDirty: () => void;
+  onPendingChange?: (pending: boolean) => void;
 }) {
   const [draft, setDraft] = useState(action),
     [requirements, setRequirements] = useState(action.requirements.join('\n')),
@@ -51,12 +53,14 @@ export function ActionEditor({
       return;
     }
     setPending(true);
+    onPendingChange?.(true);
     try {
       await onSave(validated.data);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save item');
     } finally {
       setPending(false);
+      onPendingChange?.(false);
     }
   }
   return (

@@ -1,3 +1,4 @@
+import { settleMotion } from './motion-helpers';
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 const button = (page: Page, name: string) => page.getByRole('button', { name, exact: true });
@@ -33,6 +34,7 @@ test('first launch, back, preferences, demo and completion preserve data', async
       element.getAnimations({ subtree: true }).map((animation) => animation.finished),
     );
   });
+  await settleMotion(page);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await button(page, 'Start using TaskLens').click();
   await expect(page.getByRole('heading', { name: 'Inbox', exact: true })).toBeVisible();
@@ -83,6 +85,7 @@ test('responsive layouts and reduced motion remain accessible', async ({ page })
       element.getAnimations({ subtree: true }).map((animation) => animation.finished),
     );
   });
+  await settleMotion(page);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.keyboard.press('Tab');
   await expect(button(page, 'Skip tour')).toBeFocused();

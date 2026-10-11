@@ -250,3 +250,19 @@ Native execution remains separately blocked; browser-process restart coverage is
 - Original logo verified byte-identical. No sample tasks are saved by onboarding.
 - Packaged native WebView acceptance remains unverified for this feature; do not infer a native pass from browser results.
 - Full file inventory and behavior report: ONBOARDING_REPORT.md.
+
+### Workspace motion validation — 2026-10-11
+
+- [x] Shared motion tokens, heading reveals, onboarding handoff, navigation, panels, controls, capture, calendar and task/toast feedback — Developer 1.
+- [x] Reduced motion, inert exits, focus restoration and rapid-navigation cancellation — Developer 1.
+- [x] Persistence/recovery and existing workflow regressions — Developer 2.
+- [x] TypeScript/lint, formatting, build, 16 unit tests and 20 browser tests pass.
+- [ ] Packaged native WebView motion and platform reduced-motion verification — Developer 1 + Developer 2.
+- Behavior, changed files and verification details: MOTION_REPORT.md.
+
+### Inbox result dialog — 2026-10-11
+
+- [x] Center Inbox extraction review in a floating dialog with the search backdrop blur — Developer 1.
+- [x] Responsive review/editor scrolling, focus containment/restoration, guarded dismissal and background paste isolation — Developer 1.
+- [x] Shared save behavior, storage regressions, 16 unit tests and all 21 browser tests verified — Developer 2.
+- [ ] Packaged native WebView modal/backdrop verification — Developer 1 + Developer 2.

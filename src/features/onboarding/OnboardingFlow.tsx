@@ -1,3 +1,4 @@
+import { MotionHeading } from '../../components/motion/MotionHeading';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, FileImage, CalendarDays, ShieldCheck } from '../../components/icons';
 import { useApp } from '../../app/context';
@@ -20,10 +21,12 @@ export function OnboardingFlow({
   replay,
   onExit,
   onFinish,
+  onFinishingChange,
 }: {
+  onFinishingChange: (finishing: boolean) => void;
   replay: boolean;
   onExit: () => void;
-  onFinish: () => void;
+  onFinish: () => Promise<void>;
 }) {
   const { snapshot, saveSettings, services, announce } = useApp();
   const [steps] = useState(() =>
@@ -81,11 +84,13 @@ export function OnboardingFlow({
     busy.current = true;
     setPending(true);
     setError('');
+    if (finish) onFinishingChange(true);
     try {
       await saveSettings(settings);
       announce('');
-      if (finish) onFinish();
+      if (finish) await onFinish();
     } catch (e) {
+      if (finish) onFinishingChange(false);
       setError(e instanceof Error ? e.message : 'Could not save preferences. Please try again.');
     } finally {
       busy.current = false;
@@ -132,9 +137,9 @@ export function OnboardingFlow({
             <div className="eyebrow">
               {step === 'welcome' ? 'A LITTLE LESS TO REMEMBER' : 'YOUR SPACE FOR CLARITY'}
             </div>
-            <h1 ref={heading} tabIndex={-1}>
+            <MotionHeading ref={heading} tabIndex={-1} revealWords>
               {titles[step]}
-            </h1>
+            </MotionHeading>
             {step === 'welcome' && (
               <>
                 <p>

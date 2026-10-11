@@ -1,3 +1,4 @@
+import { MotionHeading } from '../../components/motion/MotionHeading';
 import { useState } from 'react';
 import { CircleCheck, Plus } from '../../components/icons';
 import { useApp } from '../../app/context';
@@ -83,7 +84,7 @@ export function TaskViews({
               })
             : 'YOUR LOCAL WORKSPACE'}
         </div>
-        <h1>{details.title}</h1>
+        <MotionHeading>{details.title}</MotionHeading>
         <p>{details.subtitle}</p>
       </div>
       {view === 'all' && !isSearch && (

@@ -1,3 +1,4 @@
+import { settleMotion } from './motion-helpers';
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { snapshotSchema } from '../src/types/action';
@@ -117,6 +118,7 @@ test('HTML drag/drop and paste accept actual image files', async ({ page }) => {
   }, image);
   await expect(page.getByAltText('Preview of dropped.png')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Pictorial', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Close details' }).click();
   await page.getByRole('button', { name: 'Remove screenshot' }).click();
   await page.evaluate((bytes) => {
     const data = new DataTransfer();
@@ -171,14 +173,17 @@ test('keyboard access, accessibility, offline operation and narrow desktop layou
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await page.getByRole('button', { name: 'New item' }).hover();
+  await settleMotion(page);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await context.setOffline(true);
   await demo(page);
+  await settleMotion(page);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.setViewportSize({ width: 900, height: 640 });
   await expect(page.getByRole('button', { name: 'Confirm & save event' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByRole('button', { name: 'Edit details', exact: true }).click();
+  await settleMotion(page);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.keyboard.press('Escape');
   await expect(page.getByRole('complementary', { name: 'Item details' })).not.toBeVisible();
@@ -195,8 +200,8 @@ test('unsaved edits are protected, reminder changes persist, search ignores list
   await page.getByLabel('Date', { exact: true }).fill('2026-10-09');
   await page.getByLabel('Arrival time', { exact: true }).fill('15:00');
   await page.getByLabel('1 hour before').uncheck();
-  await expect(page.getByRole('button', { name: 'Remove screenshot' })).toBeDisabled();
-  await nav(page, 'Upcoming');
+  await expect(page.locator('button[aria-label="Remove screenshot"]')).toBeDisabled();
+  await page.mouse.click(2, 2);
   await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Keep these edits');
   await page.keyboard.press('Escape');
   await expect(page.getByText('Discard your unsaved edits?')).toBeVisible();

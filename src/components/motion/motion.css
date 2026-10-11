@@ -1,0 +1,65 @@
+:root {
+  --motion-page: 320ms;
+  --motion-panel: 220ms;
+  --motion-fade: 160ms;
+  --motion-workspace: 320ms;
+  --motion-word: 300ms;
+  --motion-feedback: 160ms;
+  --motion-exit: 140ms;
+  --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+.motion-word {
+  display: inline-block;
+  white-space: pre;
+}
+.button,
+.icon-button {
+  transition:
+    background-color 140ms,
+    border-color 140ms,
+    color 140ms,
+    transform 120ms var(--motion-ease);
+}
+.button:not(:disabled):active,
+.icon-button:not(:disabled):active {
+  transform: scale(0.98);
+}
+.processing-area,
+.error-state,
+.inline-confirm {
+  animation: motion-reveal var(--motion-page) var(--motion-ease) both;
+}
+.toast {
+  transform: translateY(8px);
+  transition:
+    opacity var(--motion-fade),
+    transform var(--motion-fade) var(--motion-ease);
+}
+.toast.visible {
+  transform: none;
+}
+.motion-exit-snapshot,
+.motion-exit-snapshot * {
+  pointer-events: none !important;
+  animation: none !important;
+  transition: none !important;
+}
+@keyframes motion-reveal {
+  from {
+    transform: translateY(8px);
+  }
+  to {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .motion-word,
+  .button:active,
+  .icon-button:active,
+  .toast {
+    transform: none !important;
+  }
+  .motion-exit-snapshot {
+    display: none;
+  }
+}

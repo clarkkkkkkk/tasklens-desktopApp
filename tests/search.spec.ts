@@ -1,3 +1,4 @@
+import { settleMotion } from './motion-helpers';
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { actionSchema, defaultSettings } from '../src/types/action';
@@ -47,6 +48,7 @@ test('floating search supports keyboard selection, local fields, focus containme
   await expect(input).toBeFocused();
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('option')).toHaveCount(0);
+  await settleMotion(page);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   for (const [query, title] of [
     ['studio', 'Design review'],
@@ -61,6 +63,7 @@ test('floating search supports keyboard selection, local fields, focus containme
   await expect(dialog.getByRole('option', { selected: true })).toContainText('Design review');
   await page.keyboard.press('ArrowDown');
   await expect(dialog.getByRole('option', { selected: true })).toContainText('Design handoff');
+  await settleMotion(page);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.keyboard.press('Tab');
   expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
@@ -84,6 +87,7 @@ test('empty results, outside dismissal and reduced motion stay accessible on nar
   const dialog = page.getByRole('dialog');
   await page.getByLabel('Search all items').fill('nothing matches this');
   await expect(dialog.getByText('No matches just yet.')).toBeVisible();
+  await settleMotion(page);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   expect(await dialog.evaluate((element) => getComputedStyle(element).animationName)).toBe('none');
   const box = await dialog.boundingBox();
