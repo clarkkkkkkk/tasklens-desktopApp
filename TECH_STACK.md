@@ -6,7 +6,7 @@
 | Build | Vite: small, fast frontend development and static production assets. |
 | Desktop | Tauri 2 / Rust: system webview, local app identity, constrained native surface. No privileged plugins are needed yet. |
 | Styling | Tailwind CSS via its Vite plugin plus shared CSS tokens: one authoritative palette and spacing vocabulary. |
-| Components | Small semantic local primitives and Lucide icons. shadcn/ui is not installed because the initial controls do not need additional headless dependencies. |
+| Components | Small semantic local primitives and Solar (Bold Duotone) icons via @solar-icons/react. shadcn/ui is not installed because the initial controls do not need additional headless dependencies. |
 | Typography | Bundled Inter via @fontsource/inter; no font network request at runtime. |
 | State | React context and hooks; domain operations are independent from presentation. |
 | Validation | Zod at form and persistence boundaries. Native form controls for simple inputs. |

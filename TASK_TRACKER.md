@@ -27,12 +27,13 @@ Phase 1 implementation tracker, updated 2026-10-08. Owners are responsibility as
   - Status: BACKLOG
   - Dependency: Schema migration design
   - Definition of done: Exported files can be restored safely with clear conflict handling.
-- [ ] Verify packaged macOS and Windows builds.
+- [ ] Verify packaged macOS and Windows builds (Windows done; macOS remaining).
   - Owner: Developer 1 + Developer 2
   - Priority: P1
   - Status: BACKLOG
   - Dependency: Equipped platform hosts
   - Definition of done: Capture/edit/save/restart flow, focus, resize and original icons pass native smoke tests.
+  - Progress (2026-10-11): Windows DONE. MSI and NSIS bundles build; the NSIS-installed app passes `npm run test:native:win` 8/8 (capture via picker/drop/paste, edit/confirm/save, graceful restart persistence, Ctrl+K/Escape focus, 900×640 minimum size, original icons). Gaps: MSI install, Explorer file drag, >100% display scaling, unsigned installers. macOS not started.
 
 ## IN PROGRESS
 No frontend implementation tasks remain in progress. Native acceptance is explicitly blocked below.
