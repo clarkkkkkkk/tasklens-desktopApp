@@ -1,3 +1,4 @@
+import { useEntrance } from '../../components/motion/motion';
 import { useEffect, useRef, useState } from 'react';
 import {
   Bell,
@@ -8,7 +9,6 @@ import {
   MapPin,
   Pencil,
   RotateCcw,
-  ShieldCheck,
   Trash2,
   X,
 } from '../../components/icons';
@@ -18,39 +18,21 @@ import { confirmAction } from '../../lib/actions';
 import { displayDate, displayTime } from '../../lib/dates';
 import type { ExtractedAction } from '../../types/action';
 import { ActionEditor } from './ActionEditor';
-export function DetailsPlaceholder() {
-  return (
-    <aside className="details-placeholder" aria-label="Getting started">
-      <div className="placeholder-art">
-        <span />
-        <FileImage size={30} />
-        <span />
-      </div>
-      <h2>
-        A little clarity,
-        <br />
-        one detail at a time.
-      </h2>
-      <p>Add a screenshot to see its details here. You’ll always get the final say.</p>
-      <div>
-        <ShieldCheck size={16} />
-        <span>Private by design</span>
-      </div>
-    </aside>
-  );
-}
+import './result-dialog.css';
 export function DetailsPanel({
   action,
   onClose,
   onSaved,
   onCalendar,
   onDirtyChange,
+  floating = false,
 }: {
   action: ExtractedAction;
   onClose: () => void;
   onSaved: (a: ExtractedAction) => void;
   onCalendar: (a: ExtractedAction) => void;
   onDirtyChange: (dirty: boolean) => void;
+  floating?: boolean;
 }) {
   const { save, remove, complete, snapshot } = useApp();
   const [editing, setEditing] = useState(!action.title),
@@ -60,6 +42,14 @@ export function DetailsPanel({
     [error, setError] = useState(''),
     [pending, setPending] = useState(false);
   const panel = useRef<HTMLElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEntrance(panel, action.id, 'panel');
+  useEffect(() => {
+    if (!floating) return;
+    const element = dialog.current;
+    element?.showModal();
+    return () => element?.close();
+  }, [floating]);
   useEffect(() => {
     onDirtyChange(dirty);
   }, [dirty, onDirtyChange]);
@@ -68,8 +58,9 @@ export function DetailsPanel({
     if (action.title) panel.current?.focus();
   }, [action.id, action.title]);
   useEffect(() => {
+    if (floating) return;
     const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !pending) {
         if (dirty) {
           setDiscard(true);
         } else onClose();
@@ -77,7 +68,12 @@ export function DetailsPanel({
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [dirty, onClose]);
+  }, [dirty, pending, floating, onClose]);
+  function dismiss() {
+    if (pending) return;
+    if (dirty) setDiscard(true);
+    else onClose();
+  }
   async function persist(item: ExtractedAction) {
     await save(item);
     setDirty(false);
@@ -95,8 +91,13 @@ export function DetailsPanel({
       setPending(false);
     }
   }
-  return (
-    <aside className="details-panel" ref={panel} tabIndex={-1} aria-label="Item details">
+  const content = (
+    <aside
+      className={`details-panel ${floating ? 'result-panel' : ''}`}
+      ref={panel}
+      tabIndex={-1}
+      aria-label="Item details"
+    >
       <h1 className="sr-only narrow-heading">Item details</h1>
       <div className="detail-toolbar">
         <span>
@@ -107,7 +108,8 @@ export function DetailsPanel({
         <button
           className="icon-button"
           aria-label="Close details"
-          onClick={() => (dirty ? setDiscard(true) : onClose())}
+          disabled={pending}
+          onClick={dismiss}
         >
           <X size={18} />
         </button>
@@ -132,6 +134,7 @@ export function DetailsPanel({
           defaults={snapshot.settings.defaultReminders}
           onSave={persist}
           onDirty={() => setDirty(true)}
+          onPendingChange={setPending}
           onCancel={() => {
             if (dirty) setDiscard(true);
             else if (!action.title) onClose();
@@ -355,5 +358,37 @@ export function DetailsPanel({
         </>
       )}
     </aside>
+  );
+  if (!floating) return content;
+  return (
+    <dialog
+      ref={dialog}
+      className="inbox-result-dialog"
+      aria-label="Screenshot result"
+      onCancel={(event) => {
+        event.preventDefault();
+        dismiss();
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          dismiss();
+        }
+      }}
+      onClick={(event) => {
+        if (event.target !== event.currentTarget) return;
+        const bounds = event.currentTarget.getBoundingClientRect();
+        if (
+          event.clientX < bounds.left ||
+          event.clientX > bounds.right ||
+          event.clientY < bounds.top ||
+          event.clientY > bounds.bottom
+        )
+          dismiss();
+      }}
+    >
+      {content}
+    </dialog>
   );
 }

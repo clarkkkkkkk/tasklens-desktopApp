@@ -1,3 +1,4 @@
+import { MotionHeading } from '../../components/motion/MotionHeading';
 import { useState } from 'react';
 import { Bell, Download, HardDrive, Monitor, ShieldCheck, Sparkles } from '../../components/icons';
 import { useApp } from '../../app/context';
@@ -33,7 +34,7 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
     <section className="settings-view">
       <div className="page-heading">
         <div className="eyebrow">MAKE YOURSELF AT HOME</div>
-        <h1>Settings</h1>
+        <MotionHeading>Settings</MotionHeading>
         <p>A few preferences. A workspace that feels like yours.</p>
       </div>
       {error && <ErrorState message={error} />}

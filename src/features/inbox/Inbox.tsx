@@ -1,3 +1,4 @@
+import { MotionHeading } from '../../components/motion/MotionHeading';
 import { createDemoScreenshot } from '../../services/extraction/demoSource';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -19,6 +20,7 @@ import type { ExtractedAction } from '../../types/action';
 import { extractionSteps } from '../../services/extraction/ExtractionService';
 export function Inbox({
   active,
+  suspendPaste = false,
   captureHint = false,
   onCaptureInteraction,
   locked,
@@ -26,6 +28,7 @@ export function Inbox({
   onRemove,
 }: {
   active: boolean;
+  suspendPaste?: boolean;
   captureHint?: boolean;
   onCaptureInteraction?: () => void;
   locked: boolean;
@@ -116,7 +119,7 @@ export function Inbox({
     [process, locked, onCaptureInteraction],
   );
   useEffect(() => {
-    if (!active) return;
+    if (!active || suspendPaste) return;
     const paste = (e: ClipboardEvent) => {
       if (
         e.target instanceof HTMLElement &&
@@ -133,7 +136,7 @@ export function Inbox({
     };
     window.addEventListener('paste', paste);
     return () => window.removeEventListener('paste', paste);
-  }, [active, accept]);
+  }, [active, suspendPaste, accept]);
   function remove() {
     controller.current?.abort();
     inputVersion.current++;
@@ -166,7 +169,7 @@ export function Inbox({
       )}
       <div className="page-heading">
         <div className="eyebrow">YOUR SPACE TO START</div>
-        <h1>Inbox</h1>
+        <MotionHeading>Inbox</MotionHeading>
         <p>Turn screenshots and information into organized actions.</p>
       </div>
       {error && (
@@ -203,7 +206,12 @@ export function Inbox({
           <div className="preview-image">
             <img src={source.previewUrl} alt={`Preview of ${source.fileName}`} />
           </div>
-          <div className="processing-area" role="status" aria-live="polite">
+          <div
+            key={busy ? 'processing' : 'result'}
+            className="processing-area"
+            role="status"
+            aria-live="polite"
+          >
             <div className="processing-title">
               {busy ? <LoaderCircle size={17} className="spin" /> : <Check size={17} />}
               <strong>{busy ? extractionSteps[Math.max(0, step)] : 'Ready for your review'}</strong>
@@ -226,6 +234,7 @@ export function Inbox({
             {result && !busy && (
               <Button
                 variant="primary"
+                data-open-result
                 onClick={() =>
                   callback.current(snapshot.actions.find((a) => a.id === result.id) || result)
                 }

@@ -1,3 +1,4 @@
+import { MotionHeading } from '../../components/motion/MotionHeading';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, FileImage, CalendarDays, ShieldCheck } from '../../components/icons';
 import { useApp } from '../../app/context';
@@ -20,10 +21,12 @@ export function OnboardingFlow({
   replay,
   onExit,
   onFinish,
+  onFinishingChange,
 }: {
+  onFinishingChange: (finishing: boolean) => void;
   replay: boolean;
   onExit: () => void;
-  onFinish: () => void;
+  onFinish: (reason: 'complete' | 'skip') => Promise<void>;
 }) {
   const { snapshot, saveSettings, services, announce } = useApp();
   const [steps] = useState(() =>
@@ -76,23 +79,25 @@ export function OnboardingFlow({
     void run();
     return () => controller.abort();
   }, [step, demo, attempt, services]);
-  async function persist(settings: Settings, finish = false) {
+  async function persist(settings: Settings, finish: false | 'complete' | 'skip' = false) {
     if (busy.current) return;
     busy.current = true;
     setPending(true);
     setError('');
+    if (finish) onFinishingChange(true);
     try {
       await saveSettings(settings);
       announce('');
-      if (finish) onFinish();
+      if (finish) await onFinish(finish);
     } catch (e) {
+      if (finish) onFinishingChange(false);
       setError(e instanceof Error ? e.message : 'Could not save preferences. Please try again.');
     } finally {
       busy.current = false;
       setPending(false);
     }
   }
-  function finish() {
+  function finish(reason: 'complete' | 'skip') {
     void persist(
       {
         ...snapshot.settings,
@@ -100,7 +105,7 @@ export function OnboardingFlow({
           snapshot.settings.onboardingCompletedVersion,
         ),
       },
-      true,
+      reason,
     );
   }
   return (
@@ -132,9 +137,9 @@ export function OnboardingFlow({
             <div className="eyebrow">
               {step === 'welcome' ? 'A LITTLE LESS TO REMEMBER' : 'YOUR SPACE FOR CLARITY'}
             </div>
-            <h1 ref={heading} tabIndex={-1}>
+            <MotionHeading ref={heading} tabIndex={-1} revealWords>
               {titles[step]}
-            </h1>
+            </MotionHeading>
             {step === 'welcome' && (
               <>
                 <p>
@@ -235,7 +240,7 @@ export function OnboardingFlow({
           </ErrorState>
         )}
         <footer className="onboarding-actions">
-          <Button variant="ghost" disabled={pending} onClick={finish}>
+          <Button variant="ghost" disabled={pending} onClick={() => finish('skip')}>
             Skip tour
           </Button>
           <div>
@@ -247,7 +252,9 @@ export function OnboardingFlow({
             <Button
               variant="primary"
               disabled={pending}
-              onClick={index === steps.length - 1 ? finish : () => setIndex(index + 1)}
+              onClick={
+                index === steps.length - 1 ? () => finish('complete') : () => setIndex(index + 1)
+              }
             >
               {pending
                 ? 'Saving…'
