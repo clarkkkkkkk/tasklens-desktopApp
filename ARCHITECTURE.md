@@ -51,3 +51,8 @@ Workspace cards, empty states, task rows and editor/review content share their p
 
 ## Inbox extraction review
 App records whether selection came from Inbox extraction or its Open result action. These selections use DetailsPanel's native modal presentation with a centered, blurred backdrop; manual items and selections from other views keep the side panel. Review/editor components and save operations are shared. The Inbox stays mounted behind the modal and its global paste handler is suspended while either overlay is open. Native modal focus containment, guarded Escape/outside dismissal and a fallback to Open result preserve keyboard access when the original capture control no longer exists. Editor writes report pending state so modal dismissal cannot interrupt a save.
+
+## Completion brand handoff
+Onboarding reports complete versus skip only after settings persist. Complete mounts the local BrandHandoff overlay while the workspace stays mounted, inert and aria-hidden. It measures the real sidebar image/name, reveals a centered copy, then animates it into those exact positions while uncovering the workspace. The real brand stays visually hidden until overlay removal, so the swap is continuous. Skip and reduced motion use the direct Inbox path; returning launches do not mount the overlay.
+
+Browser animation promises sequence the finite stages; unmount cancels all work. Reduced-motion changes and window resizing settle immediately. Inbox focus is applied in a layout effect after inertness is removed. Search/paste are suspended during handoff, and the six-second first-capture hint begins afterward. Replay completion can show the brand animation but never repeats the first-capture hint. No persisted setting, asset or service contract changes.

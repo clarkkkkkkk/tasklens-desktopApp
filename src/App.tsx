@@ -1,8 +1,9 @@
 import { MotionToast } from './components/motion/MotionToast';
-import { animateMotion, prepareExit, useEntrance } from './components/motion/motion';
+import { BrandHandoff } from './components/motion/BrandHandoff';
+import { animateMotion, prepareExit, reducedMotion, useEntrance } from './components/motion/motion';
 import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
 import { CURRENT_ONBOARDING_VERSION } from './features/onboarding/onboarding.constants';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Download, RefreshCw } from './components/icons';
 import { useApp } from './app/context';
 import { Sidebar } from './layouts/Sidebar';
@@ -28,6 +29,8 @@ export default function App() {
     [captureHint, setCaptureHint] = useState(false);
   const [finishingTour, setFinishingTour] = useState(false);
   const [floatingResult, setFloatingResult] = useState(false);
+  const [brandHandoff, setBrandHandoff] = useState<{ firstRun: boolean } | null>(null);
+  const pendingBrandFocus = useRef(false);
   const pageContent = useRef<HTMLDivElement>(null);
   const replayOpener = useRef<HTMLElement | null>(null);
   const needsOnboarding =
@@ -35,7 +38,18 @@ export default function App() {
     !loadError &&
     snapshot.settings.onboardingCompletedVersion < CURRENT_ONBOARDING_VERSION;
   const touring = !loadError && (replay || needsOnboarding || finishingTour);
-  useEntrance(pageContent, view, 'page', !touring && !loading);
+  useEntrance(pageContent, view, 'page', !touring && !loading && !brandHandoff);
+  const finishBrandHandoff = useCallback(() => {
+    pendingBrandFocus.current = true;
+    setBrandHandoff(null);
+    if (brandHandoff?.firstRun) setCaptureHint(true);
+  }, [brandHandoff]);
+  useLayoutEffect(() => {
+    if (!brandHandoff && pendingBrandFocus.current) {
+      pendingBrandFocus.current = false;
+      document.getElementById('main-content')?.focus({ preventScroll: true });
+    }
+  }, [brandHandoff]);
   const exitReplay = useCallback(() => {
     prepareExit(document.querySelector('.onboarding'), 160)();
     setReplay(false);
@@ -91,12 +105,12 @@ export default function App() {
     const handler = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
-        setSearchOpen(true);
+        if (!brandHandoff) setSearchOpen(true);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [touring, loading, loadError]);
+  }, [touring, brandHandoff, loading, loadError]);
   function backup() {
     try {
       downloadText(services.repository.exportRaw(), 'tasklens-recovery.json');
@@ -112,22 +126,32 @@ export default function App() {
           replay={replay}
           onFinishingChange={setFinishingTour}
           onExit={exitReplay}
-          onFinish={async () => {
+          onFinish={async (reason) => {
             const tour = document.querySelector<HTMLElement>('.onboarding');
             if (tour) {
               tour.inert = true;
               tour.setAttribute('aria-hidden', 'true');
               await animateMotion(tour, 'fade', 0, true);
             }
+            const showBrand = reason === 'complete' && !reducedMotion();
+            if (showBrand) setBrandHandoff({ firstRun: !replay });
             setFinishingTour(false);
             setView('inbox');
             setReplay(false);
-            if (!replay) setCaptureHint(true);
-            requestAnimationFrame(() => document.getElementById('main-content')?.focus());
+            if (!showBrand) {
+              if (!replay) setCaptureHint(true);
+              requestAnimationFrame(() => document.getElementById('main-content')?.focus());
+            }
           }}
         />
       )}
-      <div hidden={touring} inert={touring} className="app-shell">
+      {brandHandoff && <BrandHandoff onComplete={finishBrandHandoff} />}
+      <div
+        hidden={touring}
+        inert={touring || !!brandHandoff}
+        aria-hidden={brandHandoff ? true : undefined}
+        className={`app-shell ${brandHandoff ? 'brand-handoff-active' : ''}`}
+      >
         <a className="skip-link" href="#main-content">
           Skip to workspace
         </a>
@@ -178,7 +202,7 @@ export default function App() {
                 <>
                   <Inbox
                     active={showInbox && !touring}
-                    suspendPaste={resultDialogOpen || searchOpen}
+                    suspendPaste={resultDialogOpen || searchOpen || !!brandHandoff}
                     captureHint={captureHint}
                     onCaptureInteraction={() => setCaptureHint(false)}
                     locked={dirty}

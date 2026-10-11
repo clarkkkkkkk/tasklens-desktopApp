@@ -266,3 +266,11 @@ Native execution remains separately blocked; browser-process restart coverage is
 - [x] Responsive review/editor scrolling, focus containment/restoration, guarded dismissal and background paste isolation — Developer 1.
 - [x] Shared save behavior, storage regressions, 16 unit tests and all 21 browser tests verified — Developer 2.
 - [ ] Packaged native WebView modal/backdrop verification — Developer 1 + Developer 2.
+
+### Completion brand transition — 2026-10-11
+
+- [x] Centered unchanged TaskLens logo/name reveal and smooth travel to the actual sidebar brand; approximately 2.8 seconds including onboarding exit — Developer 1.
+- [x] Responsive positioning, inert workspace, focus restoration, shortcut isolation and reduced-motion settlement — Developer 1.
+- [x] Completion-save failure protection, unchanged stored data and browser regression verification — Developer 2.
+- [x] TypeScript/lint, formatting, build and 16 unit tests; full 26 browser tests before timing refinement and all five brand tests after slowing the transition.
+- [ ] Packaged native WebView animation verification — Developer 1 + Developer 2.

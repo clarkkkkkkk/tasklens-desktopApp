@@ -1,0 +1,33 @@
+.brand-handoff {
+  --brand-handoff-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  outline: none;
+  overflow: hidden;
+}
+.brand-handoff-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--app);
+}
+.brand-handoff-logo,
+.brand-handoff-name {
+  position: fixed;
+  transform-origin: top left;
+  pointer-events: none;
+  will-change: transform;
+}
+.brand-handoff-logo {
+  object-fit: contain;
+}
+.brand-handoff-name {
+  white-space: nowrap;
+}
+.brand-handoff-name > span {
+  display: block;
+  clip-path: inset(0 100% 0 0);
+}
+.brand-handoff-active .brand {
+  visibility: hidden;
+}

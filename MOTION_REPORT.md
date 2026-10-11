@@ -53,3 +53,13 @@ Escape/outside click protects dirty edits; pending writes block dismissal. Nativ
 Changed: `src/App.tsx`, `src/features/inbox/Inbox.tsx`, `src/features/extraction/DetailsPanel.tsx`, `ActionEditor.tsx`, new `result-dialog.css`, new `tests/inbox-result.spec.ts`, adapted `tests/motion.spec.ts`/`tests/workflows.spec.ts`, design/architecture/tracker documentation.
 
 Verification: 16 unit tests and the full 21-test browser suite passed. Dialog screenshots inspected at 1440×920 and 600×640; automated centering, viewport bounds, actions, focus and axe checks also passed at 900×640. Initial verification exposed a focus fallback issue after the capture button was replaced; this was fixed and the final suite passes. Packaged native WebView verification remains separate and unverified.
+
+## Completion brand transition
+
+After Start using TaskLens successfully saves completion, the unchanged `public/TaskLens.png` enters at center, reveals the TaskLens name, pauses, then travels into the measured top-left sidebar brand position. The final timing uses a 400ms entrance, 650ms reveal, 450ms hold and 1100ms docking movement with gentle ease-in/out: approximately 2.8 seconds including onboarding exit. The workspace uncovers during docking. Its real brand remains hidden until arrival to avoid duplication.
+
+The workspace remains mounted and inert during the handoff. Search shortcuts cannot interrupt it; Inbox receives focus afterward. Skip, returning launches and reduced motion bypass the sequence. Resizing or enabling reduced motion settles an active transition immediately. Failed persistence never starts it. Replay completion shows the transition without repeating the first-capture hint. No storage schema, service interface or animation dependency changes.
+
+Changed files: `src/components/motion/BrandHandoff.tsx`, `src/components/motion/brand-handoff.css`, `src/App.tsx`, `src/features/onboarding/OnboardingFlow.tsx`, `tests/brand-handoff.spec.ts`, `DESIGN_SKILL.md`, `ARCHITECTURE.md`, `TASK_TRACKER.md` and this report.
+
+Verification: TypeScript/lint, formatting, production build and all 16 unit tests passed. The full 26-test browser suite passed; after the timing refinement, all five brand tests passed again, covering 1440px, 900px and 600px widths, focus/keyboard isolation, reduced motion, reloads and failed completion saves. Centered and docked desktop screenshots were visually inspected. Packaged native WebView verification remains unverified.

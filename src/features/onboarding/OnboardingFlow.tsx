@@ -26,7 +26,7 @@ export function OnboardingFlow({
   onFinishingChange: (finishing: boolean) => void;
   replay: boolean;
   onExit: () => void;
-  onFinish: () => Promise<void>;
+  onFinish: (reason: 'complete' | 'skip') => Promise<void>;
 }) {
   const { snapshot, saveSettings, services, announce } = useApp();
   const [steps] = useState(() =>
@@ -79,7 +79,7 @@ export function OnboardingFlow({
     void run();
     return () => controller.abort();
   }, [step, demo, attempt, services]);
-  async function persist(settings: Settings, finish = false) {
+  async function persist(settings: Settings, finish: false | 'complete' | 'skip' = false) {
     if (busy.current) return;
     busy.current = true;
     setPending(true);
@@ -88,7 +88,7 @@ export function OnboardingFlow({
     try {
       await saveSettings(settings);
       announce('');
-      if (finish) await onFinish();
+      if (finish) await onFinish(finish);
     } catch (e) {
       if (finish) onFinishingChange(false);
       setError(e instanceof Error ? e.message : 'Could not save preferences. Please try again.');
@@ -97,7 +97,7 @@ export function OnboardingFlow({
       setPending(false);
     }
   }
-  function finish() {
+  function finish(reason: 'complete' | 'skip') {
     void persist(
       {
         ...snapshot.settings,
@@ -105,7 +105,7 @@ export function OnboardingFlow({
           snapshot.settings.onboardingCompletedVersion,
         ),
       },
-      true,
+      reason,
     );
   }
   return (
@@ -240,7 +240,7 @@ export function OnboardingFlow({
           </ErrorState>
         )}
         <footer className="onboarding-actions">
-          <Button variant="ghost" disabled={pending} onClick={finish}>
+          <Button variant="ghost" disabled={pending} onClick={() => finish('skip')}>
             Skip tour
           </Button>
           <div>
@@ -252,7 +252,9 @@ export function OnboardingFlow({
             <Button
               variant="primary"
               disabled={pending}
-              onClick={index === steps.length - 1 ? finish : () => setIndex(index + 1)}
+              onClick={
+                index === steps.length - 1 ? () => finish('complete') : () => setIndex(index + 1)
+              }
             >
               {pending
                 ? 'Saving…'
