@@ -72,11 +72,13 @@ test('floating search supports keyboard selection, local fields, focus containme
   await page.keyboard.press('Enter');
   await expect(dialog).not.toBeVisible();
   await expect(page.getByRole('heading', { name: 'Design handoff', exact: true })).toBeVisible();
-  await trigger.click();
+  await page.keyboard.press('Control+k');
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
-  await expect(trigger).toBeFocused();
+  await expect(page.getByRole('dialog', { name: 'Item details', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Design handoff', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(trigger).toBeFocused();
 });
 test('empty results, outside dismissal and reduced motion stay accessible on narrow windows', async ({
   page,
@@ -114,4 +116,37 @@ test('Escape and item selection preserve an underlying unsaved editor', async ({
   await expect(
     page.getByText('Save or close your current edits before opening another item.'),
   ).toBeVisible();
+});
+
+test('search opens a centered result from any workspace page and protects edits', async ({
+  page,
+}) => {
+  for (const view of ['Inbox', 'All Tasks', 'Calendar']) {
+    if (view !== 'Inbox')
+      await page.getByRole('button', { name: new RegExp('^' + view + '(?: \\d+)?$') }).click();
+    await page.keyboard.press('Control+k');
+    await page.getByLabel('Search all items').fill('Studio');
+    await page.keyboard.press('Enter');
+    const result = page.getByRole('dialog', { name: 'Item details', exact: true });
+    await expect(result).toBeVisible();
+    expect(await result.evaluate((node) => node.matches(':modal'))).toBe(true);
+    await expect(page.locator('.workspace')).not.toHaveClass(/with-details/);
+    for (const width of [1440, 900, 600]) {
+      await page.setViewportSize({ width, height: 640 });
+      await settleMotion(page);
+      const box = (await result.boundingBox())!;
+      expect(Math.abs(box.x + box.width / 2 - width / 2)).toBeLessThan(2);
+      expect(box.height).toBeLessThan(640);
+    }
+    expect(
+      await result.evaluate((node) => getComputedStyle(node, '::backdrop').backdropFilter),
+    ).toContain('blur(12px)');
+    await result.getByRole('button', { name: 'Edit details' }).click();
+    await page.getByLabel('Location', { exact: true }).fill('Unsaved location');
+    await page.keyboard.press('Escape');
+    await expect(result.getByText('Discard your unsaved edits?')).toBeVisible();
+    await result.getByRole('button', { name: 'Discard edits', exact: true }).click();
+    await expect(result).not.toBeVisible();
+    await page.setViewportSize({ width: 1440, height: 920 });
+  }
 });

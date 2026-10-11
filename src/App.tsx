@@ -99,7 +99,7 @@ export default function App() {
     ? snapshot.actions.find((a) => a.id === selection.id) || selection
     : null;
   const showInbox = view === 'inbox';
-  const resultDialogOpen = showInbox && floatingResult && !!selected;
+  const resultDialogOpen = floatingResult && !!selected;
   useEffect(() => {
     if (touring || loading || loadError) return;
     const handler = (event: KeyboardEvent) => {
@@ -268,7 +268,7 @@ export default function App() {
             loading={loading}
             error={loadError}
             onClose={() => setSearchOpen(false)}
-            onSelect={onOpen}
+            onSelect={(action) => onOpen(action, true)}
           />
         )}
         <MotionToast message={notice} />

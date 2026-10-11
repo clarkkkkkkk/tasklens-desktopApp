@@ -364,7 +364,7 @@ export function DetailsPanel({
     <dialog
       ref={dialog}
       className="inbox-result-dialog"
-      aria-label="Screenshot result"
+      aria-label={action.source.type === 'image' ? 'Screenshot result' : 'Item details'}
       onCancel={(event) => {
         event.preventDefault();
         dismiss();
