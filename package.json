@@ -14,6 +14,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:native:win": "node scripts/windows-native-acceptance.mjs",
+    "test:native:ai": "node scripts/windows-local-ai-acceptance.mjs",
     "tauri": "tauri",
     "format": "prettier --write src tests scripts *.ts *.js *.json",
     "format:check": "prettier --check src tests scripts *.ts *.js *.json",

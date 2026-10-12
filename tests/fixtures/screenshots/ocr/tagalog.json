@@ -1,0 +1,61 @@
+{
+  "engine": "tesseract v5.4.0.20240606",
+  "fullText": "Org Officers\n\nPres. Lim\n\nBukas ng 3:00 PM ang orientation sa Room\n204. Magdala ng ballpen.",
+  "imageHeight": 312,
+  "imageWidth": 864,
+  "languages": ["eng", "ceb", "tgl"],
+  "regions": [
+    {
+      "block": 1,
+      "box": {
+        "height": 34,
+        "width": 185,
+        "x": 34,
+        "y": 42
+      },
+      "confidence": 0.967,
+      "id": "r1",
+      "paragraph": 1,
+      "text": "Org Officers"
+    },
+    {
+      "block": 2,
+      "box": {
+        "height": 17,
+        "width": 90,
+        "x": 59,
+        "y": 135
+      },
+      "confidence": 0.961,
+      "id": "r2",
+      "paragraph": 1,
+      "text": "Pres. Lim"
+    },
+    {
+      "block": 3,
+      "box": {
+        "height": 30,
+        "width": 565,
+        "x": 61,
+        "y": 189
+      },
+      "confidence": 0.948,
+      "id": "r3",
+      "paragraph": 1,
+      "text": "Bukas ng 3:00 PM ang orientation sa Room"
+    },
+    {
+      "block": 3,
+      "box": {
+        "height": 30,
+        "width": 331,
+        "x": 60,
+        "y": 229
+      },
+      "confidence": 0.923,
+      "id": "r4",
+      "paragraph": 1,
+      "text": "204. Magdala ng ballpen."
+    }
+  ]
+}

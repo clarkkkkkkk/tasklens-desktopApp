@@ -10,8 +10,9 @@ import {
   ShieldCheck,
 } from '../components/icons';
 import type { ExtractedAction, View } from '../types/action';
-import { needsReview } from '../lib/actions';
-import { localDate } from '../lib/dates';
+import { useEffect, useState } from 'react';
+import { useApp } from '../app/context';
+import { needsReview, selectActions } from '../lib/actions';
 const navigation = [
   { id: 'inbox', label: 'Inbox', icon: Inbox },
   { id: 'today', label: 'Today', icon: Sun },
@@ -32,8 +33,7 @@ export function Sidebar({
 }) {
   function count(id: View) {
     if (id === 'review') return actions.filter(needsReview).length;
-    if (id === 'today')
-      return actions.filter((a) => a.status === 'confirmed' && a.date === localDate()).length;
+    if (id === 'today') return selectActions(actions, 'today').length;
     if (id === 'all') return actions.length;
     return 0;
   }
@@ -70,15 +70,35 @@ export function Sidebar({
           <Settings />
           <span>Settings</span>
         </button>
-        <div className="local-status">
-          <ShieldCheck size={16} />
-          <span>On your device. Only.</span>
-          <span className="status-dot" />
-        </div>
+        <LocalStatus />
         <div className="version-label">
-          TASKLENS <span>v0.1 · Phase 1</span>
+          TASKLENS <span>v0.1 · Phase 2</span>
         </div>
       </div>
     </aside>
+  );
+}
+
+/** Subtle on-device indicator; says so while the local model is working. */
+function LocalStatus() {
+  const { services } = useApp();
+  const [processing, setProcessing] = useState(false);
+  useEffect(() => {
+    let dispose: (() => void) | undefined;
+    let alive = true;
+    void services.localAI
+      .onRuntimeStatus((status) => setProcessing(status.state === 'processing'))
+      .then((fn) => (alive ? (dispose = fn) : fn()));
+    return () => {
+      alive = false;
+      dispose?.();
+    };
+  }, [services]);
+  return (
+    <div className="local-status" role="status">
+      <ShieldCheck size={16} />
+      <span>{processing ? 'Processing locally' : 'On your device. Only.'}</span>
+      <span className="status-dot" />
+    </div>
   );
 }

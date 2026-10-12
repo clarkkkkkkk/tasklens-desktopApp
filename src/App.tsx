@@ -227,6 +227,11 @@ export default function App() {
                     locked={dirty || !!bundle || voiceBusy}
                     onVoiceGuard={onVoiceGuard}
                     onBundle={setBundle}
+                    onOpenSettings={() => {
+                      if (dirty || voiceCancel.current) return;
+                      onClose();
+                      setView('settings');
+                    }}
                     onResult={(action) => onOpen(action, true)}
                     onRemove={() => {
                       if (selection && !snapshot.actions.some((a) => a.id === selection.id))

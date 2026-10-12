@@ -47,6 +47,25 @@ test('sample → edit → confirm → today/upcoming/calendar → complete → r
   await expect(page.getByAltText('Source: sample-announcement.png')).toBeVisible();
   expect(errors).toEqual([]);
 });
+test('overdue confirmed items stay in Today until completed', async ({ page }) => {
+  await start(page);
+  await demo(page);
+  await page.getByRole('button', { name: 'Confirm & save event', exact: true }).click();
+  await expect(page.getByText('Saved on this device.', { exact: true })).toBeVisible();
+  await page.clock.setFixedTime(new Date('2026-10-10T09:00:00+08:00'));
+  await page.reload();
+  const todayNav = page.getByRole('navigation').getByRole('button', { name: /^Today/ });
+  await expect(todayNav).toHaveAccessibleName('Today 1');
+  await todayNav.click();
+  await expect(page.getByRole('heading', { name: 'Overdue', exact: true })).toBeVisible();
+  await expect(page.getByText('Overdue', { exact: true }).last()).toBeVisible();
+  await nav(page, 'Upcoming');
+  await expect(page.getByText('Nothing on the horizon. Yet.', { exact: true })).toBeVisible();
+  await todayNav.click();
+  await page.getByRole('button', { name: 'Complete Pictorial', exact: true }).click();
+  await expect(page.getByText('Your day has room to breathe.', { exact: true })).toBeVisible();
+  await expect(todayNav).toHaveAccessibleName('Today');
+});
 test('drafts, search across content, deletion and preferences persist', async ({ page }) => {
   await start(page);
   await demo(page);

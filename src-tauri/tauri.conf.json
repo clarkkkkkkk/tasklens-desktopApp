@@ -37,7 +37,8 @@
     ],
     "resources": [
       "resources/models.json",
-      "resources/bin/*"
+      "resources/bin/*",
+      "resources/tessdata/*"
     ],
     "macOS": {
       "infoPlist": "Info.plist",

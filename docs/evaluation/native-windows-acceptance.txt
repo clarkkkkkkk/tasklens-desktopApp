@@ -1,0 +1,16 @@
+TaskLens local AI — Windows native acceptance (npm run test:native:ai)
+2026-10-12 · release build · Windows 11 · AMD Ryzen 5 3600 · Phi-4-mini-instruct Q4_K_M · llama.cpp b11505 · Tesseract 5.4 (eng+ceb+tgl)
+
+PASS  skip onboarding; Settings shows verified model, runtime and OCR languages — (0.8s)
+PASS  pictorial: real OCR + local model; arrival ≠ start; date question; Source Trace — saved; arrival 1:30 PM Confirmed, start empty (88.3s)
+PASS  cancellation: Cancel processing stops work and no late result appears — (19.1s)
+WARN  action bundle: one screenshot yields multiple reviewable items — model returned 1 item for 2 actions
+PASS  privacy: TaskLens and llama-server held only loopback connections — TaskLens/llama-server remotes: 0.0.0.0, 127.0.0.1; WebView2 runtime non-loopback: 162.159.61.3, 150.171.29.11 (0.0s)
+PASS  runtime stops when TaskLens exits — (4.3s)
+PASS  crash safety: killing TaskLens also ends llama-server — llama-server 19044 ended with TaskLens (5.1s)
+
+Notes
+- WARN marks model-quality outcomes. An earlier run of the same check returned 2 items; another rated the
+  arrival Needs review (both are honest model behaviour, not app failures).
+- 0.0.0.0 is the listening socket. The WebView2 runtime's own Microsoft/Cloudflare connections are not made by
+  TaskLens code (CSP connect-src is ipc: only) and carry no extraction data; see LOCAL_AI.md.

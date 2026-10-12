@@ -11,7 +11,8 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import type { ExtractedAction } from '../../types/action';
 import { useApp } from '../../app/context';
-import { displayDate, displayTime, localDate } from '../../lib/dates';
+import { displayDate, displayTime } from '../../lib/dates';
+import { isOverdue } from '../../lib/actions';
 import { ConfidenceBadge, EmptyState, ErrorState } from '../../components/ui';
 export function TaskList({
   items,
@@ -66,7 +67,7 @@ export function TaskList({
       <ul ref={list} className="task-list">
         {items.map((item) => {
           const completed = item.status === 'completed',
-            overdue = item.status === 'confirmed' && !!item.date && item.date < localDate();
+            overdue = isOverdue(item);
           return (
             <li
               data-action-id={item.id}

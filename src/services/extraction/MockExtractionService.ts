@@ -1,6 +1,11 @@
 import { actionSchema } from '../../types/action';
 import { buildReminders } from '../reminders/ReminderScheduler';
-import type { ExtractionInput, ExtractionOptions, ExtractionService } from './ExtractionService';
+import {
+  extractionSteps,
+  type ExtractionInput,
+  type ExtractionOptions,
+  type ExtractionService,
+} from './ExtractionService';
 function delay(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
@@ -22,9 +27,12 @@ function delay(ms: number, signal: AbortSignal): Promise<void> {
 export class MockExtractionService implements ExtractionService {
   readonly mode = 'mock' as const;
   async extract(input: ExtractionInput, { signal, onProgress }: ExtractionOptions) {
-    for (let step = 0; step < 3; step++) {
+    // The mock never reads pixels: drop the image so it cannot reach stored results.
+    const source = { ...input };
+    delete source.image;
+    for (let step = 0; step < extractionSteps.length; step++) {
       onProgress(step);
-      await delay(650, signal);
+      await delay(500, signal);
     }
     const now = new Date().toISOString();
     return {
@@ -49,7 +57,7 @@ export class MockExtractionService implements ExtractionService {
             requirements: 'inferred',
           },
           reminders: buildReminders('2026-10-08', '13:30', ['night', 'hour', 'quarter']),
-          source: { ...input, extractionMode: 'mock' },
+          source: { ...source, extractionMode: 'mock' },
           status: 'needs_review',
           createdAt: now,
           updatedAt: now,

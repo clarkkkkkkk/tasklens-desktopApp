@@ -12,9 +12,13 @@
 | Validation | Zod at form and persistence boundaries. Native form controls for simple inputs. |
 | Persistence | Versioned localStorage behind ActionRepository; no existing SQLite/Tauri setup was present. Writes fail visibly and do not optimistically erase current state. |
 | Tests | Vitest for domain/storage contracts; Playwright for real-browser workflow, persistence and accessibility checks; ESLint and TypeScript. |
+| OCR | Tesseract 5 CLI (Apache-2.0), languages eng+ceb+tgl, run as a separate local process with TSV output: mature, offline, multilingual, and returns per-word confidence and boxes needed for Source Trace. The `image` crate prepares a temporary copy. |
+| Local LLM | Microsoft Phi-4-mini-instruct (MIT), GGUF Q4_K_M: a 3.8B instruction model small enough for CPU-only laptops. |
+| Model runtime | llama.cpp `llama-server` (MIT), pinned release b11505, managed by Rust and bound to 127.0.0.1. Chosen over a per-call CLI so the model loads once; JSON-schema grammars constrain output. Ollama is not required. |
+| Voice | whisper.cpp (MIT) with Whisper Small, unchanged from the voice feature. |
 
 ## Future, not installed
-SQLite will implement the same repository contract after native database access and migrations are tested. Local OCR remains deferred; text/voice already use local LLM extraction behind ExtractionService with validated output. A native reminder scheduler will implement ReminderScheduler. Phase 1 stores schedules but never claims to send OS notifications. Startup registration is also deferred.
+SQLite will implement the same repository contract after native database access and migrations are tested. GPU acceleration for llama.cpp and a bundled Tesseract per platform are future packaging work. A native reminder scheduler will implement ReminderScheduler. Phase 1 stores schedules but never claims to send OS notifications. Startup registration is also deferred.
 
 ## Setup references
 - [Tauri configuration](https://v2.tauri.app/reference/config/)
@@ -24,4 +28,4 @@ SQLite will implement the same repository contract after native database access 
 Node 22.12+ and a current Rust toolchain are recommended. Native Linux builds also require GTK 3 and WebKitGTK 4.1 development libraries. Linux native automation and debug Debian packaging are now available on this host; real microphone and all-platform voice acceptance are tracked separately in TASK_TRACKER.md.
 
 ## Local voice/text additions
-Voice capture uses CPAL (Rust); decoding uses Symphonia with only WAV/PCM, MP3, M4A AAC-LC/ALAC and OGG/Vorbis enabled; Rubato resamples to 16 kHz mono PCM. Speech inference uses pinned whisper.cpp and multilingual Whisper Small. Shared structured extraction uses pinned llama.cpp with Qwen3-4B Q4_K_M, schema-constrained JSON and Zod validation. Tauri IPC replaces any need for a local HTTP service. Models are user-imported; native binaries are built per target with `npm run build:runtimes`. See VOICE_CAPTURE.md for setup and acceptance boundaries. SQLite, OCR and notification delivery remain future work.
+Voice capture uses CPAL (Rust); decoding uses Symphonia with only WAV/PCM, MP3, M4A AAC-LC/ALAC and OGG/Vorbis enabled; Rubato resamples to 16 kHz mono PCM. Speech inference uses pinned whisper.cpp and multilingual Whisper Small. Structured extraction for voice, text and screenshots uses the same Phi-4-mini-instruct model on the managed llama-server (127.0.0.1 only), schema-constrained JSON and the shared validator. Models are user-imported; native binaries are built per target with `npm run build:runtimes`. See VOICE_CAPTURE.md for setup and acceptance boundaries. SQLite and notification delivery remain future work.

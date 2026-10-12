@@ -124,7 +124,7 @@ export function VoiceCapture({
     if (version !== generation.current || signal.aborted) return;
     setWarnings(
       bundle.ambiguities.length
-        ? bundle.ambiguities
+        ? bundle.ambiguities.map((a) => a.question)
         : bundle.actions.length
           ? []
           : ['No clear action was found. Inspect your transcript or capture more context.'],

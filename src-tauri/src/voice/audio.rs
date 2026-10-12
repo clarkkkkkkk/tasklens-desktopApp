@@ -101,7 +101,7 @@ pub fn check_signal(path: &Path, cancelled: impl Fn() -> bool) -> Result<(), Str
     let mut peak = 0.0_f64;
     let mut count = 0_u64;
     for sample in reader.samples::<i16>() {
-        if count % 16000 == 0 && cancelled() {
+        if count.is_multiple_of(16000) && cancelled() {
             return Err("Processing cancelled".into());
         }
         let value = sample.map_err(|_| "Audio is damaged")? as f64 / 32768.0;

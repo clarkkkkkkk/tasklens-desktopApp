@@ -1,0 +1,811 @@
+[
+  {
+    "id": "pictorial",
+    "languages": "Cebuano + English",
+    "seconds": 71.22173269999999,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "1 (expected 1)"
+      },
+      {
+        "name": "pictorial: found",
+        "ok": true,
+        "detail": "Pictorial"
+      },
+      {
+        "name": "pictorial: type",
+        "ok": true,
+        "detail": "\"event\" (expected \"event\")"
+      },
+      {
+        "name": "pictorial: date",
+        "ok": true,
+        "detail": "empty (expected empty)"
+      },
+      {
+        "name": "pictorial: time",
+        "ok": true,
+        "detail": "empty (expected empty)"
+      },
+      {
+        "name": "pictorial: arrival time",
+        "ok": true,
+        "detail": "\"13:30\" (expected \"13:30\")"
+      },
+      {
+        "name": "pictorial: location",
+        "ok": true,
+        "detail": "\"Campus\""
+      },
+      {
+        "name": "pictorial: requirement black pants",
+        "ok": false,
+        "detail": "[\"No jeans please\"]"
+      },
+      {
+        "name": "pictorial: requirement jeans",
+        "ok": true,
+        "detail": "[\"No jeans please\"]"
+      },
+      {
+        "name": "pictorial: confidence.arrivalTime",
+        "ok": true,
+        "detail": "\"confirmed\" (expected \"confirmed\")"
+      },
+      {
+        "name": "pictorial: confidence.time",
+        "ok": true,
+        "detail": "\"needs_review\" (expected \"needs_review\")"
+      },
+      {
+        "name": "pictorial: confidence.date",
+        "ok": true,
+        "detail": "\"needs_review\" (expected \"needs_review\")"
+      },
+      {
+        "name": "ambiguity on date",
+        "ok": true,
+        "detail": "[\"date: The source says “Tomorrow”, but when it was originally sent is unclear. Which date did it refer to?\"]"
+      },
+      {
+        "name": "no 1:30 PM interpreted as the event start time",
+        "ok": true
+      },
+      {
+        "name": "no “tomorrow/ugma” resolved without a known sending date",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "event",
+        "title": "Pictorial",
+        "arrivalTime": "13:30",
+        "location": "Campus",
+        "requirements": [
+          "No jeans please"
+        ],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "needs_review",
+          "time": "needs_review",
+          "arrivalTime": "confirmed",
+          "location": "needs_review",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: The source says “Tomorrow”, but when it was originally sent is unclear. Which date did it refer to? [\"2026-10-13\"]"
+        ]
+      }
+    ],
+    "issues": [
+      "item 1: relative date “Tomorrow” left for review"
+    ]
+  },
+  {
+    "id": "midterm",
+    "languages": "English",
+    "seconds": 68.8746123,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "2 (expected 1–2)"
+      },
+      {
+        "name": "midterm|exam|cecc483: found",
+        "ok": true,
+        "detail": "Midterm Examination - CECC483"
+      },
+      {
+        "name": "midterm|exam|cecc483: type",
+        "ok": true,
+        "detail": "\"event\" (expected \"event\")"
+      },
+      {
+        "name": "midterm|exam|cecc483: date",
+        "ok": true,
+        "detail": "\"2026-10-11\" (expected \"2026-10-11\")"
+      },
+      {
+        "name": "midterm|exam|cecc483: time",
+        "ok": true,
+        "detail": "\"08:00\" (expected \"08:00\")"
+      },
+      {
+        "name": "midterm|exam|cecc483: end time",
+        "ok": false,
+        "detail": "empty (expected \"13:00\")"
+      },
+      {
+        "name": "midterm|exam|cecc483: location",
+        "ok": true,
+        "detail": "\"CIT-U Gymnasium\""
+      },
+      {
+        "name": "midterm|exam|cecc483: confidence.date",
+        "ok": true,
+        "detail": "\"confirmed\" (expected \"confirmed\")"
+      },
+      {
+        "name": "midterm|exam|cecc483: confidence.time",
+        "ok": true,
+        "detail": "\"confirmed\" (expected \"confirmed\")"
+      },
+      {
+        "name": "midterm|exam|cecc483: confidence.location",
+        "ok": true,
+        "detail": "\"confirmed\" (expected \"confirmed\")"
+      },
+      {
+        "name": "no unrelated coverage section merged into the CECC483 exam without an open question",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "event",
+        "title": "Midterm Examination - CECC483",
+        "date": "2026-10-11",
+        "time": "08:00",
+        "location": "CIT-U Gymnasium",
+        "requirements": [],
+        "notes": [],
+        "confidence": {
+          "overall": "confirmed",
+          "title": "confirmed",
+          "date": "confirmed",
+          "time": "confirmed",
+          "location": "confirmed"
+        }
+      },
+      {
+        "type": "task",
+        "title": "Multiple Choice Exam",
+        "date": "2026-10-11",
+        "time": "08:00",
+        "requirements": [
+          "Study for terminologies, Statics of Rigid Bodies, Mechanics of Deformable Bodies, Algebra, Trigonometry, Geometry, Calculus"
+        ],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "confirmed",
+          "time": "confirmed",
+          "requirements": "inferred"
+        }
+      },
+      {
+        "ambiguities": [
+          "notes: This screenshot has more than one “Coverage” section. Do they all belong to “Multiple Choice Exam”? []"
+        ]
+      }
+    ],
+    "issues": [
+      "item 2: combines 2 separate “Coverage” sections"
+    ]
+  },
+  {
+    "id": "bundle-english",
+    "languages": "English",
+    "seconds": 21.08452349999998,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": false,
+        "detail": "1 (expected 2)"
+      },
+      {
+        "name": "chapter 3: found",
+        "ok": true,
+        "detail": "Submit Chapter 3"
+      },
+      {
+        "name": "chapter 3: type",
+        "ok": true,
+        "detail": "\"deadline\" (expected \"deadline\")"
+      },
+      {
+        "name": "chapter 3: date",
+        "ok": true,
+        "detail": "\"2026-10-09\" (expected \"2026-10-09\")"
+      },
+      {
+        "name": "chapter 3: time",
+        "ok": false,
+        "detail": "empty (expected \"17:00\")"
+      },
+      {
+        "name": "consultation: found",
+        "ok": false,
+        "detail": "missing"
+      },
+      {
+        "name": "no deadline and consultation merged into one item",
+        "ok": true
+      },
+      {
+        "name": "no deadline time used as consultation time",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "deadline",
+        "title": "Submit Chapter 3",
+        "date": "2026-10-09",
+        "requirements": [
+          "Bring revised questionnaire"
+        ],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "inferred",
+          "time": "needs_review",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "ambiguities": []
+      }
+    ],
+    "issues": [
+      "item 1: model date 2026-10-06 corrected to 2026-10-09 for “Friday before 5 PM”"
+    ]
+  },
+  {
+    "id": "cebuano-mixed",
+    "languages": "Cebuano + English",
+    "seconds": 35.82150569999998,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "1 (expected 1)"
+      },
+      {
+        "name": "reflection: found",
+        "ok": true,
+        "detail": "Reflection paper submission"
+      },
+      {
+        "name": "reflection: type",
+        "ok": true,
+        "detail": "\"deadline\" (expected \"deadline\")"
+      },
+      {
+        "name": "reflection: date",
+        "ok": true,
+        "detail": "\"2026-10-09\" (expected \"2026-10-09\")"
+      },
+      {
+        "name": "reflection: time",
+        "ok": true,
+        "detail": "\"17:00\" (expected \"17:00\")"
+      },
+      {
+        "name": "no cancelled seminar created as an event to attend",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "deadline",
+        "title": "Reflection paper submission",
+        "date": "2026-10-09",
+        "time": "17:00",
+        "requirements": [],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "inferred",
+          "time": "inferred"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: Which Friday is referred to as 'karong Friday'? []"
+        ]
+      }
+    ],
+    "issues": [
+      "item 1: model date 2026-10-11 corrected to 2026-10-09 for “karong Friday”"
+    ]
+  },
+  {
+    "id": "tagalog-mixed",
+    "languages": "Tagalog + English",
+    "seconds": 20.98776510000002,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "1 (expected 1)"
+      },
+      {
+        "name": "quiz|biology: found",
+        "ok": true,
+        "detail": "Biology quiz"
+      },
+      {
+        "name": "quiz|biology: type",
+        "ok": false,
+        "detail": "\"deadline\" (expected \"event\")"
+      },
+      {
+        "name": "quiz|biology: date",
+        "ok": true,
+        "detail": "\"2026-10-08\" (expected \"2026-10-08\")"
+      },
+      {
+        "name": "quiz|biology: time",
+        "ok": false,
+        "detail": "empty (expected \"10:00\")"
+      },
+      {
+        "name": "quiz|biology: requirement lab manual",
+        "ok": true,
+        "detail": "[\"Bring lab manual and calculator\"]"
+      },
+      {
+        "name": "quiz|biology: requirement calculator",
+        "ok": true,
+        "detail": "[\"Bring lab manual and calculator\"]"
+      },
+      {
+        "name": "no invented location",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "deadline",
+        "title": "Biology quiz",
+        "date": "2026-10-08",
+        "requirements": [
+          "Bring lab manual and calculator"
+        ],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "inferred",
+          "time": "needs_review",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "ambiguities": []
+      }
+    ],
+    "issues": [
+      "item 1: model date 2026-10-09 corrected to 2026-10-08 for “Huwebes, 10:00 AM”"
+    ]
+  },
+  {
+    "id": "tagalog",
+    "languages": "Tagalog",
+    "seconds": 36.119433400000005,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "1 (expected 1)"
+      },
+      {
+        "name": "orientation: found",
+        "ok": true,
+        "detail": "Orientation"
+      },
+      {
+        "name": "orientation: type",
+        "ok": true,
+        "detail": "\"event\" (expected \"event\")"
+      },
+      {
+        "name": "orientation: date",
+        "ok": true,
+        "detail": "empty (expected empty)"
+      },
+      {
+        "name": "orientation: time",
+        "ok": true,
+        "detail": "\"15:00\" (expected \"15:00\")"
+      },
+      {
+        "name": "orientation: location",
+        "ok": true,
+        "detail": "\"Room 204\""
+      },
+      {
+        "name": "orientation: requirement ballpen",
+        "ok": true,
+        "detail": "[\"Bring ballpen\",\"Magdala\"]"
+      },
+      {
+        "name": "ambiguity on date",
+        "ok": true,
+        "detail": "[\"date: The source says “Bukas ng 3:00 PM”, but when it was originally sent is unclear. Which date did it refer to?\"]"
+      },
+      {
+        "name": "no “bukas” resolved without a known sending date",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "event",
+        "title": "Orientation",
+        "time": "15:00",
+        "location": "Room 204",
+        "requirements": [
+          "Bring ballpen",
+          "Magdala"
+        ],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "inferred",
+          "date": "needs_review",
+          "time": "confirmed",
+          "location": "confirmed",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: The source says “Bukas ng 3:00 PM”, but when it was originally sent is unclear. Which date did it refer to? [\"2026-10-13\",\"2026-10-12\"]"
+        ]
+      }
+    ],
+    "issues": [
+      "item 1: relative date “Bukas ng 3:00 PM” left for review"
+    ]
+  },
+  {
+    "id": "voice-exam-reminder",
+    "languages": "English",
+    "seconds": 123.21960589999996,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": false,
+        "detail": "3 (expected 1–2)"
+      },
+      {
+        "name": "exam: found",
+        "ok": true,
+        "detail": "exam"
+      },
+      {
+        "name": "exam: type",
+        "ok": true,
+        "detail": "\"event\" (expected \"event\")"
+      },
+      {
+        "name": "exam: date",
+        "ok": true,
+        "detail": "\"2026-10-12\" (expected \"2026-10-12\")"
+      },
+      {
+        "name": "exam: time",
+        "ok": true,
+        "detail": "\"09:00\" (expected \"09:00\")"
+      },
+      {
+        "name": "exam: requirement calculator",
+        "ok": true,
+        "detail": "[\"bring calculator and ID\"]"
+      },
+      {
+        "name": "exam: requirement \\bID\\b",
+        "ok": true,
+        "detail": "[\"bring calculator and ID\"]"
+      },
+      {
+        "name": "no reminder time used as the exam start",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "deadline",
+        "title": "Bring my calculator and ID",
+        "date": "2026-10-12",
+        "time": "08:00",
+        "requirements": [
+          "calculator and ID",
+          "bring"
+        ],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "inferred",
+          "time": "inferred",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "type": "event",
+        "title": "exam",
+        "date": "2026-10-12",
+        "time": "09:00",
+        "requirements": [
+          "bring calculator and ID"
+        ],
+        "notes": [],
+        "confidence": {
+          "overall": "inferred",
+          "title": "confirmed",
+          "date": "inferred",
+          "time": "inferred",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "type": "event",
+        "title": "exam",
+        "date": "2026-10-12",
+        "time": "09:00",
+        "requirements": [
+          "bring calculator and ID"
+        ],
+        "notes": [],
+        "confidence": {
+          "overall": "inferred",
+          "title": "confirmed",
+          "date": "inferred",
+          "time": "inferred",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: Which day is 'the next day' referring to? []"
+        ]
+      }
+    ],
+    "issues": [
+      "item 1: model date 2026-10-13 corrected to 2026-10-12 for “tomorrow”",
+      "item 2: date expression “the next day” is not in the source; ignored",
+      "item 2: model date 2026-10-14 corrected to 2026-10-12 for “tomorrow”",
+      "item 3: date expression “the next day” is not in the source; ignored",
+      "item 3: model date 2026-10-14 corrected to 2026-10-12 for “tomorrow”"
+    ]
+  },
+  {
+    "id": "cebuano-inig-udto",
+    "languages": "Cebuano",
+    "seconds": 34.48862069999997,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "1 (expected 1)"
+      },
+      {
+        "name": "meeting: found",
+        "ok": true,
+        "detail": "meeting at the library"
+      },
+      {
+        "name": "meeting: type",
+        "ok": true,
+        "detail": "\"event\" (expected \"event\")"
+      },
+      {
+        "name": "meeting: date",
+        "ok": true,
+        "detail": "\"2026-10-13\" (expected \"2026-10-13\")"
+      },
+      {
+        "name": "meeting: time",
+        "ok": false,
+        "detail": "empty (expected \"12:00\")"
+      },
+      {
+        "name": "meeting: location",
+        "ok": false,
+        "detail": "empty"
+      },
+      {
+        "name": "meeting: requirement \\bID\\b",
+        "ok": false,
+        "detail": "[]"
+      }
+    ],
+    "output": [
+      {
+        "type": "event",
+        "title": "meeting at the library",
+        "date": "2026-10-13",
+        "requirements": [],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "inferred",
+          "time": "needs_review"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: What is the exact date for 'Ugma' referring to? []"
+        ]
+      }
+    ],
+    "issues": [
+      "item 1: model date 2026-10-12 corrected to 2026-10-13 for “Ugma”"
+    ]
+  },
+  {
+    "id": "mixed-moved-to",
+    "languages": "Cebuano + English",
+    "seconds": 59.47658640000003,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "2 (expected 2)"
+      },
+      {
+        "name": "consultation: found",
+        "ok": true,
+        "detail": "Consultation"
+      },
+      {
+        "name": "consultation: type",
+        "ok": true,
+        "detail": "\"event\" (expected \"event\")"
+      },
+      {
+        "name": "consultation: date",
+        "ok": true,
+        "detail": "\"2026-10-15\" (expected \"2026-10-15\")"
+      },
+      {
+        "name": "consultation: time",
+        "ok": true,
+        "detail": "\"15:00\" (expected \"15:00\")"
+      },
+      {
+        "name": "draft: found",
+        "ok": true,
+        "detail": "Submit draft"
+      },
+      {
+        "name": "draft: type",
+        "ok": true,
+        "detail": "\"deadline\" (expected \"deadline\")"
+      },
+      {
+        "name": "draft: date",
+        "ok": true,
+        "detail": "\"2026-10-14\" (expected \"2026-10-14\")"
+      },
+      {
+        "name": "draft: time",
+        "ok": false,
+        "detail": "empty (expected \"17:00\")"
+      }
+    ],
+    "output": [
+      {
+        "type": "deadline",
+        "title": "Submit draft",
+        "date": "2026-10-14",
+        "requirements": [],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "inferred",
+          "date": "inferred",
+          "time": "needs_review"
+        }
+      },
+      {
+        "type": "event",
+        "title": "Consultation",
+        "date": "2026-10-15",
+        "time": "15:00",
+        "requirements": [],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "inferred",
+          "date": "inferred",
+          "time": "confirmed"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: Which Wednesday is “before 5 karong Wednesday”? The sending date is not visible. []",
+          "date: Which Thursday is “Thursday 3 PM”? The sending date is not visible. []"
+        ]
+      }
+    ],
+    "issues": [
+      "item 1: model date 2026-10-12 corrected to 2026-10-14 for “before 5 karong Wednesday”",
+      "item 2 time: cited t1, the only unit stating 15:00",
+      "item 2: model date 2026-10-13 corrected to 2026-10-15 for “Thursday 3 PM”",
+      "item 3 dropped: “Submit lab report” is not grounded in the source"
+    ]
+  },
+  {
+    "id": "contextless-correction",
+    "languages": "English",
+    "seconds": 25.22797810000001,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "1 (expected 0–1)"
+      },
+      {
+        "name": "no invented a date for an unidentified meeting",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "deadline",
+        "title": "Move meeting time",
+        "requirements": [],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "inferred",
+          "date": "needs_review",
+          "time": "needs_review"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: What is the original date and time of the meeting that needs to be moved from two to three PM? []",
+          "endTime: What is the end time of the meeting that needs to be moved from two to three PM? []"
+        ]
+      }
+    ],
+    "issues": []
+  }
+]

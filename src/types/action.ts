@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { transcriptSchema } from '../services/voice/types';
+import { ocrDocumentSchema } from '../services/ocr/types';
 
 export const dateSchema = z
   .string()
@@ -23,6 +24,42 @@ export const reminderSchema = z.object({
   enabled: z.boolean(),
   offsetMinutes: z.number().optional(),
 });
+/** Fields that can cite source evidence (OCR regions or transcript segments). */
+export const evidenceFields = [
+  'title',
+  'date',
+  'time',
+  'endTime',
+  'arrivalTime',
+  'location',
+  'requirements',
+  'notes',
+  'reminders',
+] as const;
+export type EvidenceField = (typeof evidenceFields)[number];
+const ambiguityObject = z.object({
+  id: z.string().min(1).max(100),
+  field: z.string().min(1).max(40),
+  question: z.string().min(1).max(2000),
+  options: z.array(z.string().max(500)).max(8).default([]),
+  /** Source unit IDs (OCR regions `r*`, transcript segments `s*`, text lines `t*`). */
+  segmentIds: z.array(z.string().max(40)).max(50).default([]),
+});
+/** Structured open question. Legacy plain-string entries are upgraded on read. */
+export const ambiguitySchema = z.union([
+  ambiguityObject,
+  z
+    .string()
+    .max(2000)
+    .transform((question, ctx) => ({
+      id: `legacy-${ctx.path.join('-')}`,
+      field: 'general',
+      question,
+      options: [],
+      segmentIds: [],
+    })),
+]);
+export type ExtractionAmbiguity = z.infer<typeof ambiguityObject>;
 export const actionSchema = z
   .object({
     id: z.string().min(1),
@@ -34,14 +71,18 @@ export const actionSchema = z
       .max(180, 'Keep the title under 180 characters'),
     date: optionalDate,
     time: optionalTime,
+    endTime: optionalTime,
     arrivalTime: optionalTime,
     location: z.string().max(500).optional(),
     requirements: z.array(z.string().max(1000)).max(100),
     notes: z.array(z.string().max(5000)).max(100),
     confidence: z.object({
       overall: confidenceSchema,
+      title: confidenceSchema.optional(),
       date: confidenceSchema.optional(),
       time: confidenceSchema.optional(),
+      endTime: confidenceSchema.optional(),
+      arrivalTime: confidenceSchema.optional(),
       location: confidenceSchema.optional(),
       requirements: confidenceSchema.optional(),
     }),
@@ -50,6 +91,8 @@ export const actionSchema = z
       type: z.enum(['image', 'text', 'voice']),
       text: z.string().max(100000).optional(),
       transcript: transcriptSchema.optional(),
+      /** OCR regions with bounding boxes, retained for Source Trace. */
+      ocr: ocrDocumentSchema.optional(),
       capturedAt: z.string().datetime().optional(),
       recordingDate: dateSchema.optional(),
       timezone: z.string().max(100).optional(),
@@ -64,16 +107,7 @@ export const actionSchema = z
     evidence: z
       .array(
         z.object({
-          field: z.enum([
-            'title',
-            'date',
-            'time',
-            'arrivalTime',
-            'location',
-            'requirements',
-            'notes',
-            'reminders',
-          ]),
+          field: z.enum(evidenceFields),
           segmentIds: z.array(z.string()).min(1).max(100),
           quote: z.string().min(1).max(10000),
           value: z.string().max(10000),
@@ -81,13 +115,19 @@ export const actionSchema = z
       )
       .max(100)
       .optional(),
-    ambiguities: z.array(z.string().max(2000)).max(30).optional(),
+    ambiguities: z.array(ambiguitySchema).max(30).optional(),
     status: z.enum(['needs_review', 'confirmed', 'completed']),
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
   })
   .superRefine((item, ctx) => {
-    if (!item.date && (item.time || item.arrivalTime))
+    // Drafts may keep a reviewed time while the date is still an open question
+    // (e.g. a confirmed 1:30 PM arrival with an ambiguous "tomorrow").
+    if (
+      !item.date &&
+      (item.time || item.arrivalTime || item.endTime) &&
+      item.status !== 'needs_review'
+    )
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['date'],
@@ -104,8 +144,15 @@ export type ConfidenceLevel = z.infer<typeof confidenceSchema>;
 export type ActionType = z.infer<typeof actionSchema>['type'];
 export type Reminder = z.infer<typeof reminderSchema>;
 export type ExtractedAction = z.infer<typeof actionSchema>;
+/** Optional developer controls; sensible defaults work automatically. */
+export const localAISettingsSchema = z.object({
+  developerMode: z.boolean().default(false),
+  contextSize: z.number().int().min(2048).max(32768).default(8192),
+  threads: z.number().int().min(1).max(64).nullable().default(null),
+});
 export const settingsSchema = z.object({
   onboardingCompletedVersion: z.number().int().nonnegative().default(0),
+  localAI: localAISettingsSchema.default({}),
   remindersEnabled: z.boolean(),
   defaultReminders: z.array(z.enum(['night', 'hour', 'quarter'])),
   theme: z.literal('light'),
@@ -113,12 +160,15 @@ export const settingsSchema = z.object({
 export type Settings = z.infer<typeof settingsSchema>;
 export const defaultSettings: Settings = {
   onboardingCompletedVersion: 0,
+  localAI: { developerMode: false, contextSize: 8192, threads: null },
   remindersEnabled: true,
   defaultReminders: ['night', 'hour', 'quarter'],
   theme: 'light',
 };
+/** Stored envelope version. Bump it only together with a step in repositories/migrations.ts. */
+export const SNAPSHOT_VERSION = 1;
 export const snapshotSchema = z.object({
-  version: z.literal(1),
+  version: z.literal(SNAPSHOT_VERSION),
   actions: z.array(actionSchema),
   settings: settingsSchema,
 });

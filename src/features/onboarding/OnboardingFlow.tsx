@@ -64,7 +64,8 @@ export function OnboardingFlow({
         const file = await createDemoScreenshot();
         const previewUrl = await readScreenshot(file);
         if (controller.signal.aborted) return;
-        const results = await services.extraction.extract(
+        // The tour always uses the deterministic sample, so it works before a model is installed.
+        const results = await services.demoExtraction.extract(
           { type: 'image', fileName: file.name, previewUrl },
           { signal: controller.signal, onProgress: () => {} },
         );

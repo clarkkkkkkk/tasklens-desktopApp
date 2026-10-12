@@ -8,10 +8,10 @@ Use the desktop application. Browser builds preserve the screenshot demo and man
 
 Build the native inference executables with `npm run build:runtimes` before `npm run tauri build`. CMake, a C/C++ compiler, Git, Node and the normal Tauri/Rust platform prerequisites are required. Linux recording also requires ALSA development headers. The build script checks out exact revisions from `src-tauri/resources/models.json`, builds CPU executables for the current host architecture and bundles them as application resources. Build on each target OS/architecture; Linux binaries cannot be shipped in Windows/macOS packages.
 
-Install both models through Settings → Local AI / Voice → Import model:
+Install Whisper through Settings › Voice transcription › Import model, and the extraction model through Settings › Local AI › Select / Import model (see LOCAL_AI.md):
 
 - Multilingual Whisper Small: `ggml-small.bin`, 487,601,967 bytes, SHA-256 `1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b`.
-- Qwen3-4B Q4_K_M: `Qwen3-4B-Q4_K_M.gguf`, 2,497,280,256 bytes, SHA-256 `7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5`.
+- Phi-4-mini-instruct Q4_K_M: `Phi-4-mini-instruct-Q4_K_M.gguf`, 2,491,874,272 bytes, SHA-256 `88c00229914083cd112853aab84ed51b87bdf6b9ce42f532d8c85c7c63b1730a` (shared with screenshot extraction).
 
 Pinned original model URLs and runtime commit IDs are recorded in the model manifest. Obtain weights yourself; TaskLens never downloads models automatically. Imports are copied into the Tauri application-data `models` directory, checked against the pinned size/hash, then loaded for validation. Originals remain unchanged. Weights and compiled runtimes are ignored by Git.
 
@@ -23,7 +23,7 @@ Choose Voice in Inbox to request microphone access and start a compact recorder.
 
 Import audio through the picker or drop audio into Inbox. Accepted containers/codecs: WAV/PCM, MP3, M4A with AAC-LC or ALAC, OGG with Vorbis. WebM, Opus and unsupported variants are rejected. Validation uses extension/MIME, a 100 MB transfer limit, decoding, sample-rate/channel bounds and decoded duration. Recordings stop at five minutes; imports are limited to fifteen minutes.
 
-Audio is decoded on a native worker, downmixed and resampled to mono 16 kHz 16-bit PCM. whisper.cpp returns original-language text and timestamped segments. No translation option is enabled. Both voice transcripts and text capture use the same extraction service and Qwen prompt/schema. Screenshot processing remains an explicitly marked mock until OCR is added.
+Audio is decoded on a native worker, downmixed and resampled to mono 16 kHz 16-bit PCM. whisper.cpp returns original-language text and timestamped segments. No translation option is enabled. Voice transcripts, typed text and screenshots use the same LocalAIExtractionService, Phi-4-mini prompt and validator.
 
 The centered result dialog lists all extracted actions. Switching actions preserves mounted editors and drafts. Saving/confirming affects only the selected action. Source Transcript exposes segment times and an export action. Evidence links reveal supported quotations/segment IDs. Invalid references are dropped, and evidence is hidden when the corresponding value has been edited. Evidence is model attribution and still requires human review.
 

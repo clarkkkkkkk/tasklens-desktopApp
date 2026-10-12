@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import {
   defaultSettings,
+  SNAPSHOT_VERSION,
   type ExtractedAction,
   type Settings,
   type Snapshot,
@@ -9,7 +10,7 @@ import { AppContext } from './context';
 import type { Services } from './services';
 export function AppProvider({ services, children }: { services: Services; children: ReactNode }) {
   const [snapshot, setSnapshot] = useState<Snapshot>({
-    version: 1,
+    version: SNAPSHOT_VERSION,
     actions: [],
     settings: defaultSettings,
   });
@@ -33,6 +34,13 @@ export function AppProvider({ services, children }: { services: Services; childr
     window.addEventListener('storage', listener);
     return () => window.removeEventListener('storage', listener);
   }, [reload]);
+  useEffect(() => {
+    services.settings.current = snapshot.settings;
+    services.localAI.setConfig({
+      contextSize: snapshot.settings.localAI.contextSize,
+      threads: snapshot.settings.localAI.threads,
+    });
+  }, [services, snapshot.settings]);
   useEffect(() => {
     if (!notice) return;
     const timer = setTimeout(() => setNotice(''), 5000);

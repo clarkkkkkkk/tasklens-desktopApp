@@ -1,0 +1,87 @@
+{
+  "engine": "tesseract v5.4.0.20240606",
+  "fullText": "Bio 101 GC\n\nOct 6, 2026, 8:20 PM\nMaam Reyes\nPaalala: Ang quiz sa Biology ay moved to\n\nHuwebes, 10:00 AM. Dalhin ang lab manual\nat calculator.",
+  "imageHeight": 412,
+  "imageWidth": 864,
+  "languages": ["eng", "ceb", "tgl"],
+  "regions": [
+    {
+      "block": 1,
+      "box": {
+        "height": 26,
+        "width": 155,
+        "x": 35,
+        "y": 43
+      },
+      "confidence": 0.949,
+      "id": "r1",
+      "paragraph": 1,
+      "text": "Bio 101 GC"
+    },
+    {
+      "block": 2,
+      "box": {
+        "height": 20,
+        "width": 214,
+        "x": 325,
+        "y": 139
+      },
+      "confidence": 0.963,
+      "id": "r2",
+      "paragraph": 1,
+      "text": "Oct 6, 2026, 8:20 PM"
+    },
+    {
+      "block": 2,
+      "box": {
+        "height": 23,
+        "width": 136,
+        "x": 58,
+        "y": 195
+      },
+      "confidence": 0.833,
+      "id": "r3",
+      "paragraph": 1,
+      "text": "Maam Reyes"
+    },
+    {
+      "block": 2,
+      "box": {
+        "height": 30,
+        "width": 537,
+        "x": 61,
+        "y": 249
+      },
+      "confidence": 0.956,
+      "id": "r4",
+      "paragraph": 1,
+      "text": "Paalala: Ang quiz sa Biology ay moved to"
+    },
+    {
+      "block": 3,
+      "box": {
+        "height": 30,
+        "width": 570,
+        "x": 61,
+        "y": 289
+      },
+      "confidence": 0.946,
+      "id": "r5",
+      "paragraph": 1,
+      "text": "Huwebes, 10:00 AM. Dalhin ang lab manual"
+    },
+    {
+      "block": 3,
+      "box": {
+        "height": 23,
+        "width": 166,
+        "x": 59,
+        "y": 331
+      },
+      "confidence": 0.965,
+      "id": "r6",
+      "paragraph": 1,
+      "text": "at calculator."
+    }
+  ]
+}

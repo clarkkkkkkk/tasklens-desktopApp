@@ -1,5 +1,7 @@
 # Local voice implementation report
 
+> **Update (Phase 2 merge, 2026-10-12):** voice and text extraction now use the shared Phi-4-mini-instruct pipeline described in LOCAL_AI.md; the Qwen3-4B figures below are historical measurements of the earlier extractor.
+
 ## Behavior
 
 Inbox provides Voice, Import audio and Capture text. Native capture uses the default microphone after an explicit Voice action. Supported imported audio is decoded/resampled locally, then transcribed with multilingual Whisper Small. Voice and text share Qwen3-4B structured extraction, validation and temporal rules. Results appear in the existing centered blurred dialog, with every action selectable, independent drafts, transcript inspection, evidence highlighting and explicit per-action saving. Nothing is automatically saved.
