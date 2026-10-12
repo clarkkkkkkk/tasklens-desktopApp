@@ -190,13 +190,14 @@ impl Runtime {
         if let Some(threads) = config.threads {
             args.extend(["--threads".into(), threads.to_string()]);
         }
-        let mut child = platform::command(&binary)
-            .args(&args)
-            .current_dir(binary.parent().unwrap_or(std::path::Path::new(".")))
-            .stdout(Stdio::null())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|_| "MODEL_LOAD_FAILED: The local model runtime could not start.")?;
+        let mut child = platform::spawn(
+            platform::command(&binary)
+                .args(&args)
+                .current_dir(binary.parent().unwrap_or(std::path::Path::new(".")))
+                .stdout(Stdio::null())
+                .stderr(Stdio::piped()),
+        )
+        .map_err(|_| "MODEL_LOAD_FAILED: The local model runtime could not start.")?;
         if let Some(stderr) = child.stderr.take() {
             let log = self.log.clone();
             log.lock().unwrap().clear();

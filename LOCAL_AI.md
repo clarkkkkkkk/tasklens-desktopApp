@@ -131,11 +131,14 @@ Every meaningful field keeps the OCR region IDs it came from. In review, **Sourc
 
 ## Known limitations
 
-- CPU inference: roughly 25–65 seconds per screenshot on a 6-core desktop CPU (Ryzen 5 3600), plus model loading. No GPU acceleration is configured yet.
-- Phi-4-mini at 4-bit is a small model. It mislabels item types, misses requirements phrased as suggestions and sometimes splits one activity into several items. Review every result; the validator guards dates, times and evidence but not wording.
+- CPU inference: roughly 20–125 seconds per item set on a 6-core desktop CPU (Ryzen 5 3600); the first extraction also loads the model (about 10–20 s). No GPU acceleration is configured yet.
+- Phi-4-mini at 4-bit is a small model. On the regression suite it passes 71/83 checks with no forbidden hallucination, but it mislabels item types (an exam as a deadline), often leaves times empty, misses requirements phrased as suggestions ("much better mag black pants"), sometimes merges or splits items, and occasionally returns no item with only a question. Review every result. The validator guards evidence, dates, times, confidence and grounding, not wording.
+- Outputs are deterministic for identical input (temperature 0), but the prompt includes the current time and file time, so re-running the same screenshot can give a different result.
+- Prompt wording matters: small additions measurably changed results. Change the prompt only together with an evaluation run, and bump the prompt version.
 - OCR quality depends on the screenshot. Stylised fonts, emoji and very small text reduce accuracy; handwriting is not supported.
 - Line grouping uses layout heuristics tuned on chat bubbles and notices.
-- If TaskLens crashes, a running `llama-server` may need to be ended manually (Task Manager / Activity Monitor). Normal exit stops it.
+- Runtimes are tied to TaskLens's lifetime: a Windows job object (kill on close) and a Linux parent-death signal end `llama-server` even if TaskLens crashes. On macOS only a normal exit stops it.
+- The WebView2 runtime (Windows) may itself contact Microsoft services, as browser engines do; TaskLens's page has no network access (CSP `connect-src ipc:`) and extraction never uses the network. Tauri disables WebView2 SmartScreen by default.
 - Packaged builds must ship `llama-server` for each platform. Tesseract is found from a bundled copy or a system installation.
 
 ## Licenses

@@ -4057,6 +4057,7 @@ dependencies = [
  "cpal",
  "hound",
  "image",
+ "libc",
  "objc",
  "rfd",
  "rubato",
@@ -4068,6 +4069,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-single-instance",
  "uuid",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

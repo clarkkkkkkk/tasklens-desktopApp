@@ -18,3 +18,5 @@ src-tauri/resources/tessdata/*
 *.traineddata
 *.gguf
 ggml-*.bin
+
+test-results-native/

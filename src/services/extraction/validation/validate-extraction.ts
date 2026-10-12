@@ -220,6 +220,7 @@ function buildResult(
       textOf,
       `${label} time`,
       issues,
+      context.units,
     );
     let endTime = checkTime(
       item.end_time,
@@ -227,6 +228,7 @@ function buildResult(
       textOf,
       `${label} end time`,
       issues,
+      context.units,
     );
     const arrival = checkTime(
       item.arrival_time,
@@ -234,6 +236,7 @@ function buildResult(
       textOf,
       `${label} arrival time`,
       issues,
+      context.units,
     );
     // One statement cannot be both the start and the arrival time: keep whichever the
     // wording supports ("starts at" vs "naa na", "be there by"); default to arrival.
@@ -379,9 +382,13 @@ function buildResult(
           : 'confirmed';
 
     const stamp = now.toISOString();
+    // Deadlines are handed in, not attended: one with an arrival time is an event.
+    const type = item.type === 'deadline' && arrival.value ? 'event' : item.type;
+    if (type !== item.type)
+      issues.push(`${label}: deadline with an arrival time treated as an event`);
     const candidate = {
       id: crypto.randomUUID(),
-      type: item.type,
+      type,
       title,
       date: dateValue,
       time: time.value ?? undefined,
@@ -410,6 +417,20 @@ function buildResult(
   if (bundle.items.length && !actions.length)
     return { ok: false, stage: 'actions', error: 'No extracted item passed validation.', issues };
   for (const a of ambiguities) a.segmentIds = expand(a.segmentIds);
+  // A start-time option equal to the item's arrival time would invite exactly the
+  // arrival-is-start assumption TaskLens must avoid; offer it only as the arrival time.
+  for (const { action, index } of actions)
+    for (const a of ambiguities)
+      if (
+        a.field === 'time' &&
+        (a.item === index || (a.item === null && actions.length === 1)) &&
+        action.arrivalTime
+      ) {
+        const kept = a.options.filter((o) => toTimeValue(o) !== action.arrivalTime);
+        if (kept.length !== a.options.length)
+          issues.push(`item ${index + 1}: start-time option equal to the arrival time removed`);
+        a.options = kept;
+      }
   const strip = ({ item, ...rest }: (typeof ambiguities)[number]) => (void item, rest);
   for (const { action, index } of actions)
     action.ambiguities = ambiguities.filter((a) => a.item === index || a.item === null).map(strip);
@@ -423,6 +444,12 @@ function buildResult(
 
 const hhmm = (minutes: number) =>
   `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+/** "1:30PM" → "13:30"; HH:MM passes through; anything else → null. */
+function toTimeValue(option: string): string | null {
+  if (/^([01]\d|2[0-3]):[0-5]\d$/.test(option)) return option;
+  const found = findTimes(option).find((t) => t.explicit);
+  return found ? hhmm(found.minutes) : null;
+}
 const VALID_TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const PLACEHOLDER =
   /^(unknown|unsure|not sure|n\/?a|none|null|undefined|not (specified|stated|given|mentioned)|tbd|tba|other)$/i;
@@ -472,6 +499,7 @@ function checkTime(
   textOf: (ids: string[]) => string,
   label: string,
   issues: string[],
+  units: SourceUnit[],
 ): { value: string | null; ids: string[]; confidence: ConfidenceLevel } {
   let value = field.value && VALID_TIME.test(field.value) ? field.value : null;
   // Convert the time as written ourselves: small models misconvert 12-hour times.
@@ -487,7 +515,17 @@ function checkTime(
   }
   if (!value) return { value: null, ids: [], confidence: 'needs_review' };
   // A time with no source support is treated as unsupported, never merely inferred.
-  const support = ids.length ? timeSupport(value, textOf(ids)) : 'none';
+  let support = ids.length ? timeSupport(value, textOf(ids)) : 'none';
+  if (support !== 'exact') {
+    // Recover the citation only when exactly one unit states this time explicitly.
+    const time = value;
+    const stating = units.filter((u) => timeSupport(time, u.text) === 'exact');
+    if (stating.length === 1) {
+      issues.push(`${label}: cited ${stating[0].id}, the only unit stating ${value}`);
+      ids = [stating[0].id];
+      support = 'exact';
+    }
+  }
   const allowed: ConfidenceLevel =
     support === 'exact' ? 'confirmed' : support === 'partial' ? 'inferred' : 'needs_review';
   return { value, ids, confidence: weaker(field.confidence, allowed) };

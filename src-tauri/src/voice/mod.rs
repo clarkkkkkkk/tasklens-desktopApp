@@ -93,8 +93,7 @@ fn run(
     let file = fs::File::create(&out).map_err(|_| error())?;
     let mut command = crate::platform::command(&executable(app, name)?);
     command.args(args).stdout(file).stderr(Stdio::null());
-    let mut child = command
-        .spawn()
+    let mut child = crate::platform::spawn(&mut command)
         .map_err(|_| "Could not start local inference runtime")?;
     let start = Instant::now();
     loop {
@@ -166,10 +165,19 @@ pub async fn voice_models(window: tauri::Window, app: tauri::AppHandle) -> Resul
     let state = app.state::<VoiceState>();
     let status = state.model_status.lock().unwrap();
     let mut result = Vec::new();
-    for kind in ["whisper"] {
-        let spec = manifest(kind)?;
-        result.push(json!({"kind":kind,"name":spec["model"],"status":status.get(kind).cloned().unwrap_or_else(|| if model(&app,kind).map(|p| p.exists()).unwrap_or(false) {"validating".into()} else {"not_installed".into()}),"runtimeAvailable":executable(&app,"whisper-cli").is_ok(),"source":spec["source"]}));
-    }
+    // Voice manages only whisper; the extraction model lives in Settings › Local AI.
+    let kind = "whisper";
+    let spec = manifest(kind)?;
+    let installed = model(&app, kind).map(|p| p.exists()).unwrap_or(false);
+    let current = status.get(kind).cloned().unwrap_or_else(|| {
+        if installed {
+            "validating"
+        } else {
+            "not_installed"
+        }
+        .into()
+    });
+    result.push(json!({"kind": kind, "name": spec["model"], "status": current, "runtimeAvailable": executable(&app, "whisper-cli").is_ok(), "source": spec["source"]}));
     Ok(json!(result))
 }
 #[tauri::command]

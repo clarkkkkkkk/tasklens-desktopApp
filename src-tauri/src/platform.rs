@@ -117,6 +117,7 @@ pub fn tessdata_candidates(app: &tauri::AppHandle, tesseract: Option<&Path>) -> 
 }
 
 /// A child process that never opens a console window and never inherits stdin.
+/// Children started through `spawn` never outlive TaskLens, even after a crash.
 pub fn command(program: &Path) -> Command {
     let mut command = Command::new(program);
     command.stdin(Stdio::null());
@@ -126,7 +127,67 @@ pub fn command(program: &Path) -> Command {
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         command.creation_flags(CREATE_NO_WINDOW);
     }
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::unix::process::CommandExt;
+        // SAFETY: prctl is async-signal-safe; the closure only sets the parent-death signal.
+        unsafe {
+            command.pre_exec(|| {
+                libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL);
+                Ok(())
+            });
+        }
+    }
     command
+}
+
+/// Spawns a runtime and ties it to TaskLens's lifetime. On Windows the child joins a job
+/// object that the OS closes, killing the child, when TaskLens exits for any reason; on
+/// Linux `command` sets a parent-death signal. macOS relies on the normal exit cleanup.
+pub fn spawn(command: &mut Command) -> std::io::Result<Child> {
+    let child = command.spawn()?;
+    #[cfg(windows)]
+    windows_job::assign(&child);
+    Ok(child)
+}
+
+#[cfg(windows)]
+mod windows_job {
+    use std::{os::windows::io::AsRawHandle, process::Child, sync::OnceLock};
+    use windows_sys::Win32::System::JobObjects::{
+        AssignProcessToJobObject, CreateJobObjectW, JobObjectExtendedLimitInformation,
+        SetInformationJobObject, JOBOBJECT_EXTENDED_LIMIT_INFORMATION,
+        JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+    };
+
+    /// The job handle is intentionally never closed: Windows closes it when TaskLens exits.
+    fn job() -> usize {
+        static JOB: OnceLock<usize> = OnceLock::new();
+        *JOB.get_or_init(|| unsafe {
+            let job = CreateJobObjectW(std::ptr::null(), std::ptr::null());
+            if job.is_null() {
+                return 0;
+            }
+            let mut info: JOBOBJECT_EXTENDED_LIMIT_INFORMATION = std::mem::zeroed();
+            info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+            SetInformationJobObject(
+                job,
+                JobObjectExtendedLimitInformation,
+                &info as *const _ as *const std::ffi::c_void,
+                std::mem::size_of_val(&info) as u32,
+            );
+            job as usize
+        })
+    }
+
+    pub fn assign(child: &Child) {
+        let job = job();
+        if job != 0 {
+            unsafe {
+                AssignProcessToJobObject(job as _, child.as_raw_handle() as _);
+            }
+        }
+    }
 }
 
 pub struct Limits {
@@ -144,12 +205,13 @@ pub fn run_to_file(
     limits: Limits,
 ) -> Result<(), String> {
     let file = fs::File::create(output).map_err(|_| GENERIC_ERROR.to_string())?;
-    let mut child = command(program)
-        .args(args)
-        .stdout(file)
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(|_| "Could not start the local runtime.".to_string())?;
+    let mut child = spawn(
+        command(program)
+            .args(args)
+            .stdout(file)
+            .stderr(Stdio::null()),
+    )
+    .map_err(|_| "Could not start the local runtime.".to_string())?;
     wait(&mut child, output, cancel, limits)
 }
 

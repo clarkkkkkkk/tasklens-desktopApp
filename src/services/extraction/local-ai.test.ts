@@ -113,33 +113,49 @@ describe('validation', () => {
   it('keeps arrival time distinct from start time and converts the written time itself', () => {
     const result = ok(
       validateExtraction(
-        rawBundle([
-          rawItem({
-            title: { evidence: [pantsUnit], value: 'Pictorial', confidence: 'confirmed' },
-            time: {
-              evidence: [arrivalUnit],
-              text: '1:30PM',
-              value: '11:30',
-              confidence: 'confirmed',
+        rawBundle(
+          [
+            rawItem({
+              type: 'deadline',
+              title: { evidence: [pantsUnit], value: 'Pictorial', confidence: 'confirmed' },
+              time: {
+                evidence: [arrivalUnit],
+                text: '1:30PM',
+                value: '11:30',
+                confidence: 'confirmed',
+              },
+              arrival_time: {
+                evidence: [arrivalUnit],
+                text: '1:30PM',
+                value: '11:30',
+                confidence: 'confirmed',
+              },
+              location: { evidence: [arrivalUnit], value: 'Campus', confidence: 'confirmed' },
+            }),
+          ],
+          [
+            {
+              item: 0,
+              field: 'time',
+              question: 'When does it start?',
+              options: ['1:30PM'],
+              evidence: [],
             },
-            arrival_time: {
-              evidence: [arrivalUnit],
-              text: '1:30PM',
-              value: '11:30',
-              confidence: 'confirmed',
-            },
-            location: { evidence: [arrivalUnit], value: 'Campus', confidence: 'confirmed' },
-          }),
-        ]),
+          ],
+        ),
         pictorial,
       ),
     );
     const [action] = result.actions;
     expect(action.arrivalTime).toBe('13:30');
+    // Deadlines are not attended: an arrival time makes it an event.
+    expect(action.type).toBe('event');
     expect(action.confidence.arrivalTime).toBe('confirmed');
     expect(action.time).toBeUndefined();
     expect(action.confidence.time).toBe('needs_review');
     expect(action.location).toBe('Campus');
+    // Never offer the arrival time as the start time.
+    expect(action.ambiguities?.find((q) => q.field === 'time')?.options).toEqual([]);
     expect(action.evidence?.find((e) => e.field === 'arrivalTime')?.segmentIds).toEqual([
       'r8',
       'r9',
@@ -225,6 +241,26 @@ describe('validation', () => {
     );
     expect(result.actions.map((a) => a.title)).toEqual(['Submit draft']);
     expect(result.issues.join()).toContain('not grounded');
+  });
+
+  it('recovers a missing citation only from the single unit that states the time', () => {
+    const result = ok(
+      validateExtraction(
+        rawBundle([
+          rawItem({
+            title: { evidence: [pantsUnit], value: 'Pictorial', confidence: 'confirmed' },
+            arrival_time: { evidence: [], text: '1:30PM', value: '13:30', confidence: 'confirmed' },
+          }),
+        ]),
+        pictorial,
+      ),
+    );
+    const [action] = result.actions;
+    expect(action.confidence.arrivalTime).toBe('confirmed');
+    expect(action.evidence?.find((e) => e.field === 'arrivalTime')?.segmentIds).toEqual([
+      'r8',
+      'r9',
+    ]);
   });
 
   it('may downgrade but never upgrade model confidence', () => {
