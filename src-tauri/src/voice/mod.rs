@@ -7,7 +7,7 @@ use std::{
     fs,
     io::{Read, Write},
     path::{Path, PathBuf},
-    process::{Command, Stdio},
+    process::Stdio,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc, Mutex,
@@ -58,29 +58,10 @@ fn model(app: &tauri::AppHandle, kind: &str) -> Result<PathBuf, String> {
         .join(manifest(kind)?["file"].as_str().unwrap()))
 }
 fn executable(app: &tauri::AppHandle, name: &str) -> Result<PathBuf, String> {
-    let name = format!("{}{}", name, if cfg!(windows) { ".exe" } else { "" });
-    let path = app
-        .path()
-        .resource_dir()
-        .map_err(|_| error())?
-        .join("resources/bin")
-        .join(&name);
-    if path.is_file() {
-        return Ok(path);
-    }
-    #[cfg(debug_assertions)]
-    {
-        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("resources/bin")
-            .join(&name);
-        if path.is_file() {
-            return Ok(path);
-        }
-    }
-    Err(
+    crate::platform::bundled_binary(app, name).ok_or_else(|| {
         "Local runtime missing. Install a TaskLens build that includes the inference runtimes."
-            .into(),
-    )
+            .into()
+    })
 }
 fn hash(path: &Path, spec: &Value) -> Result<(), String> {
     let mut file = fs::File::open(path).map_err(|_| "Model file is missing")?;
@@ -110,17 +91,8 @@ fn run(
 ) -> Result<String, String> {
     let out = folder.join("worker-output.txt");
     let file = fs::File::create(&out).map_err(|_| error())?;
-    let mut command = Command::new(executable(app, name)?);
-    command
-        .args(args)
-        .stdin(Stdio::null())
-        .stdout(file)
-        .stderr(Stdio::null());
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        command.creation_flags(0x08000000);
-    }
+    let mut command = crate::platform::command(&executable(app, name)?);
+    command.args(args).stdout(file).stderr(Stdio::null());
     let mut child = command
         .spawn()
         .map_err(|_| "Could not start local inference runtime")?;
@@ -194,9 +166,9 @@ pub async fn voice_models(window: tauri::Window, app: tauri::AppHandle) -> Resul
     let state = app.state::<VoiceState>();
     let status = state.model_status.lock().unwrap();
     let mut result = Vec::new();
-    for kind in ["whisper", "extraction"] {
+    for kind in ["whisper"] {
         let spec = manifest(kind)?;
-        result.push(json!({"kind":kind,"name":spec["model"],"status":status.get(kind).cloned().unwrap_or_else(|| if model(&app,kind).map(|p| p.exists()).unwrap_or(false) {"validating".into()} else {"not_installed".into()}),"runtimeAvailable":executable(&app,if kind=="whisper" {"whisper-cli"} else {"llama-completion"}).is_ok(),"source":spec["source"]}));
+        result.push(json!({"kind":kind,"name":spec["model"],"status":status.get(kind).cloned().unwrap_or_else(|| if model(&app,kind).map(|p| p.exists()).unwrap_or(false) {"validating".into()} else {"not_installed".into()}),"runtimeAvailable":executable(&app,"whisper-cli").is_ok(),"source":spec["source"]}));
     }
     Ok(json!(result))
 }
@@ -208,6 +180,9 @@ pub async fn voice_validate_model(
     import: bool,
 ) -> Result<(), String> {
     check_window(&window)?;
+    if kind != "whisper" {
+        return Err("Manage the extraction model in Settings › Local AI.".into());
+    }
     manifest(&kind)?;
     tauri::async_runtime::spawn_blocking(move || {
         let state = app.state::<VoiceState>();
@@ -249,43 +224,22 @@ pub async fn voice_validate_model(
             let folder = root(&app)?.join("model-validation");
             fs::create_dir_all(&folder).map_err(|_| error())?;
             let cancel = AtomicBool::new(false);
-            let result = if kind == "whisper" {
-                let wav = folder.join("silence.wav");
-                audio::write_wav(&wav, &vec![0.0; 16000])?;
-                run(
-                    &app,
-                    "whisper-cli",
-                    &[
-                        "-m".into(),
-                        target.to_string_lossy().into(),
-                        "-f".into(),
-                        wav.to_string_lossy().into(),
-                        "-l".into(),
-                        "auto".into(),
-                    ],
-                    &folder,
-                    &cancel,
-                )
-            } else {
-                run(
-                    &app,
-                    "llama-completion",
-                    &[
-                        "-m".into(),
-                        target.to_string_lossy().into(),
-                        "-p".into(),
-                        "test".into(),
-                        "-n".into(),
-                        "0".into(),
-                        "-c".into(),
-                        "512".into(),
-                        "-ngl".into(),
-                        "0".into(),
-                    ],
-                    &folder,
-                    &cancel,
-                )
-            };
+            let wav = folder.join("silence.wav");
+            audio::write_wav(&wav, &vec![0.0; 16000])?;
+            let result = run(
+                &app,
+                "whisper-cli",
+                &[
+                    "-m".into(),
+                    target.to_string_lossy().into(),
+                    "-f".into(),
+                    wav.to_string_lossy().into(),
+                    "-l".into(),
+                    "auto".into(),
+                ],
+                &folder,
+                &cancel,
+            );
             let _ = fs::remove_dir_all(folder);
             result?;
             Ok(())
@@ -529,81 +483,6 @@ fn parse_transcript(raw: &Value, duration: u64) -> Result<Value, String> {
     Ok(
         json!({"fullText":full,"segments":segments,"language":raw["result"]["language"],"durationMs":duration,"model":"whisper-small"}),
     )
-}
-#[tauri::command]
-pub async fn local_extract(
-    window: tauri::Window,
-    app: tauri::AppHandle,
-    id: String,
-    prompt: String,
-    schema: String,
-) -> Result<String, String> {
-    check_window(&window)?;
-    // The client-provided id is an opaque lookup key only; never a filesystem path.
-    if uuid::Uuid::parse_str(&id).is_err() || prompt.len() > 120000 || schema.len() > 50000 {
-        return Err("Extraction input exceeds its limit".into());
-    }
-    tauri::async_runtime::spawn_blocking(move || {
-        let state = app.state::<VoiceState>();
-        let _gate = state
-            .inference
-            .try_lock()
-            .map_err(|_| "Local processing is busy")?;
-        if state.cancelled_ids.lock().unwrap().remove(&id) {
-            return Err("Processing cancelled".into());
-        }
-        let (job_id, path) = new_job(&app, 0)?;
-        {
-            let mut jobs = state.jobs.lock().unwrap();
-            let entry = jobs.remove(&job_id).unwrap();
-            jobs.insert(id.clone(), entry);
-        }
-        let (_, cancel) = job(&app, &id)?;
-        let result = (|| {
-            let target = model(&app, "extraction")?;
-            hash(&target, &manifest("extraction")?)?;
-            state
-                .model_status
-                .lock()
-                .unwrap()
-                .insert("extraction".into(), "loading".into());
-            fs::write(path.join("prompt.txt"), prompt).map_err(|_| error())?;
-            fs::write(path.join("schema.json"), schema).map_err(|_| error())?;
-            run(
-                &app,
-                "llama-completion",
-                &[
-                    "-m".into(),
-                    target.to_string_lossy().into(),
-                    "-f".into(),
-                    path.join("prompt.txt").to_string_lossy().into(),
-                    "-jf".into(),
-                    path.join("schema.json").to_string_lossy().into(),
-                    "-n".into(),
-                    "4096".into(),
-                    "-c".into(),
-                    "32768".into(),
-                    "-ngl".into(),
-                    "0".into(),
-                    "--temp".into(),
-                    "0".into(),
-                    "--no-display-prompt".into(),
-                    "--no-conversation".into(),
-                    "--simple-io".into(),
-                ],
-                &path,
-                &cancel,
-            )
-        })();
-        state.model_status.lock().unwrap().insert(
-            "extraction".into(),
-            if result.is_ok() { "ready" } else { "error" }.into(),
-        );
-        cleanup(&app, &id);
-        result
-    })
-    .await
-    .map_err(|_| error())?
 }
 #[cfg(test)]
 mod tests {

@@ -9,12 +9,50 @@
     "source": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.bin"
   },
   "extraction": {
-    "revision": "d81235049384534c167caea52b85a694f6103d14",
+    "model": "Phi-4-mini-instruct",
+    "publisher": "Microsoft",
+    "license": "MIT",
+    "quantization": "Q4_K_M",
+    "quantizedBy": "Unsloth (GGUF conversion of microsoft/Phi-4-mini-instruct)",
+    "file": "Phi-4-mini-instruct-Q4_K_M.gguf",
+    "sha256": "88c00229914083cd112853aab84ed51b87bdf6b9ce42f532d8c85c7c63b1730a",
+    "bytes": 2491874272,
+    "source": "https://huggingface.co/unsloth/Phi-4-mini-instruct-GGUF/resolve/78eb92a46fc37e6b524df991ed9aca9bc6aa7b80/Phi-4-mini-instruct-Q4_K_M.gguf",
+    "upstream": "https://huggingface.co/microsoft/Phi-4-mini-instruct"
+  },
+  "llamaCpp": {
     "repository": "https://github.com/ggml-org/llama.cpp",
-    "model": "Qwen3-4B Q4_K_M",
-    "file": "Qwen3-4B-Q4_K_M.gguf",
-    "sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
-    "bytes": 2497280256,
-    "source": "https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/bc640142c66e1fdd12af0bd68f40445458f3869b/Qwen3-4B-Q4_K_M.gguf"
+    "release": "b11505",
+    "revision": "ff5888f999f24e2f9eaf6537b4eb6b85fd559188",
+    "license": "MIT",
+    "binary": "llama-server",
+    "prebuilt": {
+      "win32-x64": {
+        "file": "llama-b11505-bin-win-cpu-x64.zip",
+        "sha256": "1b050214d5a0a0e40dc9ff1ca1ec50608ad989a4afaa87e2597e6b3841fc8674"
+      },
+      "win32-arm64": {
+        "file": "llama-b11505-bin-win-cpu-arm64.zip",
+        "sha256": "406079f6edc408368a94e40a431361553436cc4fb943894e8f23df4a24ad3055"
+      },
+      "darwin-arm64": {
+        "file": "llama-b11505-bin-macos-arm64.tar.gz",
+        "sha256": "633dab37eb84bef55227e69c82a0f807bb54790f8df84166479ed3b5689e405d"
+      },
+      "darwin-x64": {
+        "file": "llama-b11505-bin-macos-x64.tar.gz",
+        "sha256": "5178f1ceeb267e1303cc62226595319ac8c233f7fcd701fdf54a90fc0b93f70d"
+      },
+      "linux-x64": {
+        "file": "llama-b11505-bin-ubuntu-x64.tar.gz",
+        "sha256": "9e23bb8c48e0abbd03a558e8c341ec768fa32d56146a09e5fd13db5b0461e60c"
+      }
+    }
+  },
+  "tesseract": {
+    "version": "5.x",
+    "license": "Apache-2.0",
+    "languages": ["eng", "ceb", "tgl"],
+    "languageData": "https://github.com/tesseract-ocr/tessdata"
   }
 }

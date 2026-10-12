@@ -1,0 +1,77 @@
+[
+  {
+    "id": "pictorial",
+    "layout": "chat",
+    "header": "BSCE 3-A Group Chat",
+    "messages": [
+      { "sender": "Mika (Class Rep)", "text": "Guys!! Tomorrow ang pictorial ugma and much better all of us mag black pants" },
+      { "sender": "Mika (Class Rep)", "text": "No jeans please" },
+      { "sender": "Mika (Class Rep)", "text": "Mga 1:30PM kinahanglan naa na tanan sa campus." },
+      { "sender": "Mika (Class Rep)", "text": "Wala pa final ang exact time sa pictorial, i-announce pa later." }
+    ]
+  },
+  {
+    "id": "midterm",
+    "layout": "notice",
+    "sections": [
+      {
+        "heading": "MIDTERM EXAMINATION - CECC483",
+        "lines": [
+          "Date: October 11, 2026 (Sunday)",
+          "Time: 8:00 AM - 1:00 PM",
+          "Venue: CIT-U Gymnasium",
+          "Type of Exam: Multiple Choices (75pts) w/ terminologies",
+          "Coverage:",
+          "- Statics of Rigid Bodies",
+          "- Mechanics of Deformable Bodies"
+        ]
+      },
+      {
+        "heading": "Coverage:",
+        "lines": ["- Algebra", "- Trigonometry", "- Geometry", "- Calculus"]
+      }
+    ]
+  },
+  {
+    "id": "bundle-english",
+    "layout": "chat",
+    "header": "Thesis Advising",
+    "timestamp": "Mon, Oct 5, 2026 at 9:14 AM",
+    "messages": [
+      {
+        "sender": "Engr. Santos",
+        "text": "Submit Chapter 3 Friday before 5 PM. Consultation is Monday at 2 PM. Bring the revised questionnaire."
+      }
+    ]
+  },
+  {
+    "id": "cebuano-mixed",
+    "layout": "chat",
+    "header": "ENGL 102 Announcements",
+    "timestamp": "Oct 7, 2026, 7:45 AM",
+    "messages": [
+      { "sender": "Sir Dela Cruz", "text": "Palihug submit sa inyong reflection paper karong Friday before 5." },
+      { "sender": "Sir Dela Cruz", "text": "Ang seminar inig udto, cancelled na." }
+    ]
+  },
+  {
+    "id": "tagalog-mixed",
+    "layout": "chat",
+    "header": "Bio 101 GC",
+    "timestamp": "Oct 6, 2026, 8:20 PM",
+    "messages": [
+      {
+        "sender": "Ma'am Reyes",
+        "text": "Paalala: Ang quiz sa Biology ay moved to Huwebes, 10:00 AM. Dalhin ang lab manual at calculator."
+      }
+    ]
+  },
+  {
+    "id": "tagalog",
+    "layout": "chat",
+    "header": "Org Officers",
+    "messages": [
+      { "sender": "Pres. Lim", "text": "Bukas ng 3:00 PM ang orientation sa Room 204. Magdala ng ballpen." }
+    ]
+  }
+]

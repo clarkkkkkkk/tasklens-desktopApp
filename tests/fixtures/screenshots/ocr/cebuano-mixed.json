@@ -1,0 +1,90 @@
+{
+  "engine": "tesseract v5.4.0.20240606",
+  "fullText": "ENGL 102 Announcements\n\nOct 7, 2026, 7:45 AM\n\nSir Dela Cruz\n\nPalihug submit sa inyong reflection paper\nkarong Friday before 5.\n\nSir Dela Cruz\n\nAng seminar inig udto, cancelled na.",
+  "imageHeight": 508,
+  "imageWidth": 864,
+  "languages": [
+    "eng",
+    "ceb",
+    "tgl"
+  ],
+  "regions": [
+    {
+      "box": {
+        "height": 24,
+        "width": 402,
+        "x": 35,
+        "y": 44
+      },
+      "confidence": 0.952,
+      "id": "r1",
+      "text": "ENGL 102 Announcements"
+    },
+    {
+      "box": {
+        "height": 20,
+        "width": 216,
+        "x": 324,
+        "y": 139
+      },
+      "confidence": 0.962,
+      "id": "r2",
+      "text": "Oct 7, 2026, 7:45 AM"
+    },
+    {
+      "box": {
+        "height": 18,
+        "width": 133,
+        "x": 58,
+        "y": 194
+      },
+      "confidence": 0.958,
+      "id": "r3",
+      "text": "Sir Dela Cruz"
+    },
+    {
+      "box": {
+        "height": 30,
+        "width": 547,
+        "x": 61,
+        "y": 249
+      },
+      "confidence": 0.943,
+      "id": "r4",
+      "text": "Palihug submit sa inyong reflection paper"
+    },
+    {
+      "box": {
+        "height": 30,
+        "width": 303,
+        "x": 61,
+        "y": 289
+      },
+      "confidence": 0.954,
+      "id": "r5",
+      "text": "karong Friday before 5."
+    },
+    {
+      "box": {
+        "height": 18,
+        "width": 133,
+        "x": 58,
+        "y": 372
+      },
+      "confidence": 0.958,
+      "id": "r6",
+      "text": "Sir Dela Cruz"
+    },
+    {
+      "box": {
+        "height": 30,
+        "width": 478,
+        "x": 59,
+        "y": 427
+      },
+      "confidence": 0.939,
+      "id": "r7",
+      "text": "Ang seminar inig udto, cancelled na."
+    }
+  ]
+}

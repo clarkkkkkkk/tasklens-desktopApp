@@ -11,6 +11,10 @@ test-results/
 
 # Local inference assets are built/imported, never committed.
 .local-ai/
-src-tauri/resources/bin/
+src-tauri/resources/bin/*
+!src-tauri/resources/bin/README.md
+src-tauri/resources/tessdata/*
+!src-tauri/resources/tessdata/README.md
+*.traineddata
 *.gguf
 ggml-*.bin

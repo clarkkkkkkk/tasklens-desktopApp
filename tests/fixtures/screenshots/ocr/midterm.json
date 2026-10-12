@@ -1,0 +1,156 @@
+{
+  "engine": "tesseract v5.4.0.20240606",
+  "fullText": "MIDTERM EXAMINATION - CECC483\n\nDate: October 11, 2026 (Sunday)\nTime: 8:00 AM - 1:00 PM\nVenue: CIT-U Gymnasium\nType of Exam: Multiple Choices (75pts) w/ terminologies\nCoverage:\n- Statics of Rigid Bodies\n\n- Mechanics of Deformable Bodies\n\nCoverage:\n\n- Algebra\n- Trigonometry\n- Geometry\n\n- Calculus",
+  "imageHeight": 854,
+  "imageWidth": 864,
+  "languages": [
+    "eng",
+    "ceb",
+    "tgl"
+  ],
+  "regions": [
+    {
+      "box": {
+        "height": 23,
+        "width": 543,
+        "x": 69,
+        "y": 69
+      },
+      "confidence": 0.931,
+      "id": "r1",
+      "text": "MIDTERM EXAMINATION - CECC483"
+    },
+    {
+      "box": {
+        "height": 27,
+        "width": 396,
+        "x": 69,
+        "y": 125
+      },
+      "confidence": 0.965,
+      "id": "r2",
+      "text": "Date: October 11, 2026 (Sunday)"
+    },
+    {
+      "box": {
+        "height": 21,
+        "width": 300,
+        "x": 67,
+        "y": 171
+      },
+      "confidence": 0.95,
+      "id": "r3",
+      "text": "Time: 8:00 AM - 1:00 PM"
+    },
+    {
+      "box": {
+        "height": 27,
+        "width": 311,
+        "x": 67,
+        "y": 217
+      },
+      "confidence": 0.928,
+      "id": "r4",
+      "text": "Venue: CIT-U Gymnasium"
+    },
+    {
+      "box": {
+        "height": 27,
+        "width": 691,
+        "x": 67,
+        "y": 263
+      },
+      "confidence": 0.947,
+      "id": "r5",
+      "text": "Type of Exam: Multiple Choices (75pts) w/ terminologies"
+    },
+    {
+      "box": {
+        "height": 26,
+        "width": 121,
+        "x": 67,
+        "y": 310
+      },
+      "confidence": 0.967,
+      "id": "r6",
+      "text": "Coverage:"
+    },
+    {
+      "box": {
+        "height": 27,
+        "width": 288,
+        "x": 68,
+        "y": 355
+      },
+      "confidence": 0.959,
+      "id": "r7",
+      "text": "- Statics of Rigid Bodies"
+    },
+    {
+      "box": {
+        "height": 21,
+        "width": 422,
+        "x": 68,
+        "y": 401
+      },
+      "confidence": 0.956,
+      "id": "r8",
+      "text": "- Mechanics of Deformable Bodies"
+    },
+    {
+      "box": {
+        "height": 30,
+        "width": 147,
+        "x": 67,
+        "y": 533
+      },
+      "confidence": 0.965,
+      "id": "r9",
+      "text": "Coverage:"
+    },
+    {
+      "box": {
+        "height": 27,
+        "width": 112,
+        "x": 68,
+        "y": 589
+      },
+      "confidence": 0.946,
+      "id": "r10",
+      "text": "- Algebra"
+    },
+    {
+      "box": {
+        "height": 27,
+        "width": 182,
+        "x": 68,
+        "y": 635
+      },
+      "confidence": 0.947,
+      "id": "r11",
+      "text": "- Trigonometry"
+    },
+    {
+      "box": {
+        "height": 26,
+        "width": 138,
+        "x": 68,
+        "y": 682
+      },
+      "confidence": 0.942,
+      "id": "r12",
+      "text": "- Geometry"
+    },
+    {
+      "box": {
+        "height": 21,
+        "width": 118,
+        "x": 68,
+        "y": 727
+      },
+      "confidence": 0.949,
+      "id": "r13",
+      "text": "- Calculus"
+    }
+  ]
+}
