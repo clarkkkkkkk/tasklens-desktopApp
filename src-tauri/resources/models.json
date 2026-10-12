@@ -1,0 +1,20 @@
+{
+  "whisper": {
+    "revision": "d1be6fde11ac6e0407606b4e42fe72d34add8037",
+    "repository": "https://github.com/ggml-org/whisper.cpp",
+    "model": "Whisper Small (multilingual)",
+    "file": "ggml-small.bin",
+    "sha256": "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b",
+    "bytes": 487601967,
+    "source": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.bin"
+  },
+  "extraction": {
+    "revision": "d81235049384534c167caea52b85a694f6103d14",
+    "repository": "https://github.com/ggml-org/llama.cpp",
+    "model": "Qwen3-4B Q4_K_M",
+    "file": "Qwen3-4B-Q4_K_M.gguf",
+    "sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+    "bytes": 2497280256,
+    "source": "https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/bc640142c66e1fdd12af0bd68f40445458f3869b/Qwen3-4B-Q4_K_M.gguf"
+  }
+}

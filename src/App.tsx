@@ -1,3 +1,4 @@
+import { BundleReview } from './features/voice/BundleReview';
 import { MotionToast } from './components/motion/MotionToast';
 import { BrandHandoff } from './components/motion/BrandHandoff';
 import { animateMotion, prepareExit, reducedMotion, useEntrance } from './components/motion/motion';
@@ -30,6 +31,14 @@ export default function App() {
   const [finishingTour, setFinishingTour] = useState(false);
   const [floatingResult, setFloatingResult] = useState(false);
   const [brandHandoff, setBrandHandoff] = useState<{ firstRun: boolean } | null>(null);
+  const [bundle, setBundle] = useState<ExtractedAction[] | null>(null);
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const voiceCancel = useRef<(() => Promise<void>) | null>(null);
+  const [pendingView, setPendingView] = useState<View | null>(null);
+  const onVoiceGuard = useCallback((cancel: (() => Promise<void>) | null) => {
+    voiceCancel.current = cancel;
+    setVoiceBusy(!!cancel);
+  }, []);
   const pendingBrandFocus = useRef(false);
   const pageContent = useRef<HTMLDivElement>(null);
   const replayOpener = useRef<HTMLElement | null>(null);
@@ -99,18 +108,18 @@ export default function App() {
     ? snapshot.actions.find((a) => a.id === selection.id) || selection
     : null;
   const showInbox = view === 'inbox';
-  const resultDialogOpen = showInbox && floatingResult && !!selected;
+  const resultDialogOpen = floatingResult && !!selected;
   useEffect(() => {
     if (touring || loading || loadError) return;
     const handler = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
-        if (!brandHandoff) setSearchOpen(true);
+        if (!brandHandoff && !voiceBusy && !bundle) setSearchOpen(true);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [touring, brandHandoff, loading, loadError]);
+  }, [touring, brandHandoff, voiceBusy, bundle, loading, loadError]);
   function backup() {
     try {
       downloadText(services.repository.exportRaw(), 'tasklens-recovery.json');
@@ -158,6 +167,10 @@ export default function App() {
         <Sidebar
           view={view}
           onNavigate={(v) => {
+            if (voiceCancel.current) {
+              setPendingView(v);
+              return;
+            }
             if (dirty) {
               announce('Save or close your current edits before changing views.');
               return;
@@ -171,9 +184,13 @@ export default function App() {
         />
         <div className="app-body">
           <TopBar
-            onSearch={() => setSearchOpen(true)}
+            onSearch={() => {
+              if (!voiceBusy) setSearchOpen(true);
+            }}
             searchOpen={searchOpen}
-            onNew={() => onOpen(newAction())}
+            onNew={() => {
+              if (!voiceBusy) onOpen(newAction());
+            }}
           />
           <main
             id="main-content"
@@ -202,10 +219,14 @@ export default function App() {
                 <>
                   <Inbox
                     active={showInbox && !touring}
-                    suspendPaste={resultDialogOpen || searchOpen || !!brandHandoff}
+                    suspendPaste={
+                      resultDialogOpen || searchOpen || !!brandHandoff || voiceBusy || !!bundle
+                    }
                     captureHint={captureHint}
                     onCaptureInteraction={() => setCaptureHint(false)}
-                    locked={dirty}
+                    locked={dirty || !!bundle || voiceBusy}
+                    onVoiceGuard={onVoiceGuard}
+                    onBundle={setBundle}
                     onResult={(action) => onOpen(action, true)}
                     onRemove={() => {
                       if (selection && !snapshot.actions.some((a) => a.id === selection.id))
@@ -239,7 +260,9 @@ export default function App() {
                         view={view}
                         search=""
                         onOpen={onOpen}
-                        onNew={() => onOpen(newAction())}
+                        onNew={() => {
+                          if (!voiceBusy) onOpen(newAction());
+                        }}
                       />
                     ))}
                 </>
@@ -268,8 +291,26 @@ export default function App() {
             loading={loading}
             error={loadError}
             onClose={() => setSearchOpen(false)}
-            onSelect={onOpen}
+            onSelect={(action) => onOpen(action, true)}
           />
+        )}
+        {bundle && <BundleReview actions={bundle} onClose={() => setBundle(null)} />}
+        {pendingView && (
+          <div className="voice-navigation-confirm" role="alert">
+            <p>Stop and discard the current capture before changing pages?</p>
+            <Button
+              onClick={() => {
+                void (async () => {
+                  await voiceCancel.current?.();
+                  setView(pendingView);
+                  setPendingView(null);
+                })();
+              }}
+            >
+              Stop and leave
+            </Button>
+            <Button onClick={() => setPendingView(null)}>Keep capturing</Button>
+          </div>
         )}
         <MotionToast message={notice} />
       </div>

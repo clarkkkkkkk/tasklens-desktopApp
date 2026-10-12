@@ -8,3 +8,9 @@ test-results/
 .env
 .env.*
 .DS_Store
+
+# Local inference assets are built/imported, never committed.
+.local-ai/
+src-tauri/resources/bin/
+*.gguf
+ggml-*.bin

@@ -69,8 +69,9 @@ export function OnboardingFlow({
           { signal: controller.signal, onProgress: () => {} },
         );
         if (controller.signal.aborted) return;
-        if (!results.length) throw new Error('The sample returned no details. Please retry.');
-        setDemo(results[0]);
+        if (!results.actions.length)
+          throw new Error('The sample returned no details. Please retry.');
+        setDemo(results.actions[0]);
       } catch (e) {
         if (!controller.signal.aborted)
           setDemoError(e instanceof Error ? e.message : 'The sample could not load. Please retry.');

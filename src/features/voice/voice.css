@@ -1,0 +1,108 @@
+.voice-capture {
+  margin-bottom: 24px;
+}
+.voice-capture > .action-pair {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+.voice-recorder,
+.voice-text {
+  margin-top: 16px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.voice-recorder h2 {
+  font-size: 20px;
+}
+.voice-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.voice-level {
+  width: 80px;
+  height: 8px;
+  background: var(--surface-secondary, #eef1f5);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.voice-level > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left;
+  transition: transform 140ms linear;
+}
+.voice-text textarea {
+  width: 100%;
+  min-height: 120px;
+  margin: 8px 0 16px;
+}
+.voice-capture label {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+.source-transcript ol {
+  list-style: none;
+  padding: 0;
+}
+.source-transcript li {
+  padding: 12px;
+  border-radius: 10px;
+}
+.source-transcript li > span {
+  font-size: 12px;
+}
+.transcript-highlight {
+  background: var(--accent-soft);
+}
+.transcript-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.bundle-selector {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.bundle-selector select {
+  min-width: 0;
+  flex: 1;
+}
+.bundle-panel {
+  min-height: 0;
+  overflow: auto;
+}
+.bundle-panel .details-panel {
+  width: 100%;
+  border: 0;
+  max-height: calc(100vh - 140px);
+}
+.bundle-panel[hidden] {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice-level > span {
+    transform: none !important;
+    transition: none;
+  }
+}
+.voice-navigation-confirm {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 120;
+  max-width: calc(100vw - 32px);
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}

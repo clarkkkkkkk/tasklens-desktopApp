@@ -1,3 +1,4 @@
+import { SourceTranscript } from '../voice/SourceTranscript';
 import { useEntrance } from '../../components/motion/motion';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -26,6 +27,9 @@ export function DetailsPanel({
   onCalendar,
   onDirtyChange,
   floating = false,
+  active = true,
+  hideCalendar = false,
+  onPendingChange,
 }: {
   action: ExtractedAction;
   onClose: () => void;
@@ -33,6 +37,9 @@ export function DetailsPanel({
   onCalendar: (a: ExtractedAction) => void;
   onDirtyChange: (dirty: boolean) => void;
   floating?: boolean;
+  active?: boolean;
+  hideCalendar?: boolean;
+  onPendingChange?: (pending: boolean) => void;
 }) {
   const { save, remove, complete, snapshot } = useApp();
   const [editing, setEditing] = useState(!action.title),
@@ -43,7 +50,10 @@ export function DetailsPanel({
     [pending, setPending] = useState(false);
   const panel = useRef<HTMLElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
-  useEntrance(panel, action.id, 'panel');
+  useEntrance(panel, action.id, 'panel', active);
+  useEffect(() => {
+    onPendingChange?.(pending);
+  }, [pending, onPendingChange]);
   useEffect(() => {
     if (!floating) return;
     const element = dialog.current;
@@ -55,10 +65,10 @@ export function DetailsPanel({
   }, [dirty, onDirtyChange]);
   const saved = snapshot.actions.some((a) => a.id === action.id);
   useEffect(() => {
-    if (action.title) panel.current?.focus();
-  }, [action.id, action.title]);
+    if (action.title && active) panel.current?.focus();
+  }, [action.id, action.title, active]);
   useEffect(() => {
-    if (floating) return;
+    if (floating || !active) return;
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !pending) {
         if (dirty) {
@@ -68,7 +78,7 @@ export function DetailsPanel({
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [dirty, pending, floating, onClose]);
+  }, [dirty, pending, floating, active, onClose]);
   function dismiss() {
     if (pending) return;
     if (dirty) setDiscard(true);
@@ -259,6 +269,12 @@ export function DetailsPanel({
                 {!snapshot.settings.remindersEnabled ? ' Reminders are disabled in Settings.' : ''}
               </p>
             </section>
+            <SourceTranscript action={action} />
+            {action.ambiguities?.map((message, index) => (
+              <p className="mock-notice" key={index}>
+                {message}
+              </p>
+            ))}
             {action.source.fileName && (
               <div className="source-label">
                 <FileImage size={14} />
@@ -339,7 +355,7 @@ export function DetailsPanel({
                     <Pencil size={15} />
                     Edit details
                   </Button>
-                  {action.date && (
+                  {action.date && !hideCalendar && (
                     <Button onClick={() => onCalendar(action)}>
                       <CalendarDays size={15} />
                       View in calendar
@@ -364,7 +380,7 @@ export function DetailsPanel({
     <dialog
       ref={dialog}
       className="inbox-result-dialog"
-      aria-label="Screenshot result"
+      aria-label={action.source.type === 'image' ? 'Screenshot result' : 'Item details'}
       onCancel={(event) => {
         event.preventDefault();
         dismiss();

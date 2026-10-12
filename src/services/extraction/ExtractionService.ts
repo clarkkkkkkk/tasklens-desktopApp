@@ -4,9 +4,13 @@ export interface ExtractionOptions {
   signal: AbortSignal;
   onProgress: (step: number) => void;
 }
+export interface ExtractionBundle {
+  actions: ExtractedAction[];
+  ambiguities: string[];
+}
 export interface ExtractionService {
   readonly mode: 'mock' | 'local';
-  extract(input: ExtractionInput, options: ExtractionOptions): Promise<ExtractedAction[]>;
+  extract(input: ExtractionInput, options: ExtractionOptions): Promise<ExtractionBundle>;
 }
 export const extractionSteps = [
   'Reading screenshot…',

@@ -1,3 +1,4 @@
+import { VoiceSettings } from '../voice/VoiceSettings';
 import { MotionHeading } from '../../components/motion/MotionHeading';
 import { useState } from 'react';
 import { Bell, Download, HardDrive, Monitor, ShieldCheck, Sparkles } from '../../components/icons';
@@ -38,6 +39,7 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
         <p>A few preferences. A workspace that feels like yours.</p>
       </div>
       {error && <ErrorState message={error} />}
+      <VoiceSettings />
       <section className="settings-section">
         <h2>
           <Monitor size={18} />
