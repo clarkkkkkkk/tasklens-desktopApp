@@ -35,6 +35,13 @@ export function AppProvider({ services, children }: { services: Services; childr
     return () => window.removeEventListener('storage', listener);
   }, [reload]);
   useEffect(() => {
+    services.settings.current = snapshot.settings;
+    services.localAI.setConfig({
+      contextSize: snapshot.settings.localAI.contextSize,
+      threads: snapshot.settings.localAI.threads,
+    });
+  }, [services, snapshot.settings]);
+  useEffect(() => {
     if (!notice) return;
     const timer = setTimeout(() => setNotice(''), 5000);
     return () => clearTimeout(timer);

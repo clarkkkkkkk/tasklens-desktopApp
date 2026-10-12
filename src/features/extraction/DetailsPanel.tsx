@@ -10,6 +10,7 @@ import {
   MapPin,
   Pencil,
   RotateCcw,
+  ScanLine,
   Trash2,
   X,
 } from '../../components/icons';
@@ -17,11 +18,32 @@ import { useApp } from '../../app/context';
 import { Button, ConfidenceBadge, ErrorState } from '../../components/ui';
 import { confirmAction } from '../../lib/actions';
 import { displayDate, displayTime } from '../../lib/dates';
-import type { ExtractedAction } from '../../types/action';
+import type { ConfidenceLevel, ExtractedAction, ExtractionAmbiguity } from '../../types/action';
+import { buildReminders, rebaseReminders } from '../../services/reminders/ReminderScheduler';
+import { findTimes } from '../../services/extraction/validation/temporal';
 import { ActionEditor } from './ActionEditor';
+import { OpenQuestions } from './OpenQuestions';
+import { evidenceFor } from './evidence';
+import { SourceTrace, type TraceTarget } from './SourceTrace';
 import './result-dialog.css';
+import './local-ai.css';
+const toTime = (option: string) => {
+  if (/^([01]\d|2[0-3]):[0-5]\d$/.test(option)) return option;
+  const found = findTimes(option).find((t) => t.explicit);
+  return found
+    ? `${String(Math.floor(found.minutes / 60)).padStart(2, '0')}:${String(found.minutes % 60).padStart(2, '0')}`
+    : null;
+};
+const FIELD_LABELS: Record<string, string> = {
+  date: 'Date',
+  time: 'Start time',
+  endTime: 'End time',
+  arrivalTime: 'Arrival time',
+  location: 'Location',
+  requirements: 'Requirements',
+};
 export function DetailsPanel({
-  action,
+  action: original,
   onClose,
   onSaved,
   onCalendar,
@@ -42,6 +64,14 @@ export function DetailsPanel({
   onPendingChange?: (pending: boolean) => void;
 }) {
   const { save, remove, complete, snapshot } = useApp();
+  // Answers to open questions are unsaved edits layered over the extracted action.
+  const [patch, setPatch] = useState<{ id: string; changes: Partial<ExtractedAction> } | null>(
+    null,
+  );
+  const action: ExtractedAction =
+    patch?.id === original.id ? { ...original, ...patch.changes } : original;
+  const [trace, setTrace] = useState<TraceTarget | null>(null);
+  const traceRef = useRef<HTMLDetailsElement>(null);
   const [editing, setEditing] = useState(!action.title),
     [dirty, setDirty] = useState(false),
     [discard, setDiscard] = useState(false),
@@ -86,10 +116,61 @@ export function DetailsPanel({
   }
   async function persist(item: ExtractedAction) {
     await save(item);
+    setPatch(null);
     setDirty(false);
     setEditing(false);
     onSaved(item);
   }
+  function showSource(label: string, ids: string[]) {
+    setTrace({ label, ids });
+    if (traceRef.current) traceRef.current.open = true;
+    requestAnimationFrame(() => traceRef.current?.scrollIntoView({ block: 'nearest' }));
+  }
+  function change(changes: Partial<ExtractedAction>) {
+    setPatch({
+      id: action.id,
+      changes: { ...(patch?.id === action.id ? patch.changes : {}), ...changes },
+    });
+    setDirty(true);
+  }
+  function answer(question: ExtractionAmbiguity, option: string) {
+    const changes: Partial<ExtractedAction> = {
+      ambiguities: (action.ambiguities ?? []).filter((a) => a.id !== question.id),
+    };
+    const field = question.field;
+    if (field === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(option)) changes.date = option;
+    else if (field === 'time' || field === 'endTime' || field === 'arrivalTime') {
+      const value = toTime(option);
+      if (value) changes[field] = value;
+    } else if (field === 'location') changes.location = option;
+    if (field in changes)
+      changes.confidence = { ...action.confidence, [field]: 'confirmed' as ConfidenceLevel };
+    const next = { ...action, ...changes };
+    changes.reminders =
+      !action.date && next.date
+        ? buildReminders(
+            next.date,
+            next.arrivalTime || next.time,
+            snapshot.settings.defaultReminders,
+          )
+        : rebaseReminders(next).reminders;
+    change(changes);
+  }
+  const source = (label: string, field: string) => {
+    const ids = evidenceFor(action, field);
+    return action.source.ocr && ids.length ? (
+      <Button
+        variant="ghost"
+        className="trace-button"
+        aria-label={`Show source for ${label.toLowerCase()}`}
+        onClick={() => showSource(label, ids)}
+      >
+        <ScanLine size={14} />
+        Source
+      </Button>
+    ) : null;
+  };
+  const badge = (level?: ConfidenceLevel) => level && <ConfidenceBadge level={level} />;
   async function run(operation: () => Promise<void>) {
     setError('');
     setPending(true);
@@ -157,6 +238,7 @@ export function DetailsPanel({
             <div className="detail-title">
               <ConfidenceBadge level={action.confidence.overall} />
               <h2>{action.title}</h2>
+              {source('Title', 'title')}
               <p>
                 {action.source.type === 'image'
                   ? 'From your screenshot to your schedule.'
@@ -168,6 +250,19 @@ export function DetailsPanel({
                 Sample result · not AI analysis. Check every detail before confirming.
               </div>
             )}
+            <OpenQuestions
+              questions={action.ambiguities ?? []}
+              disabled={pending}
+              onAnswer={answer}
+              onDismiss={(q) =>
+                change({ ambiguities: (action.ambiguities ?? []).filter((a) => a.id !== q.id) })
+              }
+              onTrace={
+                action.source.ocr
+                  ? (q) => showSource(FIELD_LABELS[q.field] ?? 'This question', q.segmentIds)
+                  : undefined
+              }
+            />
             <dl className="detail-fields">
               <div>
                 <dt>
@@ -176,23 +271,46 @@ export function DetailsPanel({
                 </dt>
                 <dd>
                   {displayDate(action.date, { weekday: 'long', month: 'short', day: 'numeric' })}
-                  {action.confidence.date && <ConfidenceBadge level={action.confidence.date} />}
+                  {badge(action.confidence.date)}
+                  {source('Date', 'date')}
                 </dd>
               </div>
+              {action.arrivalTime && (
+                <div>
+                  <dt>
+                    <Clock3 size={16} />
+                    Arrival time
+                  </dt>
+                  <dd>
+                    {displayTime(action.arrivalTime)}
+                    {badge(action.confidence.arrivalTime)}
+                    {source('Arrival time', 'arrivalTime')}
+                  </dd>
+                </div>
+              )}
               <div>
                 <dt>
-                  <Clock3 size={16} />
-                  {action.arrivalTime ? 'Arrival time' : 'Time'}
+                  {!action.arrivalTime && <Clock3 size={16} />}
+                  {action.type === 'deadline' ? 'Due' : action.arrivalTime ? 'Start time' : 'Time'}
                 </dt>
                 <dd>
-                  {displayTime(action.arrivalTime || action.time)}
-                  {action.confidence.time && <ConfidenceBadge level={action.confidence.time} />}
+                  {action.time
+                    ? displayTime(action.time)
+                    : action.confidence.time === 'needs_review'
+                      ? 'Not confirmed'
+                      : 'All day'}
+                  {badge(action.confidence.time)}
+                  {source('Start time', 'time')}
                 </dd>
               </div>
-              {action.arrivalTime && action.time && (
+              {action.endTime && (
                 <div>
-                  <dt>Event time</dt>
-                  <dd>{displayTime(action.time)}</dd>
+                  <dt>Ends</dt>
+                  <dd>
+                    {displayTime(action.endTime)}
+                    {badge(action.confidence.endTime)}
+                    {source('End time', 'endTime')}
+                  </dd>
                 </div>
               )}
               <div>
@@ -200,7 +318,11 @@ export function DetailsPanel({
                   <MapPin size={16} />
                   Location
                 </dt>
-                <dd>{action.location || 'Not specified'}</dd>
+                <dd>
+                  {action.location || 'Not specified'}
+                  {action.location && badge(action.confidence.location)}
+                  {source('Location', 'location')}
+                </dd>
               </div>
             </dl>
             <section className="detail-section">
@@ -209,6 +331,8 @@ export function DetailsPanel({
                 {action.requirements.length > 0 && (
                   <span className="count-label">{action.requirements.length}</span>
                 )}
+                {action.requirements.length > 0 && badge(action.confidence.requirements)}
+                {source('Requirements', 'requirements')}
               </h3>
               {action.requirements.length ? (
                 <ul className="requirements">
@@ -265,31 +389,18 @@ export function DetailsPanel({
                 <p className="field-help">Edit this item to add a date and reminders.</p>
               )}
               <p className="field-help">
-                Configurations saved locally. OS notifications are not active in Phase 1.
+                Configurations saved locally. OS notifications are not active yet.
                 {!snapshot.settings.remindersEnabled ? ' Reminders are disabled in Settings.' : ''}
               </p>
             </section>
             <SourceTranscript action={action} />
-            {action.ambiguities?.map((message, index) => (
-              <p className="mock-notice" key={index}>
-                {message}
-              </p>
-            ))}
             {action.source.fileName && (
               <div className="source-label">
                 <FileImage size={14} />
                 <span>{action.source.fileName}</span>
               </div>
             )}
-            {action.source.previewUrl && (
-              <details className="source-details">
-                <summary>View source screenshot</summary>
-                <img
-                  src={action.source.previewUrl}
-                  alt={`Source: ${action.source.fileName || 'screenshot'}`}
-                />
-              </details>
-            )}
+            <SourceTrace ref={traceRef} action={action} target={trace} />
             {error && <ErrorState message={error} />}{' '}
             {deleting && (
               <div className="inline-confirm">

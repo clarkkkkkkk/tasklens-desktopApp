@@ -3,13 +3,10 @@
   "fullText": "Thesis Advising\n\nMon, Oct 5, 2026 at 9:14 AM\nEngr. Santos\nSubmit Chapter 3 Friday before 5 PM.\n\nConsultation is Monday at 2 PM. Bring the\nrevised questionnaire.",
   "imageHeight": 412,
   "imageWidth": 864,
-  "languages": [
-    "eng",
-    "ceb",
-    "tgl"
-  ],
+  "languages": ["eng", "ceb", "tgl"],
   "regions": [
     {
+      "block": 1,
       "box": {
         "height": 34,
         "width": 235,
@@ -18,9 +15,11 @@
       },
       "confidence": 0.966,
       "id": "r1",
+      "paragraph": 1,
       "text": "Thesis Advising"
     },
     {
+      "block": 2,
       "box": {
         "height": 20,
         "width": 298,
@@ -29,9 +28,11 @@
       },
       "confidence": 0.962,
       "id": "r2",
+      "paragraph": 1,
       "text": "Mon, Oct 5, 2026 at 9:14 AM"
     },
     {
+      "block": 2,
       "box": {
         "height": 23,
         "width": 128,
@@ -40,9 +41,11 @@
       },
       "confidence": 0.965,
       "id": "r3",
+      "paragraph": 1,
       "text": "Engr. Santos"
     },
     {
+      "block": 2,
       "box": {
         "height": 30,
         "width": 494,
@@ -51,9 +54,11 @@
       },
       "confidence": 0.963,
       "id": "r4",
+      "paragraph": 1,
       "text": "Submit Chapter 3 Friday before 5 PM."
     },
     {
+      "block": 3,
       "box": {
         "height": 30,
         "width": 556,
@@ -62,9 +67,11 @@
       },
       "confidence": 0.963,
       "id": "r5",
+      "paragraph": 1,
       "text": "Consultation is Monday at 2 PM. Bring the"
     },
     {
+      "block": 3,
       "box": {
         "height": 30,
         "width": 286,
@@ -73,6 +80,7 @@
       },
       "confidence": 0.967,
       "id": "r6",
+      "paragraph": 1,
       "text": "revised questionnaire."
     }
   ]

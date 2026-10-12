@@ -12,7 +12,15 @@ export function isOverdue(item: ExtractedAction, today = localDate()): boolean {
 }
 export function confirmAction(item: ExtractedAction): ExtractedAction {
   const confidence = { ...item.confidence, overall: 'confirmed' as const };
-  for (const key of ['date', 'time', 'location', 'requirements'] as const)
+  for (const key of [
+    'title',
+    'date',
+    'time',
+    'endTime',
+    'arrivalTime',
+    'location',
+    'requirements',
+  ] as const)
     if (confidence[key] === 'needs_review') confidence[key] = 'confirmed';
   return { ...item, status: 'confirmed', confidence };
 }

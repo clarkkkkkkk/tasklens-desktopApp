@@ -3,13 +3,10 @@
   "fullText": "ENGL 102 Announcements\n\nOct 7, 2026, 7:45 AM\n\nSir Dela Cruz\n\nPalihug submit sa inyong reflection paper\nkarong Friday before 5.\n\nSir Dela Cruz\n\nAng seminar inig udto, cancelled na.",
   "imageHeight": 508,
   "imageWidth": 864,
-  "languages": [
-    "eng",
-    "ceb",
-    "tgl"
-  ],
+  "languages": ["eng", "ceb", "tgl"],
   "regions": [
     {
+      "block": 1,
       "box": {
         "height": 24,
         "width": 402,
@@ -18,9 +15,11 @@
       },
       "confidence": 0.952,
       "id": "r1",
+      "paragraph": 1,
       "text": "ENGL 102 Announcements"
     },
     {
+      "block": 2,
       "box": {
         "height": 20,
         "width": 216,
@@ -29,9 +28,11 @@
       },
       "confidence": 0.962,
       "id": "r2",
+      "paragraph": 1,
       "text": "Oct 7, 2026, 7:45 AM"
     },
     {
+      "block": 3,
       "box": {
         "height": 18,
         "width": 133,
@@ -40,9 +41,11 @@
       },
       "confidence": 0.958,
       "id": "r3",
+      "paragraph": 1,
       "text": "Sir Dela Cruz"
     },
     {
+      "block": 4,
       "box": {
         "height": 30,
         "width": 547,
@@ -51,9 +54,11 @@
       },
       "confidence": 0.943,
       "id": "r4",
+      "paragraph": 1,
       "text": "Palihug submit sa inyong reflection paper"
     },
     {
+      "block": 4,
       "box": {
         "height": 30,
         "width": 303,
@@ -62,9 +67,11 @@
       },
       "confidence": 0.954,
       "id": "r5",
+      "paragraph": 1,
       "text": "karong Friday before 5."
     },
     {
+      "block": 5,
       "box": {
         "height": 18,
         "width": 133,
@@ -73,9 +80,11 @@
       },
       "confidence": 0.958,
       "id": "r6",
+      "paragraph": 1,
       "text": "Sir Dela Cruz"
     },
     {
+      "block": 6,
       "box": {
         "height": 30,
         "width": 478,
@@ -84,6 +93,7 @@
       },
       "confidence": 0.939,
       "id": "r7",
+      "paragraph": 1,
       "text": "Ang seminar inig udto, cancelled na."
     }
   ]

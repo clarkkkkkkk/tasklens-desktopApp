@@ -6,9 +6,9 @@ TaskLens is an MIT-licensed desktop productivity app for students, teachers, and
 
 TaskLens brings capture, review, and personal planning into one local workspace. The hackathon value proposition is a complete, understandable screenshot-to-action workflow with a human confirmation step. Phase 1 uses explicitly labeled mock extraction and remains independently useful through manual task/event creation, editing, search, completion, and calendar views.
 
-Current workflow: image upload/drop/paste → preview → mock extraction → editable review → confirmation → local repository → agenda/calendar. The supplied pictorial example is demo data, never image analysis.
+Current workflow: image upload/drop/paste → preview → on-device OCR (Tesseract) → on-device extraction (Phi-4-mini-instruct via llama.cpp) → validation → review with per-field confidence, Source Trace and open questions → confirmation → local repository → agenda/calendar. Voice notes and typed text use the same local model. The deterministic mock remains for browser development, tests, onboarding and demos, and is always labelled.
 
-Future vision (Phase 2 and later): screenshots → on-device OCR → local LLM → validated structured output → review → SQLite → scheduled native notifications. Text, PDF and voice input can follow later. No AI, OCR, remote services, accounts, telemetry, cloud sync or analytics are implemented now.
+Next: SQLite, scheduled native notifications, GPU acceleration and broader multilingual evaluation. No remote AI, cloud OCR, accounts, telemetry, cloud sync or analytics exist, and none are planned for extraction. See LOCAL_AI.md.
 
 Offline operation keeps personal announcements and schedules on the device, reduces connectivity requirements and avoids transferring private source material to AI vendors. Local storage is not encryption; users remain responsible for their device security. The current storage is scoped to the app/webview profile. Source previews are reduced in size before saving.
 

@@ -1,16 +1,20 @@
 # Architecture
 
 ## Current
-Input → MockExtractionService → validated structured result → Review → ActionRepository → localStorage → UI.
+Screenshot → local OCR (Tesseract) → OCR regions → source units → local Phi-4-mini-instruct (llama.cpp) → structured JSON → schema, evidence, date/time and confidence validation → Review (Source Trace, open questions) → Confirm → ActionRepository → localStorage → UI.
+
+Voice notes (whisper.cpp) and typed text join the same pipeline at the source-unit step. `MockExtractionService` implements the same `ExtractionService` contract for browser development, tests, onboarding and demo mode. See [LOCAL_AI.md](LOCAL_AI.md) for setup, privacy and limitations.
 
 Layers are intentionally small:
 - `src/components`, `src/features`, `src/layouts`: accessible UI consuming application hooks.
 - `src/app`: application state, repository orchestration, dependency injection and user-visible failures.
 - `src/types`, `src/lib`: domain schemas, date helpers, selectors and validation.
-- `src/services/extraction`: ExtractionService interface and deterministic MockExtractionService.
+- `src/services/extraction`: ExtractionService interface, deterministic MockExtractionService and LocalAIExtractionService. `prompts/` holds the versioned system prompt, output schema and prompt builder; `validation/` holds the output validator and deterministic date/time helpers; `evaluation/` holds the opt-in real-model regression suite.
+- `src/services/ocr`: OcrService contract, OCR document schema and the native Tesseract client.
+- `src/services/localai`: LocalModelManager (model status, import, validation, load/unload, completion) and the native IPC/error layer.
 - `src/repositories`: ActionRepository interface and versioned LocalStorageRepository implementation.
 - `src/services/reminders`: ReminderScheduler interface and configuration-only implementation.
-- `src-tauri`: native window, security policy and desktop build foundation. No remote API or AI plugin.
+- `src-tauri`: native window and security policy, plus `platform.rs` (the only place that resolves runtime binaries, language data and hidden child processes per OS), `ocr.rs` (Tesseract), `local_ai/` (model manager, managed llama-server, loopback-only HTTP client), `jobs.rs` (request-ID cancellation) and `voice/` (whisper.cpp). No remote API, plugin or network client.
 
 Dependencies are composed in `src/app/services.ts`; components never instantiate a mock service or hardwire extracted values. Swap the implementation there to integrate future processing.
 
@@ -34,15 +38,30 @@ Loading never writes. The upgraded snapshot is persisted by the next normal writ
 
 To change the schema: bump `SNAPSHOT_VERSION`, update `snapshotSchema`, add the `[old version]` step, and add a fixture test with real data from the old version. Never edit a released step. Purely additive optional fields with Zod defaults (such as `onboardingCompletedVersion`) may stay in the same version.
 
+## Local AI pipeline
+**Services.** `src/app/services.ts` builds `LocalAIExtractionService(NativeOcrService, NativeLocalModelManager, settings)` in the desktop app and `MockExtractionService` in browsers or when `VITE_TASKLENS_EXTRACTION=mock`. `demoExtraction` is always the mock, so onboarding and samples work before a model is installed. AppProvider pushes saved settings (default reminders, context size, threads) into the services.
+
+**OCR.** The webview sends the screenshot bytes as a raw IPC body with a UUID job header (it has no path for dropped or pasted files). Rust validates type and size, decodes with limits and EXIF orientation, prepares a temporary grayscale copy behind the `Preprocessor` trait (small screenshots are upscaled), and runs the Tesseract CLI with `eng+ceb+tgl` and TSV output. Words become line regions `r1…` with mean confidence, bounding boxes in original pixels and Tesseract block/paragraph numbers. The temporary folder is removed after each job.
+
+**Source units.** `unitsFromOcr` rejoins lines wrapped from one statement (same left edge, line spacing, previous line nearly full width) and never merges labels, list items or chat timestamps. A unit keeps its first line's ID and all member line IDs. Transcript segments (`s*`) and typed sentences (`t*`) are units directly.
+
+**Model runtime.** `local_ai::server::Runtime` owns one `llama-server` process: started on demand (warm-up begins while OCR runs), reused across extractions, restarted when context/thread settings change, killed on `RunEvent::Exit`. It binds `127.0.0.1` on a free port with a random per-launch API key and `--no-webui`. Rust reaches it through `local_ai/http.rs`, which only accepts a port and always connects to IPv4 loopback. Completions stream (SSE) so cancellation drops the connection and generation stops. Requests are serialized; status changes are emitted as `local-ai-status` events.
+
+**Model manager.** `resources/models.json` pins the GGUF file, size, SHA-256 and source, and the llama.cpp release with per-platform archive checksums. Import copies and hashes in one pass into a staging file and atomically installs it; verification results are cached against size and modification time. Weights are never committed or downloaded by the app.
+
+**Prompt and schema.** `buildExtractionPrompt` produces the Phi-4 chat prompt: a constant, versioned system prompt (cached by llama.cpp) and a user turn with SOURCE_METADATA (current local time, timezone, file/capture time and an explicit statement that file time is not a sending date) and `[id] text` units. The JSON schema is generated per request: evidence arrays are enums of the present unit IDs, times carry both the as-written text and HH:MM, dates carry the original expression and a basis.
+
+**Validation.** `validateExtraction` never trusts raw output: JSON → Zod schema → unknown evidence IDs removed → times re-derived from their written form → relative dates resolved deterministically from a visible timestamp or capture date, otherwise left empty with an open question → arrival/start de-duplication → requirement/note clean-up → repeated-section check → confidence capped by support (never raised) → `actionSchema`. Invalid output gets one repair attempt; then a retryable `VALIDATION_FAILED` error. Nothing invalid is saved.
+
+**Domain additions (additive, no envelope version change).** `endTime`; per-field confidence for title, endTime and arrivalTime; evidence fields include `endTime`; `ambiguities` are `{ id, field, question, options, segmentIds }` (legacy string entries are upgraded on read); `source.ocr` stores regions and image size for Source Trace; settings gain `localAI { developerMode, contextSize, threads }` with defaults. Drafts (`needs_review`) may hold a time without a date while the date is an open question; confirmation still requires a date.
+
+**Review UI.** Inbox shows real stages and a Cancel action, keeps a generation counter so stale results never replace newer work, opens one result in the dialog or several in the bundle review, and maps error codes to Try again / Choose another image / Open AI Settings. DetailsPanel shows per-field confidence, a Source button per cited field (Source Trace highlights OCR boxes on the screenshot) and “Needs your answer” questions whose options apply as unsaved edits. Developer mode adds OCR and raw-output diagnostics.
+
 ## Future (not implemented)
-Screenshot → local OCR → local LLM → structured JSON → schema validation → Review → SQLite → ReminderScheduler → native notification.
-
-ExtractionService accepts image/text source metadata and an AbortSignal/progress callback, returns validated actions and can later support multiple results. The current mock returns one result. Removal and unmount abort active work. No OCR/LLM imports, network clients or API credentials belong in this phase.
-
-ReminderScheduler currently computes upcoming enabled configurations. It does not run timers, request permissions or deliver notifications. A future native implementation must define restart recovery, clock/timezone changes, deduplication, permission refusal and rescheduling before enabling OS delivery.
+SQLite repository, native reminder delivery, GPU acceleration, bundled Tesseract per platform, a crash-safe runtime supervisor (job object / process group), and broader multilingual evaluation. ReminderScheduler currently computes upcoming enabled configurations. It does not run timers, request permissions or deliver notifications. A future native implementation must define restart recovery, clock/timezone changes, deduplication, permission refusal and rescheduling before enabling OS delivery.
 
 ## Security and offline behavior
-Bundled fonts/assets only; no runtime external network calls. Tauri CSP restricts connections to its IPC origin and local development websocket in dev mode. Browser file APIs support chosen/dropped/pasted images; native drag interception is disabled so the webview receives HTML drag/drop. No filesystem-wide capabilities, remote URLs, authentication, telemetry or secrets.
+Bundled fonts/assets only; no runtime external network calls. Tauri CSP restricts connections to its IPC origin and local development websocket in dev mode. Local AI adds no webview network access: OCR and model calls are Tauri commands, and the only socket TaskLens opens is Rust → `127.0.0.1:<random port>` to its own llama-server. Native commands accept only the main window, UUID job IDs and bounded inputs; child processes get argument lists, never shell strings. Browser file APIs support chosen/dropped/pasted images; native drag interception is disabled so the webview receives HTML drag/drop. No filesystem-wide capabilities, remote URLs, authentication, telemetry or secrets.
 
 ## Versioned onboarding
 Settings now include `onboardingCompletedVersion`, a nonnegative integer defaulting to 0 when absent in legacy data. This additive migration retains the `tasklens:data:v1` envelope and all existing preferences/actions. `CURRENT_ONBOARDING_VERSION` is 1; release-step selection is separate from presentation so later releases can offer only their new steps. Completion never downgrades a higher version.

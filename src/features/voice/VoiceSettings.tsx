@@ -35,10 +35,11 @@ export function VoiceSettings() {
   }
   return (
     <section className="settings-section">
-      <h2>Local AI / Voice</h2>
+      <h2>Voice transcription</h2>
       <p>
-        Record with your system-default microphone. Transcription and extraction run on this device.
-        Recordings are deleted after transcription; saved items retain their transcript.
+        Record with your system-default microphone. Transcription (whisper.cpp) and extraction run
+        on this device. Recordings are deleted after transcription; saved items retain their
+        transcript.
       </p>
       {!services.voice.available && (
         <p className="field-help">

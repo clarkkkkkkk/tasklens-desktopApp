@@ -3,13 +3,10 @@
   "fullText": "BSCE 3-A Group Chat\n\nMika (Class Rep)\n\nGuys!! Tomorrow ang pictorial ugma and\nmuch better all of us mag black pants\n\nMika (Class Rep)\n\nNo jeans please\n\nMika (Class Rep)\n\nMga 1:30PM kinahanglan naa na tanan sa\ncampus.\n\nMika (Class Rep)\n\nWala pa final ang exact time sa pictorial, i-\nannounce pa later.",
   "imageHeight": 802,
   "imageWidth": 864,
-  "languages": [
-    "eng",
-    "ceb",
-    "tgl"
-  ],
+  "languages": ["eng", "ceb", "tgl"],
   "regions": [
     {
+      "block": 1,
       "box": {
         "height": 34,
         "width": 325,
@@ -18,9 +15,11 @@
       },
       "confidence": 0.945,
       "id": "r1",
+      "paragraph": 1,
       "text": "BSCE 3-A Group Chat"
     },
     {
+      "block": 2,
       "box": {
         "height": 24,
         "width": 169,
@@ -29,9 +28,11 @@
       },
       "confidence": 0.966,
       "id": "r2",
+      "paragraph": 1,
       "text": "Mika (Class Rep)"
     },
     {
+      "block": 3,
       "box": {
         "height": 30,
         "width": 536,
@@ -40,9 +41,11 @@
       },
       "confidence": 0.943,
       "id": "r3",
+      "paragraph": 1,
       "text": "Guys!! Tomorrow ang pictorial ugma and"
     },
     {
+      "block": 3,
       "box": {
         "height": 30,
         "width": 495,
@@ -51,9 +54,11 @@
       },
       "confidence": 0.964,
       "id": "r4",
+      "paragraph": 1,
       "text": "much better all of us mag black pants"
     },
     {
+      "block": 4,
       "box": {
         "height": 24,
         "width": 169,
@@ -62,9 +67,11 @@
       },
       "confidence": 0.966,
       "id": "r5",
+      "paragraph": 1,
       "text": "Mika (Class Rep)"
     },
     {
+      "block": 5,
       "box": {
         "height": 30,
         "width": 206,
@@ -73,9 +80,11 @@
       },
       "confidence": 0.958,
       "id": "r6",
+      "paragraph": 1,
       "text": "No jeans please"
     },
     {
+      "block": 6,
       "box": {
         "height": 24,
         "width": 169,
@@ -84,9 +93,11 @@
       },
       "confidence": 0.966,
       "id": "r7",
+      "paragraph": 1,
       "text": "Mika (Class Rep)"
     },
     {
+      "block": 7,
       "box": {
         "height": 30,
         "width": 547,
@@ -95,9 +106,11 @@
       },
       "confidence": 0.94,
       "id": "r8",
+      "paragraph": 1,
       "text": "Mga 1:30PM kinahanglan naa na tanan sa"
     },
     {
+      "block": 7,
       "box": {
         "height": 22,
         "width": 106,
@@ -106,9 +119,11 @@
       },
       "confidence": 0.96,
       "id": "r9",
+      "paragraph": 1,
       "text": "campus."
     },
     {
+      "block": 8,
       "box": {
         "height": 24,
         "width": 169,
@@ -117,9 +132,11 @@
       },
       "confidence": 0.966,
       "id": "r10",
+      "paragraph": 1,
       "text": "Mika (Class Rep)"
     },
     {
+      "block": 9,
       "box": {
         "height": 30,
         "width": 556,
@@ -128,9 +145,11 @@
       },
       "confidence": 0.949,
       "id": "r11",
+      "paragraph": 1,
       "text": "Wala pa final ang exact time sa pictorial, i-"
     },
     {
+      "block": 9,
       "box": {
         "height": 30,
         "width": 243,
@@ -139,6 +158,7 @@
       },
       "confidence": 0.967,
       "id": "r12",
+      "paragraph": 1,
       "text": "announce pa later."
     }
   ]

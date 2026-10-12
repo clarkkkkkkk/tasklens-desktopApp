@@ -106,7 +106,7 @@ export function VoiceCapture({
     if (version !== generation.current || signal.aborted) return;
     setWarnings(
       bundle.ambiguities.length
-        ? bundle.ambiguities
+        ? bundle.ambiguities.map((a) => a.question)
         : bundle.actions.length
           ? []
           : ['No clear action was found. Inspect your transcript or capture more context.'],
@@ -332,7 +332,7 @@ export function VoiceCapture({
       {status !== 'idle' && (
         <div className="voice-recorder">
           <div className="voice-status">
-            <h2 role="status">{labels[status]}</h2>
+            <h2 aria-live="polite">{labels[status]}</h2>
             {status === 'recording' && (
               <>
                 <span aria-label="Recording duration">

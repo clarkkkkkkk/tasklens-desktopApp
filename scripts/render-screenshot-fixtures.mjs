@@ -15,7 +15,10 @@ function html(fixture) {
       ? `<header>${escape(fixture.header)}</header>
          ${fixture.timestamp ? `<p class="stamp">${escape(fixture.timestamp)}</p>` : ''}
          ${fixture.messages
-           .map((m) => `<p class="sender">${escape(m.sender)}</p><p class="bubble">${escape(m.text)}</p>`)
+           .map(
+             (m) =>
+               `<p class="sender">${escape(m.sender)}</p><p class="bubble">${escape(m.text)}</p>`,
+           )
            .join('')}`
       : fixture.sections
           .map(
@@ -38,7 +41,10 @@ function html(fixture) {
 
 const browser = await chromium.launch();
 try {
-  const page = await browser.newPage({ deviceScaleFactor: 2, viewport: { width: 432, height: 400 } });
+  const page = await browser.newPage({
+    deviceScaleFactor: 2,
+    viewport: { width: 432, height: 400 },
+  });
   mkdirSync(folder, { recursive: true });
   for (const fixture of fixtures) {
     await page.setContent(html(fixture));

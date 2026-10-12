@@ -3,9 +3,14 @@ import ReactDOM from 'react-dom/client';
 import App from '../src/App';
 import { AppProvider } from '../src/app/AppProvider';
 import { createServices } from '../src/app/services';
-import { parseExtraction } from '../src/services/extraction/LocalExtractionService';
+import {
+  unitsFromText,
+  unitsFromTranscript,
+} from '../src/services/extraction/prompts/build-prompt';
+import { validateExtraction } from '../src/services/extraction/validation/validate-extraction';
+import { rawBundle, rawItem } from './fixtures/extraction/raw';
 import { defaultSettings } from '../src/types/action';
-import { transcript, rawAction } from './fixtures/voice';
+import { phrases, transcript } from './fixtures/voice';
 import '../src/styles/app.css';
 import '../src/components/motion/motion.css';
 const query = new URLSearchParams(location.search);
@@ -55,25 +60,58 @@ services.speech = {
     await new Promise((resolve) => setTimeout(resolve, query.has('slow') ? 1500 : 50));
     signal.throwIfAborted();
     if (query.has('silence')) throw new Error('No clear speech was detected.');
-    return transcript();
+    return transcript(`${phrases[0]} ${phrases[2]}`);
   },
 };
 services.extraction = {
   mode: 'local',
-  async extract(source, { signal }) {
+  async extract(input, { signal }) {
     attempts++;
     signal.throwIfAborted();
     if (query.has('retry') && attempts === 1) throw new Error('Local extraction failed.');
-    return parseExtraction(
-      JSON.stringify({
-        actions: [
-          rawAction(),
-          rawAction({ title: 'Consultation', requirements: ['Revised questionnaire'] }),
-        ],
-        ambiguities: [],
-      }),
-      source,
+    const source = { ...input };
+    delete source.image;
+    const units = source.transcript
+      ? unitsFromTranscript(source.transcript)
+      : unitsFromText(source.text ?? '');
+    const cite = [units[0].id];
+    // Model-shaped output run through the production validator.
+    const result = validateExtraction(
+      rawBundle([
+        rawItem({
+          title: { evidence: cite, value: 'Midterm exam', confidence: 'confirmed' },
+          date: {
+            evidence: cite,
+            expression: 'tomorrow',
+            basis: 'capture_time',
+            value: null,
+            confidence: 'inferred',
+          },
+          time: { evidence: cite, text: 'starts at nine', value: '09:00', confidence: 'confirmed' },
+          requirements: [
+            { evidence: cite, text: 'Bring calculator' },
+            { evidence: cite, text: 'Bring ID' },
+          ],
+          reminders: [{ evidence: cite, time: '08:00' }],
+        }),
+        rawItem({
+          title: { evidence: cite, value: 'Consultation', confidence: 'inferred' },
+          requirements: [{ evidence: cite, text: 'Revised questionnaire' }],
+        }),
+      ]),
+      {
+        kind: source.type === 'voice' ? 'voice' : 'text',
+        units,
+        now: new Date(),
+        timezone: 'Asia/Manila',
+        capturedAt: source.capturedAt ?? null,
+        recordingDate: source.recordingDate ?? null,
+        source,
+        defaultReminders: [],
+      },
     );
+    if (!result.ok) throw new Error(result.error);
+    return { actions: result.actions, ambiguities: result.ambiguities };
   },
 };
 ReactDOM.createRoot(document.getElementById('root')!).render(

@@ -72,3 +72,14 @@ Onboarding version persistence, legacy settings defaults, immediate preference s
 - 8/8 passed against the installed app and the release exe: window title and first-launch onboarding; file picker (rejects non-images, previews PNG, removal cancels); HTML drop and paste; sample review → edit → confirm & save; Ctrl+K focus, Escape and focus restoration, visible Tab focus; minimum size (WM_GETMINMAXINFO 916×679 px → 900×640 viewport at 100% scale, no horizontal scroll) and growth; graceful WM_CLOSE and relaunch preserving item, edits and source preview; zero console/page errors.
 - Icons: exe, taskbar and Start Menu use the original TaskLens logo; `public/TaskLens.png` is byte-identical to `TaskLens.png`.
 - Not covered: MSI install (per-machine, needs elevation), OS-level drag of a file from Explorer (drop is exercised as an HTML DragEvent), display scaling above 100%, code signing (installers are unsigned, so SmartScreen will warn).
+
+## Phase 2 sprint — local intelligence engine (2026-10-12)
+- [x] Tesseract OCR (`src-tauri/src/ocr.rs`): raw-bytes IPC, decode limits, EXIF orientation, `Preprocessor` trait, TSV → line regions with boxes/confidence/layout; `cargo test -- --ignored ocr_fixtures` runs real OCR. P0 · DONE.
+- [x] `platform.rs`: bundled/system binary and tessdata resolution, hidden child processes, bounded runner. P0 · DONE.
+- [x] `local_ai/`: model manifest and verification, llama-server lifecycle, loopback HTTP/SSE client, completion and cancellation commands. P0 · DONE.
+- [x] `LocalAIExtractionService`, `NativeOcrService`, `NativeLocalModelManager`, error codes. P0 · DONE.
+- [x] Prompt v1, output schema, prompt builder, line grouping, validator, temporal helpers. P0 · DONE.
+- [x] Domain: `endTime`, per-field confidence, structured ambiguities (legacy strings upgraded), `source.ocr`, `settings.localAI`; drafts may keep a time while the date is unresolved. P0 · DONE.
+- [x] Unit tests (prompt, grouping, validator, service retry/cancel) and the opt-in real-model evaluation. P0 · DONE.
+- [x] Privacy review: no fetch/axios/telemetry in the app; only Rust → 127.0.0.1. P0 · DONE.
+- [ ] Runtime crash supervision; macOS/Linux runtime packaging. P1 · BACKLOG.

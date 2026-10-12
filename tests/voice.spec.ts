@@ -65,13 +65,11 @@ test('permission failure, silence and retry are actionable', async ({ page }) =>
 });
 test('import and text feed the same review flow', async ({ page }) => {
   await page.goto('/tests/voice-harness.html');
-  await page
-    .getByLabel('Import audio file')
-    .setInputFiles({
-      name: 'note.wav',
-      mimeType: 'audio/wav',
-      buffer: Buffer.from('test fixture handled by injected service'),
-    });
+  await page.getByLabel('Import audio file').setInputFiles({
+    name: 'note.wav',
+    mimeType: 'audio/wav',
+    buffer: Buffer.from('test fixture handled by injected service'),
+  });
   await expect(page.getByRole('dialog', { name: 'Captured actions' })).toBeVisible();
   await page.getByRole('button', { name: 'Close review' }).click();
   await page.getByRole('button', { name: 'Capture text', exact: true }).click();

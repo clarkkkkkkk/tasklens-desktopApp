@@ -35,6 +35,7 @@ pub struct Region {
     pub width: u32,
     pub height: u32,
     pub block: u32,
+    pub paragraph: u32,
 }
 
 /// Image preparation is isolated so it can be tuned (or disabled) without touching OCR.
@@ -159,6 +160,7 @@ pub fn parse_tsv(tsv: &str, scale: f32) -> Vec<Region> {
         right: u32,
         bottom: u32,
         block: u32,
+        paragraph: u32,
     }
     let mut lines: BTreeMap<(u32, u32, u32, u32), Line> = BTreeMap::new();
     for row in tsv.lines().skip(1) {
@@ -185,6 +187,7 @@ pub fn parse_tsv(tsv: &str, scale: f32) -> Vec<Region> {
             right: 0,
             bottom: 0,
             block: key.1,
+            paragraph: key.2,
         });
         line.words.push(text.to_string());
         line.conf.push(conf);
@@ -215,6 +218,7 @@ pub fn parse_tsv(tsv: &str, scale: f32) -> Vec<Region> {
             width: unscale(line.right - line.left).max(1),
             height: unscale(line.bottom - line.top).max(1),
             block: line.block,
+            paragraph: line.paragraph,
         });
     }
     regions
@@ -297,6 +301,8 @@ pub fn recognize_bytes(
             "text": r.text,
             "confidence": (r.confidence as f64 * 1000.0).round() / 1000.0,
             "box": {"x": r.x, "y": r.y, "width": r.width, "height": r.height},
+            "block": r.block,
+            "paragraph": r.paragraph,
         })).collect::<Vec<_>>(),
         "languages": engine.languages,
         "imageWidth": width,

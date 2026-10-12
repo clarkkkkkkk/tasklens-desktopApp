@@ -14,7 +14,7 @@ it('returns a valid marked review fixture and ordered progress without analyzing
     expect(actionSchema.safeParse(result.actions[0]).success).toBe(true);
     expect(result.actions[0].title).toBe('Pictorial');
     expect(result.actions[0].status).toBe('needs_review');
-    expect(onProgress.mock.calls.map((c) => c[0])).toEqual([0, 1, 2]);
+    expect(onProgress.mock.calls.map((c) => c[0])).toEqual([0, 1, 2, 3]);
   } finally {
     vi.useRealTimers();
   }

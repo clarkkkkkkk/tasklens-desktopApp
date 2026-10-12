@@ -9,12 +9,24 @@ Phase 1 implementation tracker, updated 2026-10-08. Owners are responsibility as
   - Status: BACKLOG
   - Dependency: Verified native build and migration plan
   - Definition of done: Existing actions/settings/previews migrate without data loss; repository consumers remain unchanged.
-- [ ] Implement on-device OCR and local AI extraction (PHASE 2).
-  - Owner: Developer 2, integration by Developer 1
+- [ ] Bundle Tesseract and llama-server for macOS and Linux packages; GPU builds.
+  - Owner: Developer 2
+  - Priority: P1
+  - Status: BACKLOG
+  - Dependency: Platform hosts; pinned per-platform archives already in models.json
+  - Definition of done: Packaged apps find runtimes without system installs; offline procedure in LOCAL_AI.md passes on each OS.
+- [ ] Supervise llama-server against crashes (Windows job object / process group).
+  - Owner: Developer 2
   - Priority: P2
   - Status: BACKLOG
-  - Dependency: Stable Phase 1 release and agreed local model/runtime
-  - Definition of done: Offline inference returns validated actions through ExtractionService; user review remains mandatory.
+  - Dependency: none
+  - Definition of done: Killing TaskLens never leaves the model runtime running.
+- [ ] Grow the multilingual evaluation set and tune prompt v2.
+  - Owner: Developer 1 + Developer 2
+  - Priority: P1
+  - Status: BACKLOG
+  - Dependency: Real, consented sample screenshots without personal data
+  - Definition of done: More than 30 cases; report tracked per prompt version; no regression on pictorial/midterm.
 - [ ] Implement native notification delivery and startup registration.
   - Owner: Developer 2
   - Priority: P2
@@ -34,6 +46,20 @@ Phase 1 implementation tracker, updated 2026-10-08. Owners are responsibility as
   - Dependency: Equipped platform hosts
   - Definition of done: Capture/edit/save/restart flow, focus, resize and original icons pass native smoke tests.
   - Progress (2026-10-11): Windows DONE. MSI and NSIS bundles build; the NSIS-installed app passes `npm run test:native:win` 8/8 (capture via picker/drop/paste, edit/confirm/save, graceful restart persistence, Ctrl+K/Escape focus, 900×640 minimum size, original icons). Gaps: MSI install, Explorer file drag, >100% display scaling, unsigned installers. macOS not started.
+
+## DONE — Phase 2: real local intelligence (2026-10-12)
+- [x] Merge local voice input (origin/main) into the Phase 2 branch; resolve 5 conflicts. Owner: Developer 2.
+- [x] Native Tesseract OCR service (eng+ceb+tgl) with regions, confidence, bounding boxes and isolated preprocessing; verified on six rendered screenshots. Owner: Developer 2.
+- [x] Centralised platform/runtime resolution (`platform.rs`). Owner: Developer 2.
+- [x] Model manager: pinned Phi-4-mini-instruct Q4_K_M, SHA-256 verified import, cached verification. Owner: Developer 2.
+- [x] Managed llama-server lifecycle: on demand, reused, 127.0.0.1 only, per-launch key, stopped on exit; loopback-only HTTP client; streamed cancellable completion. Owner: Developer 2.
+- [x] LocalAIExtractionService behind ExtractionService; mock kept for browser, tests, onboarding and demo. Owner: Developer 2.
+- [x] Versioned prompt (v1), per-request JSON schema with evidence enums, validator (schema, evidence, dates/times, confidence, sections), one repair retry. Owner: Developer 2.
+- [x] Cancellation and stale-result protection (request IDs, generation counter). Owner: Developer 1 + Developer 2.
+- [x] Processing stages, error recovery, Action Bundle review, Source Trace, per-field confidence, open questions UI. Owner: Developer 1.
+- [x] Settings › Local AI (status, path, size, OCR languages, import/validate/reload, developer options) and sidebar indicator. Owner: Developer 1.
+- [x] Regression fixtures (pictorial, midterm, bundle, Cebuano/Tagalog/mixed text and voice), unit tests and real-model evaluation report. Shared.
+- [x] LOCAL_AI.md, THIRD_PARTY_NOTICES.md, architecture/tech stack/README updates. Shared.
 
 ## IN PROGRESS
 No frontend implementation tasks remain in progress. Native acceptance is explicitly blocked below.

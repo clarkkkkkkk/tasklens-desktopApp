@@ -1,7 +1,8 @@
 import { VoiceSettings } from '../voice/VoiceSettings';
+import { LocalAISettings } from './LocalAISettings';
 import { MotionHeading } from '../../components/motion/MotionHeading';
 import { useState } from 'react';
-import { Bell, Download, HardDrive, Monitor, ShieldCheck, Sparkles } from '../../components/icons';
+import { Bell, Download, HardDrive, Monitor, ShieldCheck } from '../../components/icons';
 import { useApp } from '../../app/context';
 import { Button, ErrorState } from '../../components/ui';
 import { downloadText } from '../../lib/images';
@@ -147,17 +148,7 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
           <span className="badge">Active</span>
         </div>
       </section>
-      <section className="settings-section">
-        <h2>
-          <Sparkles size={18} />
-          Local AI <span className="badge">Coming in Phase 2</span>
-        </h2>
-        <p>TaskLens will use on-device AI only.</p>
-        <p className="field-help">
-          Today’s extraction is a deterministic sample. No AI is currently running, and no images
-          are sent to a cloud service.
-        </p>
-      </section>
+      <LocalAISettings settings={settings} onUpdate={update} pending={pending} />
       <section className="settings-section">
         <h2>
           <HardDrive size={18} />
