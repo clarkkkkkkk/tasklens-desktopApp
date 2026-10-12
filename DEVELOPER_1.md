@@ -50,3 +50,6 @@ Onboarding layout, four steps, restrained transitions, interactive demo presenta
 - [x] Settings › Local AI and developer mode; sidebar "Processing locally" indicator. P1 · DONE.
 - [x] DESIGN_SKILL.md "Local AI review" section. P0 · DONE.
 - [ ] Packaged-app accessibility pass of Source Trace and open questions with a screen reader. P1 · BACKLOG.
+
+## Voice capture responsibilities
+Own compact recorder/import/text controls, explicit processing/error states, transcript/evidence presentation, multi-action centered review with retained drafts, model Settings UI, permission recovery copy, keyboard/focus behavior and reduced motion. Browser integration uses a separate injected-service test entrypoint. Coordinate native/manual language-quality acceptance with Developer 2; do not present mocked browser checks as real speech recognition.

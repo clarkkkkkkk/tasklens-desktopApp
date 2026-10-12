@@ -5,6 +5,7 @@ mod local_ai;
 mod ocr;
 mod platform;
 mod voice;
+use tauri::Manager;
 
 fn main() {
     tauri::Builder::default()
@@ -13,7 +14,12 @@ fn main() {
         .manage(jobs::Jobs::default())
         .manage(local_ai::server::Runtime::default())
         .setup(|app| {
-            voice::initialize(app.handle()).map_err(std::io::Error::other)?;
+            if let Err(message) = voice::initialize(app.handle()) {
+                *app.state::<voice::VoiceState>()
+                    .initialization_error
+                    .lock()
+                    .unwrap() = Some(message);
+            }
             ocr::initialize(app.handle()).map_err(std::io::Error::other)?;
             local_ai::initialize(app.handle()).map_err(std::io::Error::other)?;
             Ok(())

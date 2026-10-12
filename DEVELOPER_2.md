@@ -4,7 +4,7 @@
 Own `src/types/`, `src/lib/`, `src/repositories/`, `src/services/`, application context/composition in `src/app/`, `src-tauri/`, architecture documentation and integration tests. Coordinate product-facing semantics with Developer 1.
 
 ## Current sprint
-Phase 1 contracts, durable local data, mock extraction, reminder data model and minimal native shell. Real AI is Phase 2 and must not be imported in this sprint.
+Local voice/text capture, native model/runtime lifecycle, shared structured extraction, temporal/evidence validation and additive persistence. Screenshot extraction remains a demo. Real platform and language-quality acceptance stays separate from automated checks.
 
 ## Task checklist
 - [x] Define and validate shared action/settings/snapshot schemas. P0 · DONE · dependency: product contract · done when malformed dates/times and source previews are rejected.
@@ -16,7 +16,7 @@ Phase 1 contracts, durable local data, mock extraction, reminder data model and 
 - [x] Add Tauri config, Rust entry point, constrained CSP and original-logo desktop icons. P0 · DONE · dependency: original branding · done when native project/config exists with no unnecessary capabilities.
 - [x] Keep overdue items visible. P0 · DONE · dependency: selectors · done when confirmed past-dated items stay in Today (own section, sidebar count) until completed, and drafts/completed items never count as overdue.
 - [x] Add versioned schema migration pipeline. P0 · DONE · dependency: snapshot schema · done when ordered `N → N + 1` steps upgrade stored data in memory, newer/unsupported/corrupt data is kept intact with distinct messages, and the first upgraded write keeps a pre-migration backup.
-- [ ] Build and launch native Linux package. P0 · BLOCKED · dependency: WebKitGTK/JavaScriptCoreGTK 4.1 and libsoup 3 development packages · done when cargo and Tauri builds succeed and the capture workflow survives an actual native restart.
+- [ ] Build and launch native Linux package. P0 · MANUAL ACCEPTANCE PENDING · Linux Rust tests and debug Debian packaging pass; actual microphone capture and native restart/save behavior still need verification.
 - [x] Run Windows native acceptance. P1 · DONE · dependency: equipped Windows host · done when platform builds and smoke checks pass. Evidence: `npm run test:native:win` (8/8) on the release exe and the NSIS-installed app.
 - [ ] Run macOS native acceptance. P1 · BACKLOG · dependency: equipped macOS host · done when platform builds and smoke checks pass.
 
@@ -24,9 +24,9 @@ Phase 1 contracts, durable local data, mock extraction, reminder data model and 
 Developer 1 consumes the shared interfaces; constructor changes belong in `src/app/services.ts`. Keep repository methods asynchronous so SQLite can replace the implementation. Schema changes must document migration behavior. Source preview is a bounded local data URL, never a remote URL. Mock provenance persists on the source.
 
 ## Blocked by
-Linux: the Fedora host lacks `javascriptcoregtk-4.1.pc`, `webkit2gtk-4.1.pc`, and `libsoup-3.0.pc`. `cargo check` reaches dependency compilation and fails at the system-library probes. Do not claim a packaged-app pass based on frontend tests.
+Linux: prior system-library blockers are resolved for automated builds. This session uses a local ALSA development sysroot. Real microphones, multilingual recordings, offline packaged restart and performance acceptance remain pending. Do not infer a manual runtime pass from automation.
 
-Windows: native build verified (see Windows host setup). Note that Windows 11 Smart App Control blocks Cargo's locally built, unsigned build scripts (`os error 4551`); it must be off on Windows development hosts.
+Windows: the earlier screenshot-workflow native build was verified (see Windows host setup); new voice commands, models and microphone permissions remain pending. Note that Windows 11 Smart App Control blocks Cargo's locally built, unsigned build scripts (`os error 4551`); it must be off on Windows development hosts.
 
 ## Handoff expectations
 Document schema additions, timezone assumptions, reminder anchoring, persistence version and failure recovery. Supply contract tests and coordinate breaking changes. Future SQLite migration must preserve previews, IDs, reminder selections and timestamps; import/backup restore needs its own validation and acceptance work.
@@ -83,3 +83,6 @@ Onboarding version persistence, legacy settings defaults, immediate preference s
 - [x] Unit tests (prompt, grouping, validator, service retry/cancel) and the opt-in real-model evaluation. P0 · DONE.
 - [x] Privacy review: no fetch/axios/telemetry in the app; only Rust → 127.0.0.1. P0 · DONE.
 - [ ] Runtime crash supervision; macOS/Linux runtime packaging. P1 · BACKLOG.
+
+## Voice/native responsibilities
+Own CPAL permissions/capture, Symphonia/Rubato preprocessing, pinned whisper.cpp/llama.cpp packaging, checksum/model lifecycle, timestamped transcription, shared extraction bundle contracts, job cancellation/stale-result protection and safe temporary-file cleanup. Preserve legacy storage and recoverable quota errors. Measure latency/RSS on the 16 GB baseline and verify offline processing and real microphone workflows on Linux, Windows and macOS. Source manifest/build setup and acceptance limitations are documented in VOICE_CAPTURE.md.

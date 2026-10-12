@@ -21,10 +21,11 @@ For a desktop window, install the [Tauri system prerequisites](https://v2.tauri.
 
 ```sh
 npm run tauri dev
+npm run build:runtimes
 npm run tauri build
 ```
 
-Linux needs GTK 3, WebKitGTK 4.1/JavaScriptCoreGTK 4.1, libsoup 3 and the usual compiler/package prerequisites. On this Fedora development host, the frontend is verified but the native build is blocked by missing WebKitGTK/JavaScriptCoreGTK 4.1 and libsoup development metadata. Installing those system packages and testing a packaged desktop app is the next handoff step. Windows 11 packages are verified by `npm run test:native:win` (Smart App Control must be off for Rust builds); macOS packages are not yet verified.
+Linux needs GTK 3, WebKitGTK 4.1/JavaScriptCoreGTK 4.1, libsoup 3, ALSA development headers and normal compiler/package prerequisites. Linux automated native checks and a debug Debian bundle are verified; real microphone and packaged workflow acceptance remain pending. Earlier Windows screenshot-workflow acceptance does not verify the new voice pipeline. Windows/macOS voice packages and permissions require actual-platform checks. See [VOICE_CAPTURE.md](VOICE_CAPTURE.md).
 
 ## Set up local AI (desktop, one time)
 
@@ -89,3 +90,6 @@ The sole original asset found was **`TaskLens.png`**. It is preserved byte-for-b
 ## License
 
 [MIT](LICENSE) © 2026 TaskLens contributors.
+
+## Local voice and text capture
+Inbox includes Voice, Import audio and Capture text. Desktop processing uses locally installed Whisper Small (transcription) and the same Phi-4-mini-instruct model as screenshots; review and confirm each extracted action before saving. Build bundled runtimes with `npm run build:runtimes` before packaging, then import Whisper in Settings › Voice transcription and Phi-4-mini in Settings › Local AI. See [VOICE_CAPTURE.md](VOICE_CAPTURE.md) for model setup, native prerequisites, supported codecs, privacy and verification limitations.

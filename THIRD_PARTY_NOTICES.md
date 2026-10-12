@@ -70,3 +70,9 @@ The above copyright notice and this permission notice shall be included in all c
 The Software may include icons that are licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0). Commercial use is allowed, but attribution is required for the use of these icons. See LICENSE-THIRD-PARTY for more details.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+## Local processing components
+
+whisper.cpp and llama.cpp are MIT licensed; their exact pinned source revisions and upstream model locations are recorded in `src-tauri/resources/models.json`. The runtime build copies each upstream LICENSE alongside its executable. Whisper model weights are MIT licensed; Qwen3-4B model weights are Apache-2.0 licensed and imported separately by the user. No weights are distributed in this repository.
+
+Native audio dependencies include CPAL (Apache-2.0), Symphonia (MPL-2.0), Rubato (MIT), and Hound (Apache-2.0). Preserve their upstream notices when distributing builds; Symphonia remains an unmodified Cargo dependency. Dependency license details are available in their pinned Cargo registry sources and Cargo.lock.

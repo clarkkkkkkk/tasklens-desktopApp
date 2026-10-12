@@ -1,0 +1,39 @@
+name: Native voice builds
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ['src-tauri/**', 'src/services/**', 'src/features/voice/**', 'scripts/build-local-runtimes.mjs', 'package*.json', '.github/workflows/native-voice.yml']
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            bundle: deb
+          - os: windows-latest
+            bundle: nsis
+          - os: macos-14
+            bundle: dmg
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_BUILD_JOBS: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - run: npm ci
+      - run: npm run build:runtimes
+      - run: npm run check
+      - run: npm test
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
+      - run: npm run tauri -- build --bundles ${{ matrix.bundle }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TaskLens-voice-${{ matrix.os }}
+          path: src-tauri/target/release/bundle/

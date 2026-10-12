@@ -69,6 +69,7 @@ function buildFromSource(repository, revision, folder, target) {
   ].find(existsSync);
   if (!binary) throw new Error(`Missing ${exe(target)}`);
   copyFileSync(binary, path.join(destination, exe(target)));
+  copyFileSync(path.join(source, 'LICENSE'), path.join(destination, `${folder}-LICENSE.txt`));
 }
 
 async function downloadVerified(url, file, sha256) {
@@ -133,6 +134,8 @@ async function prebuiltLlama() {
     copyFileSync(file, target);
     if (process.platform !== 'win32') chmodSync(target, 0o755);
   }
+  const license = files.find((f) => /^LICENSE(\.txt|\.md)?$/i.test(path.basename(f)));
+  if (license) copyFileSync(license, path.join(destination, 'llama-LICENSE.txt'));
   console.info(
     `Installed ${path.basename(server)} and ${libraries.length} libraries from ${llama.release}.`,
   );

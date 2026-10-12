@@ -40,6 +40,9 @@ export function VoiceCapture({
     generation = useRef(0),
     busy = useRef(false),
     currentStatus = useRef(status);
+  const closeAfterDiscard = useRef<(() => Promise<void>) | null>(null);
+  const pendingStart = useRef<Promise<AudioSource> | null>(null);
+  const pendingExtraction = useRef<Promise<unknown> | null>(null);
   currentStatus.current = status;
   const cancel = useCallback(async () => {
     generation.current++;
@@ -47,12 +50,21 @@ export function VoiceCapture({
     const previous = audio.current;
     audio.current = null;
     setStatus('finalizing');
+    setSource(undefined);
+    setWarnings([]);
     try {
       if (previous) await services.voice.cancel(previous);
+      if (pendingStart.current) {
+        const starting = await pendingStart.current.catch(() => null);
+        if (starting) await services.voice.cancel(starting);
+      }
+      await pendingExtraction.current?.catch(() => {});
     } catch {
+      closeAfterDiscard.current = null;
       setError('Could not finish cleanup. Restart TaskLens before recording again.');
     } finally {
       busy.current = false;
+      currentStatus.current = 'cancelled';
       setStatus('cancelled');
       setStopRequested(false);
     }
@@ -72,6 +84,7 @@ export function VoiceCapture({
   useEffect(() => {
     if (!working.has(status)) return;
     const unload = (e: BeforeUnloadEvent) => {
+      if (!working.has(currentStatus.current)) return;
       e.preventDefault();
       e.returnValue = '';
     };
@@ -79,7 +92,10 @@ export function VoiceCapture({
     let dispose: (() => void) | undefined,
       alive = true;
     void services.voice
-      .guardClose(() => setStopRequested(true))
+      .guardClose((close) => {
+        closeAfterDiscard.current = close;
+        setStopRequested(true);
+      })
       .then((fn) => {
         if (alive) dispose = fn;
         else fn();
@@ -102,7 +118,9 @@ export function VoiceCapture({
   }
   async function extract(input: ExtractedAction['source'], version: number, signal: AbortSignal) {
     setStatus('extracting');
-    const bundle = await services.extraction.extract(input, { signal, onProgress: () => {} });
+    const extraction = services.extraction.extract(input, { signal, onProgress: () => {} });
+    pendingExtraction.current = extraction;
+    const bundle = await extraction;
     if (version !== generation.current || signal.aborted) return;
     setWarnings(
       bundle.ambiguities.length
@@ -134,13 +152,14 @@ export function VoiceCapture({
         transcript,
         fileName: input.fileName,
         capturedAt: input.capturedAt,
-        recordingDate: recordingDate || undefined,
+        recordingDate: !input.capturedAt ? recordingDate || undefined : undefined,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
       setSource(next);
       await extract(next, version, signal);
     } catch (e) {
-      audio.current = null;
+      await services.voice.cancel(input).catch(() => {});
+      if (audio.current?.jobId === input.jobId) audio.current = null;
       failed(e, version);
     }
   }
@@ -151,12 +170,15 @@ export function VoiceCapture({
     setStatus('requesting_permission');
     setElapsed(0);
     try {
-      const input = await services.voice.start((ms, value) => {
+      const starting = services.voice.start((ms, value) => {
         if (job.version === generation.current) {
           setElapsed(ms);
           setLevel(value);
         }
       });
+      pendingStart.current = starting;
+      const input = await starting;
+      pendingStart.current = null;
       if (job.version !== generation.current) {
         await services.voice.cancel(input);
         return;
@@ -164,6 +186,7 @@ export function VoiceCapture({
       audio.current = input;
       setStatus('recording');
     } catch (e) {
+      pendingStart.current = null;
       failed(e, job.version);
     }
   }
@@ -200,7 +223,7 @@ export function VoiceCapture({
       await transcribe(input, version, controller.current!.signal);
     } catch (e) {
       await services.voice.cancel(input).catch(() => {});
-      audio.current = null;
+      if (audio.current?.jobId === input.jobId) audio.current = null;
       failed(e, version);
     }
   }
@@ -214,7 +237,11 @@ export function VoiceCapture({
     setSource(undefined);
     setStatus('preprocessing');
     try {
-      const input = await services.voice.importFile(selected, job.signal);
+      services.audioPreprocessor.validateFile(selected);
+      const importing = services.voice.importFile(selected, job.signal);
+      pendingStart.current = importing;
+      const input = await importing;
+      pendingStart.current = null;
       if (job.version !== generation.current) {
         await services.voice.cancel(input);
         return;
@@ -222,6 +249,7 @@ export function VoiceCapture({
       audio.current = input;
       await transcribe(input, job.version, job.signal);
     } catch (e) {
+      pendingStart.current = null;
       failed(e, job.version);
     }
   }
@@ -284,7 +312,11 @@ export function VoiceCapture({
       }}
     >
       <div className="action-pair">
-        <Button disabled={locked || working.has(status)} onClick={() => void record()}>
+        <Button
+          data-voice-open
+          disabled={locked || working.has(status)}
+          onClick={() => void record()}
+        >
           <Microphone size={18} />
           Voice
         </Button>
@@ -357,8 +389,30 @@ export function VoiceCapture({
           {stopRequested && (
             <div role="alert" className="inline-confirm">
               <p>Stop and discard this capture before closing?</p>
-              <Button onClick={() => void cancel()}>Stop and discard</Button>
-              <Button onClick={() => setStopRequested(false)}>Keep capturing</Button>
+              <Button
+                onClick={() =>
+                  void (async () => {
+                    if (currentStatus.current === 'finalizing') return;
+                    currentStatus.current = 'finalizing';
+                    await cancel();
+                    try {
+                      await closeAfterDiscard.current?.();
+                    } catch {
+                      setError('The window could not close. You can close it again after cleanup.');
+                    }
+                  })()
+                }
+              >
+                Stop and discard
+              </Button>
+              <Button
+                onClick={() => {
+                  closeAfterDiscard.current = null;
+                  setStopRequested(false);
+                }}
+              >
+                Keep capturing
+              </Button>
             </div>
           )}
           {error && (
@@ -418,8 +472,7 @@ export function VoiceCapture({
         </div>
       )}
       <p className="field-help">
-        Voice and text use local models installed in Settings. Drop audio onto these controls to
-        import it.
+        Voice and text use local models installed in Settings. Drop audio into Inbox to import it.
       </p>
     </div>
   );

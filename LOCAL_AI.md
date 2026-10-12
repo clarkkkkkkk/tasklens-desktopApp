@@ -28,6 +28,10 @@ Screenshot (bytes over local IPC, never a URL)
 
 Voice notes (whisper.cpp) and typed text use the same model, prompt and validator; their transcript segments (`s1…`) or sentences (`t1…`) take the place of OCR regions.
 
+## Voice and typed text
+
+Voice: CPAL microphone capture or audio import → native decoding/resampling → whisper.cpp (Whisper Small) → timestamped transcript → the same Phi-4-mini prompt, validator and review bundle used for screenshots. Typed text uses the same path with one source unit per sentence. Recording permission, supported formats, retention, cancellation and resource limits are documented in [VOICE_CAPTURE.md](VOICE_CAPTURE.md). No wake word or background microphone listener is used, and nothing is saved without review.
+
 ## Model
 
 | | |

@@ -30,7 +30,11 @@ export function VoiceSettings() {
       setError(e instanceof Error ? e.message : 'Could not validate model.');
     } finally {
       setPending('');
-      setModels(await services.models.list());
+      try {
+        setModels(await services.models.list());
+      } catch {
+        setError('Could not refresh model status. Reopen Settings to retry.');
+      }
     }
   }
   return (
@@ -56,7 +60,11 @@ export function VoiceSettings() {
             </h3>
             <p>{model.name}</p>
             <p role="status">
-              {pending === model.kind ? 'Validating model…' : model.status.replaceAll('_', ' ')}
+              {pending === model.kind
+                ? 'Validating model…'
+                : model.status === 'error'
+                  ? 'Validation needed · validate or re-import the model'
+                  : model.status.replaceAll('_', ' ')}
               {!model.runtimeAvailable ? ' · Runtime not installed' : ''}
             </p>
           </div>

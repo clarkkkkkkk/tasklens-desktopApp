@@ -4,10 +4,12 @@ import {
   NativeModelManager,
 } from '../services/voice/NativeVoiceServices';
 import type {
+  AudioPreprocessor,
   VoiceCaptureService,
   SpeechToTextService,
   ModelManager,
 } from '../services/voice/types';
+import { audioPreprocessor } from '../services/voice/types';
 import type { ActionRepository } from '../repositories/ActionRepository';
 import { LocalStorageRepository } from '../repositories/LocalStorageRepository';
 import type { ExtractionService } from '../services/extraction/ExtractionService';
@@ -23,6 +25,7 @@ import { ConfigurationReminderScheduler } from '../services/reminders/ReminderSc
 import type { ReminderScheduler } from '../services/reminders/ReminderScheduler';
 import { defaultSettings, type Settings } from '../types/action';
 export interface Services {
+  audioPreprocessor: AudioPreprocessor;
   voice: VoiceCaptureService;
   speech: SpeechToTextService;
   /** Whisper (voice) model files. */
@@ -45,7 +48,8 @@ export function createServices(): Services {
   const useMock = !nativeAvailable() || import.meta.env.VITE_TASKLENS_EXTRACTION === 'mock';
   // Access browser storage lazily, so denied storage becomes a recoverable UI error.
   return {
-    voice: new NativeVoiceCapture(),
+    audioPreprocessor,
+    voice: new NativeVoiceCapture(audioPreprocessor),
     speech: new NativeSpeechToText(),
     models: new NativeModelManager(),
     localAI,

@@ -9,6 +9,7 @@ describe('voice boundaries', () => {
     for (const file of [
       { name: 'a.webm', type: 'audio/webm', size: 12 },
       { name: 'a.wav', type: 'image/png', size: 12 },
+      { name: 'a.wav', type: 'audio/mpeg', size: 12 },
       { name: 'a.wav', type: 'audio/wav', size: 101 * 1024 * 1024 },
       { name: 'a.wav', type: 'audio/wav', size: 0 },
     ])
