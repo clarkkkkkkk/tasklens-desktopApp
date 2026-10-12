@@ -3,7 +3,7 @@ mod recording;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     fs,
     io::{Read, Write},
     path::{Path, PathBuf},
@@ -21,13 +21,14 @@ struct Job {
     cancelled: Arc<AtomicBool>,
     bytes: u64,
     expected: u64,
+    extension: Option<String>,
     recording: Option<recording::Recording>,
 }
 #[derive(Default)]
 pub struct VoiceState {
+    pub initialization_error: Mutex<Option<String>>,
     jobs: Mutex<HashMap<String, Job>>,
     inference: Mutex<()>,
-    cancelled_ids: Mutex<HashSet<String>>,
     model_status: Mutex<HashMap<String, String>>,
 }
 fn error() -> String {
@@ -42,6 +43,11 @@ pub fn initialize(app: &tauri::AppHandle) -> Result<(), String> {
         fs::remove_dir_all(&tmp).map_err(|_| "Cannot clean temporary voice files")?;
     }
     fs::create_dir_all(&tmp).map_err(|_| error())?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&tmp, fs::Permissions::from_mode(0o700)).map_err(|_| error())?;
+    }
     fs::create_dir_all(root(app)?.join("models")).map_err(|_| error())?;
     Ok(())
 }
@@ -150,6 +156,12 @@ fn run(
 }
 fn new_job(app: &tauri::AppHandle, expected: u64) -> Result<(String, PathBuf), String> {
     let state = app.state::<VoiceState>();
+    let _gate = state.inference.try_lock().map_err(|_| {
+        "Local processing is busy. Wait for model validation to finish before capturing."
+    })?;
+    if let Some(message) = state.initialization_error.lock().unwrap().clone() {
+        return Err(message);
+    }
     let mut jobs = state.jobs.lock().unwrap();
     if !jobs.is_empty() {
         return Err("Finish or cancel the current capture first.".into());
@@ -164,15 +176,24 @@ fn new_job(app: &tauri::AppHandle, expected: u64) -> Result<(String, PathBuf), S
             cancelled: Arc::new(AtomicBool::new(false)),
             bytes: 0,
             expected,
+            extension: None,
             recording: None,
         },
     );
     Ok((id, path))
 }
-fn cleanup(app: &tauri::AppHandle, id: &str) {
-    if let Some(job) = app.state::<VoiceState>().jobs.lock().unwrap().remove(id) {
-        let _ = fs::remove_dir_all(job.path);
+fn cleanup(app: &tauri::AppHandle, id: &str) -> Result<(), String> {
+    let state = app.state::<VoiceState>();
+    let mut jobs = state.jobs.lock().unwrap();
+    if let Some(job) = jobs.get(id) {
+        match fs::remove_dir_all(&job.path) {
+            Ok(()) => {},
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {},
+            Err(_) => return Err("Temporary voice files could not be removed. Retry cancellation or restart TaskLens.".into()),
+        }
+        jobs.remove(id);
     }
+    Ok(())
 }
 fn job(app: &tauri::AppHandle, id: &str) -> Result<(PathBuf, Arc<AtomicBool>), String> {
     let state = app.state::<VoiceState>();
@@ -196,7 +217,16 @@ pub async fn voice_models(window: tauri::Window, app: tauri::AppHandle) -> Resul
     let mut result = Vec::new();
     for kind in ["whisper", "extraction"] {
         let spec = manifest(kind)?;
-        result.push(json!({"kind":kind,"name":spec["model"],"status":status.get(kind).cloned().unwrap_or_else(|| if model(&app,kind).map(|p| p.exists()).unwrap_or(false) {"validating".into()} else {"not_installed".into()}),"runtimeAvailable":executable(&app,if kind=="whisper" {"whisper-cli"} else {"llama-completion"}).is_ok(),"source":spec["source"]}));
+        let path = model(&app, kind)?;
+        let receipt = fs::read_to_string(path.with_extension("validated")).unwrap_or_default();
+        let prior = if !path.is_file() {
+            "not_installed"
+        } else if receipt == spec["sha256"].as_str().unwrap() {
+            "ready"
+        } else {
+            "error"
+        };
+        result.push(json!({"kind":kind,"name":spec["model"],"status":status.get(kind).map(String::as_str).unwrap_or(prior),"runtimeAvailable":executable(&app,if kind=="whisper" {"whisper-cli"} else {"llama-completion"}).is_ok(),"source":spec["source"]}));
     }
     Ok(json!(result))
 }
@@ -215,6 +245,9 @@ pub async fn voice_validate_model(
             .inference
             .try_lock()
             .map_err(|_| "Local processing is busy")?;
+        if !state.jobs.lock().unwrap().is_empty() {
+            return Err("Finish or cancel the current capture before validating models.".into());
+        }
         state
             .model_status
             .lock()
@@ -288,6 +321,11 @@ pub async fn voice_validate_model(
             };
             let _ = fs::remove_dir_all(folder);
             result?;
+            fs::write(
+                target.with_extension("validated"),
+                manifest(&kind)?["sha256"].as_str().unwrap(),
+            )
+            .map_err(|_| "Could not save model validation status")?;
             Ok(())
         })();
         state
@@ -317,7 +355,7 @@ pub async fn voice_start(window: tauri::Window, app: tauri::AppHandle) -> Result
                 Ok(id)
             }
             Err(e) => {
-                cleanup(&app, &id);
+                cleanup(&app, &id)?;
                 Err(e)
             }
         }
@@ -333,6 +371,8 @@ pub async fn voice_stop(
 ) -> Result<u64, String> {
     check_window(&window)?;
     tauri::async_runtime::spawn_blocking(move || {
+        let state = app.state::<VoiceState>();
+        let _gate = state.inference.lock().unwrap();
         let rec = app
             .state::<VoiceState>()
             .jobs
@@ -368,7 +408,11 @@ pub async fn voice_import_begin(
     if !["wav", "mp3", "m4a", "ogg"].contains(&extension.as_str()) {
         return Err("Audio format unsupported".into());
     }
-    Ok(new_job(&app, size)?.0)
+    let (id, _) = new_job(&app, size)?;
+    if let Some(job) = app.state::<VoiceState>().jobs.lock().unwrap().get_mut(&id) {
+        job.extension = Some(extension);
+    }
+    Ok(id)
 }
 #[tauri::command]
 pub async fn voice_import_chunk(
@@ -410,10 +454,6 @@ pub async fn voice_cancel(
             j.cancelled.store(true, Ordering::SeqCst);
             j.recording.take()
         } else {
-            let mut cancelled = state.cancelled_ids.lock().unwrap();
-            if cancelled.len() < 64 {
-                cancelled.insert(id.clone());
-            }
             return Ok(());
         }
     };
@@ -424,10 +464,10 @@ pub async fn voice_cancel(
         }
         let state = app.state::<VoiceState>();
         let _gate = state.inference.lock().unwrap();
-        cleanup(&app, &id);
+        cleanup(&app, &id)
     })
     .await
-    .map_err(|_| error())?;
+    .map_err(|_| error())??;
     Ok(())
 }
 #[tauri::command]
@@ -460,6 +500,10 @@ pub async fn voice_transcribe(
                     if j.bytes != j.expected {
                         return Err("Audio transfer incomplete".into());
                     }
+                    audio::validate_signature(
+                        &path.join("imported.audio"),
+                        j.extension.as_deref().ok_or("Unknown audio type")?,
+                    )?;
                 }
                 let _ = app.emit(
                     "voice-progress",
@@ -475,6 +519,7 @@ pub async fn voice_transcribe(
                     .map_err(|_| "Recording could not be read")?;
                 reader.duration() as u64 * 1000 / 16000
             };
+            audio::check_signal(&path.join("audio.wav"), || cancel.load(Ordering::SeqCst))?;
             let _ = app.emit("voice-progress", json!({"jobId":id,"stage":"transcribing"}));
             let prefix = path.join("transcript");
             run(
@@ -494,6 +539,13 @@ pub async fn voice_transcribe(
                 &path,
                 &cancel,
             )?;
+            if fs::metadata(prefix.with_extension("json"))
+                .map_err(|_| error())?
+                .len()
+                > 2_000_000
+            {
+                return Err("Transcript exceeds the review limit".into());
+            }
             let raw: Value = serde_json::from_slice(
                 &fs::read(prefix.with_extension("json")).map_err(|_| error())?,
             )
@@ -504,7 +556,7 @@ pub async fn voice_transcribe(
             "whisper".into(),
             if result.is_ok() { "ready" } else { "error" }.into(),
         );
-        cleanup(&app, &id);
+        cleanup(&app, &id)?;
         result
     })
     .await
@@ -531,6 +583,11 @@ fn parse_transcript(raw: &Value, duration: u64) -> Result<Value, String> {
     )
 }
 #[tauri::command]
+pub async fn local_prepare(window: tauri::Window, app: tauri::AppHandle) -> Result<String, String> {
+    check_window(&window)?;
+    Ok(new_job(&app, 0)?.0)
+}
+#[tauri::command]
 pub async fn local_extract(
     window: tauri::Window,
     app: tauri::AppHandle,
@@ -549,16 +606,7 @@ pub async fn local_extract(
             .inference
             .try_lock()
             .map_err(|_| "Local processing is busy")?;
-        if state.cancelled_ids.lock().unwrap().remove(&id) {
-            return Err("Processing cancelled".into());
-        }
-        let (job_id, path) = new_job(&app, 0)?;
-        {
-            let mut jobs = state.jobs.lock().unwrap();
-            let entry = jobs.remove(&job_id).unwrap();
-            jobs.insert(id.clone(), entry);
-        }
-        let (_, cancel) = job(&app, &id)?;
+        let (path, cancel) = job(&app, &id)?;
         let result = (|| {
             let target = model(&app, "extraction")?;
             hash(&target, &manifest("extraction")?)?;
@@ -582,11 +630,12 @@ pub async fn local_extract(
                     "-n".into(),
                     "4096".into(),
                     "-c".into(),
-                    "32768".into(),
+                    "8192".into(),
                     "-ngl".into(),
                     "0".into(),
                     "--temp".into(),
                     "0".into(),
+                    "--no-context-shift".into(),
                     "--no-display-prompt".into(),
                     "--no-conversation".into(),
                     "--simple-io".into(),
@@ -599,7 +648,7 @@ pub async fn local_extract(
             "extraction".into(),
             if result.is_ok() { "ready" } else { "error" }.into(),
         );
-        cleanup(&app, &id);
+        cleanup(&app, &id)?;
         result
     })
     .await
@@ -608,6 +657,18 @@ pub async fn local_extract(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn pinned_hash_rejects_corrupt_and_wrong_size_models() {
+        let file = std::env::temp_dir().join(format!("tasklens-hash-{}", uuid::Uuid::new_v4()));
+        let spec = json!({"bytes":4,"sha256":"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"});
+        fs::write(&file, b"test").unwrap();
+        assert!(hash(&file, &spec).is_ok());
+        fs::write(&file, b"tast").unwrap();
+        assert!(hash(&file, &spec).unwrap_err().contains("checksum"));
+        fs::write(&file, b"short").unwrap();
+        assert!(hash(&file, &spec).unwrap_err().contains("size"));
+        fs::remove_file(file).unwrap();
+    }
     #[test]
     fn rejects_silence() {
         assert!(parse_transcript(&json!({"transcription":[]}), 1000).is_err());

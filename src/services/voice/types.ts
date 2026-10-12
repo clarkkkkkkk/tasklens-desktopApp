@@ -59,7 +59,7 @@ export interface VoiceCaptureService {
   stop(source: AudioSource): Promise<void>;
   importFile(file: File, signal: AbortSignal): Promise<AudioSource>;
   cancel(source: AudioSource): Promise<void>;
-  guardClose(onRequest: () => void): Promise<() => void>;
+  guardClose(onRequest: (close: () => Promise<void>) => void): Promise<() => void>;
 }
 export interface AudioPreprocessor {
   validateFile(file: Pick<File, 'name' | 'type' | 'size'>): void;
@@ -104,5 +104,18 @@ export const audioPreprocessor: AudioPreprocessor = {
       ].includes(file.type)
     )
       throw new Error('Audio format unsupported.');
+    const extension = file.name.split('.').pop()!.toLowerCase();
+    const declaredTypes: Record<string, string[]> = {
+      wav: ['audio/wav', 'audio/x-wav', 'audio/wave'],
+      mp3: ['audio/mpeg', 'audio/mp3'],
+      m4a: ['audio/mp4', 'audio/x-m4a'],
+      ogg: ['audio/ogg', 'application/ogg'],
+    };
+    if (
+      file.type &&
+      file.type !== 'application/octet-stream' &&
+      !declaredTypes[extension].includes(file.type)
+    )
+      throw new Error('Audio contents and declared file type must match.');
   },
 };

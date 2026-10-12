@@ -222,9 +222,7 @@ export function Inbox({
             <div className="processing-title">
               {busy ? <LoaderCircle size={17} className="spin" /> : <Check size={17} />}
               <strong>{busy ? extractionSteps[Math.max(0, step)] : 'Ready for your review'}</strong>
-              <span className="badge">
-                {services.extraction.mode === 'mock' ? 'Mock extraction' : 'Local extraction'}
-              </span>
+              <span className="badge">Mock extraction</span>
             </div>
             <div className="progress-track">
               {extractionSteps.map((label, index) => (
@@ -233,9 +231,7 @@ export function Inbox({
             </div>
             <p>
               {busy
-                ? services.extraction.mode === 'mock'
-                  ? 'Running a sample workflow. No AI is analyzing this image.'
-                  : 'Processing on this device.'
+                ? 'Running a sample workflow. No AI is analyzing this image.'
                 : 'Review the result, make it yours, and save when you’re ready.'}
             </p>
             {result && !busy && (
@@ -305,7 +301,11 @@ export function Inbox({
         </p>
       </div>
       <div className="phase-note">
-        PHASE 1 PREVIEW <span>Extraction uses sample data. On-device AI is coming in Phase 2.</span>
+        PHASE 1 PREVIEW{' '}
+        <span>
+          Screenshot extraction uses sample data. Voice and text use local models in the desktop
+          app.
+        </span>
       </div>
     </section>
   );

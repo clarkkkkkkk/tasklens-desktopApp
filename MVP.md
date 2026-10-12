@@ -17,6 +17,6 @@
 - SQLite migration once the native environment is established.
 
 ## POST-MVP
-**AI is PHASE 2.** OCR, local LLMs, audio transcription, PDFs, native reminder execution, startup registration and broader input sources require separate acceptance work. No remote AI, cloud accounts, sync, Google Calendar, chatbot, mobile app, dark mode or auto-update service is part of this implementation.
+The local voice/text extension implements audio transcription and local structured extraction with separate platform/language acceptance. OCR, PDFs, native reminder execution, startup registration and broader input sources remain future work. No remote AI, cloud accounts, sync, Google Calendar, chatbot, mobile app, dark mode or auto-update service is part of this implementation.
 
 The Phase 1 application must be usable without AI: users can create and manage their own items directly.

@@ -40,3 +40,6 @@ Working implementation, faithful design tokens and logo, meaningful accessible n
 
 ## Onboarding — 2026-10-10
 Onboarding layout, four steps, restrained transitions, interactive demo presentation, responsive stacking, Inbox handoff and keyboard accessibility are implemented. Original public/TaskLens.png is unchanged. Browser verification is recorded in TASK_TRACKER.md.
+
+## Voice capture responsibilities
+Own compact recorder/import/text controls, explicit processing/error states, transcript/evidence presentation, multi-action centered review with retained drafts, model Settings UI, permission recovery copy, keyboard/focus behavior and reduced motion. Browser integration uses a separate injected-service test entrypoint. Coordinate native/manual language-quality acceptance with Developer 2; do not present mocked browser checks as real speech recognition.

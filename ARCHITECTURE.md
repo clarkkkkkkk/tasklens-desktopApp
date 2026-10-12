@@ -1,18 +1,18 @@
 # Architecture
 
 ## Current
-Input → MockExtractionService → validated structured result → Review → ActionRepository → localStorage → UI.
+Audio → native preprocessing → Whisper transcript → shared Qwen extraction → validated action bundle → centered review → explicit save → ActionRepository → localStorage. Text starts at shared extraction; screenshots/onboarding use MockExtractionService.
 
 Layers are intentionally small:
 - `src/components`, `src/features`, `src/layouts`: accessible UI consuming application hooks.
 - `src/app`: application state, repository orchestration, dependency injection and user-visible failures.
 - `src/types`, `src/lib`: domain schemas, date helpers, selectors and validation.
-- `src/services/extraction`: ExtractionService interface and deterministic MockExtractionService.
+- `src/services/extraction`: shared bundle contract, local text/voice extraction, temporal validation and deterministic screenshot mock.
 - `src/repositories`: ActionRepository interface and versioned LocalStorageRepository implementation.
 - `src/services/reminders`: ReminderScheduler interface and configuration-only implementation.
-- `src-tauri`: native window, security policy and desktop build foundation. No remote API or AI plugin.
+- `src-tauri`: native capture, decoding, model management, subprocess inference, cleanup, window security and desktop packaging. No remote processing API.
 
-Dependencies are composed in `src/app/services.ts`; components never instantiate a mock service or hardwire extracted values. Swap the implementation there to integrate future processing.
+Dependencies are composed in `src/app/services.ts`; components never instantiate a mock service or hardwire extracted values. Browser tests inject explicit doubles; browser production never silently substitutes mock voice results.
 
 ## Domain and persistence
 ExtractedAction retains the requested action types, confidence map, requirements, notes, reminders, source and status. Additions: source.extractionMode persists mock/local provenance; createdAt/updatedAt for durable ordering and reminder `offsetMinutes` for keeping presets aligned when the event date/time changes. Reminder datetimes are ISO instants; calendar dates are local YYYY-MM-DD strings, not UTC-truncated dates. Arrival time takes precedence over event time when anchoring reminders. Night-before is 20:00 on the previous local day. Date-only items use 09:00 only as their reminder anchor and show that explicitly in the editor.
@@ -26,7 +26,7 @@ The pictorial fixture intentionally uses Thursday, October 8, 2026, 13:30 arriva
 ## Future (not implemented)
 Screenshot → local OCR → local LLM → structured JSON → schema validation → Review → SQLite → ReminderScheduler → native notification.
 
-ExtractionService accepts image/text source metadata and an AbortSignal/progress callback, returns validated actions and can later support multiple results. The current mock returns one result. Removal and unmount abort active work. No OCR/LLM imports, network clients or API credentials belong in this phase.
+ExtractionService accepts image/text/voice metadata and an AbortSignal/progress callback, returning a validated actions/ambiguities bundle. Local text/voice extraction supports multiple actions; the screenshot mock returns one. Removal and unmount abort active work. OCR, SQLite and notification delivery remain deferred. No cloud clients or API credentials are used.
 
 ReminderScheduler currently computes upcoming enabled configurations. It does not run timers, request permissions or deliver notifications. A future native implementation must define restart recovery, clock/timezone changes, deduplication, permission refusal and rescheduling before enabling OS delivery.
 
@@ -50,9 +50,14 @@ Workspace headings render ordinary text and share one 320ms page entrance with c
 Workspace cards, empty states, task rows and editor/review content share their parent entrance rather than starting independent opacity animations. This keeps mounted content visible while navigating or editing. Newly introduced processing/error content uses translation only.
 
 ## Inbox extraction review
-App records whether selection came from Inbox extraction or its Open result action. These selections use DetailsPanel's native modal presentation with a centered, blurred backdrop; manual items and selections from other views keep the side panel. Review/editor components and save operations are shared. The Inbox stays mounted behind the modal and its global paste handler is suspended while either overlay is open. Native modal focus containment, guarded Escape/outside dismissal and a fallback to Open result preserve keyboard access when the original capture control no longer exists. Editor writes report pending state so modal dismissal cannot interrupt a save.
+App records whether selection came from Inbox extraction or its Open result action. These selections use DetailsPanel's native modal presentation with a centered, blurred backdrop; manual items keep the side panel; search results also open in the centered dialog. Voice/text use BundleReview with the shared DetailsPanel and a retained editor per action. Review/editor components and save operations are shared. The Inbox stays mounted behind the modal and its global paste handler is suspended while either overlay is open. Native modal focus containment, guarded Escape/outside dismissal and a fallback to Open result preserve keyboard access when the original capture control no longer exists. Editor writes report pending state so modal dismissal cannot interrupt a save.
 
 ## Completion brand handoff
 Onboarding reports complete versus skip only after settings persist. Complete mounts the local BrandHandoff overlay while the workspace stays mounted, inert and aria-hidden. It measures the real sidebar image/name, reveals a centered copy, then animates it into those exact positions while uncovering the workspace. The real brand stays visually hidden until overlay removal, so the swap is continuous. Skip and reduced motion use the direct Inbox path; returning launches do not mount the overlay.
 
 Browser animation promises sequence the finite stages; unmount cancels all work. Reduced-motion changes and window resizing settle immediately. Inbox focus is applied in a layout effect after inertness is removed. Search/paste are suspended during handoff, and the six-second first-capture hint begins afterward. Replay completion can show the brand animation but never repeats the first-capture hint. No persisted setting, asset or service contract changes.
+
+## Local voice and text pipeline
+Native CPAL recording and bounded file transfer feed Symphonia/Rubato preprocessing, then a pinned whisper.cpp subprocess. TranscriptDocument retains full text, stable segment IDs, timestamps, language, duration and model identity. Shared LocalExtractionService routes voice/text through pinned llama.cpp/Qwen with constrained JSON and domain/evidence validation; image sources still use the marked demo. ExtractionService now returns an action/ambiguity bundle. All voice/text actions share a centered review dialog with mounted editors and explicit per-action saves. Legacy action/settings envelopes retain their storage key/version and accept additive source/evidence metadata.
+
+Native commands are main-window scoped. Inputs use opaque job IDs; paths/executable names are generated by native code. Cancellation flags, subprocess interruption, bounded input/output and frontend generations prevent stale results. Job directories are cleaned after transcription/cancellation and on startup; imported originals are never removed. A single-instance plugin protects active jobs. Models reside in application-data storage, are checksum validated, and load sequentially in short-lived subprocesses. No network listener is created. Setup and limitations: VOICE_CAPTURE.md.

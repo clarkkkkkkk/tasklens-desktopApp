@@ -51,4 +51,5 @@ for (const [kind, name] of [
   );
   if (!binary) throw new Error(`Missing ${exe}`);
   copyFileSync(binary, path.join(destination, exe));
+  copyFileSync(path.join(source, 'LICENSE'), path.join(destination, `${kind}-LICENSE.txt`));
 }

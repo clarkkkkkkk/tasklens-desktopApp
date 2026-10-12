@@ -2,7 +2,7 @@
 
 **Turn information into action. Privately.**
 
-A calm, local desktop workspace for screenshots, tasks, events, and deadlines. Phase 1 includes a complete capture → **mock extraction** → review → save workflow, plus manual item creation and a local calendar. **No AI or OCR is running. No cloud services, API keys, accounts, or telemetry are required.**
+A calm, local desktop workspace for screenshots, voice, text, tasks, events, and deadlines. Screenshots use an explicitly marked mock extraction workflow. Voice/text use local Whisper/Qwen models in the desktop app, followed by human review and saving. **OCR is not implemented. No cloud services, API keys, accounts, or telemetry are required.**
 
 ![TaskLens Inbox](docs/screenshots/inbox.png)
 
@@ -21,10 +21,11 @@ For a desktop window, install the [Tauri system prerequisites](https://v2.tauri.
 
 ```sh
 npm run tauri dev
+npm run build:runtimes
 npm run tauri build
 ```
 
-Linux needs GTK 3, WebKitGTK 4.1/JavaScriptCoreGTK 4.1, libsoup 3 and the usual compiler/package prerequisites. On this Fedora development host, the frontend is verified but the native build is blocked by missing WebKitGTK/JavaScriptCoreGTK 4.1 and libsoup development metadata. Installing those system packages and testing a packaged desktop app is the next handoff step. Windows 11 packages are verified by `npm run test:native:win` (Smart App Control must be off for Rust builds); macOS packages are not yet verified.
+Linux needs GTK 3, WebKitGTK 4.1/JavaScriptCoreGTK 4.1, libsoup 3, ALSA development headers and normal compiler/package prerequisites. Linux automated native checks and a debug Debian bundle are verified; real microphone and packaged workflow acceptance remain pending. Earlier Windows screenshot-workflow acceptance does not verify the new voice pipeline. Windows/macOS voice packages and permissions require actual-platform checks. See [VOICE_CAPTURE.md](VOICE_CAPTURE.md).
 
 ## Try the complete flow
 
@@ -72,10 +73,13 @@ To use an existing Chrome installation for tests, set `PLAYWRIGHT_CHROMIUM_EXECU
 - [Shared tracker](TASK_TRACKER.md) · [Developer 1](DEVELOPER_1.md) · [Developer 2](DEVELOPER_2.md)
 - [Contributing and branch workflow](CONTRIBUTING.md) · [Development report](DEVELOPMENT_REPORT.md)
 
-`src/app/services.ts` is the composition point for `ExtractionService`, `ActionRepository` and `ReminderScheduler`. Future local AI must replace an implementation, not rewrite the review UI. See ARCHITECTURE.md for domain additions and future boundaries.
+`src/app/services.ts` composes extraction, capture, transcription, model management, repository and reminder services. Text/voice share local extraction; image input routes to the screenshot demo. OCR and SQLite can replace implementations behind these contracts. See ARCHITECTURE.md for domain additions and future boundaries.
 
 The sole original asset found was **`TaskLens.png`**. It is preserved byte-for-byte; `public/TaskLens.png` is an exact copy used by the UI. Desktop icon files are size/format derivatives produced by Tauri's icon utility, not new branding.
 
 ## License
 
 [MIT](LICENSE) © 2026 TaskLens contributors.
+
+## Local voice and text capture
+Inbox includes Voice, Import audio and Capture text. Desktop processing uses locally installed Whisper Small and Qwen3-4B models; review and confirm each extracted action before saving. Screenshot extraction remains a marked demo. Build bundled runtimes with `npm run build:runtimes` before packaging, then import the pinned models in Settings → Local AI / Voice. See [VOICE_CAPTURE.md](VOICE_CAPTURE.md) for model setup, native prerequisites, supported codecs, privacy and verification limitations.

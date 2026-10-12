@@ -275,3 +275,22 @@ Native execution remains separately blocked; browser-process restart coverage is
 - [x] Completion-save failure protection, unchanged stored data and browser regression verification — Developer 2.
 - [x] TypeScript/lint, formatting, build and 16 unit tests; full 26 browser tests before timing refinement and all five brand tests after slowing the transition.
 - [ ] Packaged native WebView animation verification — Developer 1 + Developer 2.
+
+### Local voice/text capture — 2026-10-12
+
+- [x] Recorder/import/text UI, centered multi-action review, retained drafts, transcript/evidence inspection and explicit per-action saving — Developer 1.
+- [x] Injected capture/preprocessing/transcription/model contracts; CPAL, bounded Symphonia/Rubato conversion, timestamped Whisper output, shared Qwen bundle extraction and additive persistence — Developer 2.
+- [x] Pinned model import/hash/load validation, local subprocess packaging, opaque job cancellation, finalization/cleanup coordination and startup orphan cleanup — Developer 2.
+- [x] TypeScript, lint, formatting, frontend build and 30 unit tests — Developer 1 + Developer 2. The real-model test is opt-in and separate.
+- [x] Native format/check and seven Rust tests, including generated PCM/MP3/AAC-LC/ALAC/Vorbis fixtures, Opus/WebM rejection, silence, hash corruption, timestamps and untouched originals — Developer 2.
+- [x] Linux debug Debian packaging with both inference executables, pinned manifest and runtime licenses; no bundled model weights — Developer 2. This is a package-build check, not manual microphone acceptance.
+- [x] Final 32-test browser regression run after close-guard integration — Developer 1. Includes five voice scenarios, axe, reduced motion, native-close choices through injected services and existing workspace regressions.
+- [x] Local Qwen text-extraction fixture checks — shared. Four cases passed the six-case sweep; the omitted campus location and invalid empty reminder-time entry were corrected, and both focused reruns pass. The final mixed-language action is a task with no fabricated reminder time. This is not real-speech or general multilingual-quality acceptance.
+- [ ] Real microphone capture, all imported codecs through the packaged UI, native permission recovery and native focus/close behavior — Developer 1 + Developer 2.
+- [ ] Real quiet/noisy English, Tagalog, Cebuano and both mixed-language recognition evaluations — shared. Cebuano remains an explicit acceptance risk.
+- [ ] Disconnected-network packaged restart/transcribe/extract/review/save/reload and full latency/RSS/cancellation/cleanup measurements on the 16 GB baseline — Developer 2.
+- [ ] Windows/macOS voice packages and actual-platform microphone verification; added CI matrix has not run in this session — Developer 2.
+
+All 32 final browser tests pass; native-close choice coverage uses injected services. macOS includes microphone usage metadata and the hardened-runtime audio-input entitlement; actual-platform permission verification remains pending. Screenshots were inspected at 1440×920, 900×640 and 600×640, including centered review, stable actions and scrollable content. The independent synthetic-English Whisper run took 27.38 seconds for 6.7 seconds of audio, peaking at 768,196 KiB RSS. The six-case Qwen evaluation peaked at 5,484,236 KiB RSS; completed cases took 154.5–403.9 seconds while builds were running. The corrected focused pictorial run took 383.1 seconds and peaked at 5,490,096 KiB RSS; the mixed-language task rerun took 153.3 seconds and peaked at 5,470,212 KiB RSS. The final prompt was verified with focused reruns after the original six-case sweep, not a second complete six-case sweep. These are subprocess smoke measurements, not clean end-to-end platform benchmarks. Model output can omit details or introduce unnecessary warnings; every action requires review.
+
+Setup, supported codecs, retention, troubleshooting and limitations: VOICE_CAPTURE.md. File inventory and delivery evidence: VOICE_IMPLEMENTATION_REPORT.md.

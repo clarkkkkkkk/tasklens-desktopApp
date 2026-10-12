@@ -20,9 +20,19 @@ if (!localStorage.getItem('tasklens:data:v1'))
   );
 const services = createServices();
 let cancelled = 0,
-  attempts = 0;
+  attempts = 0,
+  closed = 0;
+let closeRequest: ((close: () => Promise<void>) => void) | undefined;
 Object.assign(window, {
   voiceTest: {
+    requestClose() {
+      closeRequest?.(async () => {
+        closed++;
+      });
+    },
+    get closed() {
+      return closed;
+    },
     get cancelled() {
       return cancelled;
     },
@@ -46,8 +56,11 @@ services.voice = {
   async cancel() {
     cancelled++;
   },
-  async guardClose() {
-    return () => {};
+  async guardClose(handler) {
+    closeRequest = handler;
+    return () => {
+      if (closeRequest === handler) closeRequest = undefined;
+    };
   },
 };
 services.speech = {

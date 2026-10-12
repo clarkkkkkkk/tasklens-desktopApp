@@ -76,14 +76,31 @@
   min-width: 0;
   flex: 1;
 }
+.bundle-review[open] {
+  display: flex;
+  flex-direction: column;
+}
+.bundle-selector {
+  flex-shrink: 0;
+}
 .bundle-panel {
   min-height: 0;
-  overflow: auto;
+  flex: 1;
+  overflow: hidden;
 }
 .bundle-panel .details-panel {
   width: 100%;
   border: 0;
-  max-height: calc(100vh - 140px);
+  height: 100%;
+  max-height: none;
+  overflow: hidden;
+}
+.bundle-panel .action-editor {
+  min-height: 0;
+}
+.bundle-panel .detail-toolbar,
+.bundle-panel .detail-actions {
+  flex-shrink: 0;
 }
 .bundle-panel[hidden] {
   display: none;

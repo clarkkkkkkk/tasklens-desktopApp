@@ -8,7 +8,7 @@ TaskLens brings capture, review, and personal planning into one local workspace.
 
 Current workflow: image upload/drop/paste → preview → mock extraction → editable review → confirmation → local repository → agenda/calendar. The supplied pictorial example is demo data, never image analysis.
 
-Future vision (Phase 2 and later): screenshots → on-device OCR → local LLM → validated structured output → review → SQLite → scheduled native notifications. Text, PDF and voice input can follow later. No AI, OCR, remote services, accounts, telemetry, cloud sync or analytics are implemented now.
+Future vision (Phase 2 and later): screenshots → on-device OCR → local LLM → validated structured output → review → SQLite → scheduled native notifications. OCR, PDF input and SQLite remain future work. The local voice/text extension now uses Whisper/Qwen, reviewed multi-action bundles and explicit saving; its actual-platform and multilingual acceptance is still in progress. Remote services, accounts, telemetry, cloud sync and analytics are not implemented.
 
 Offline operation keeps personal announcements and schedules on the device, reduces connectivity requirements and avoids transferring private source material to AI vendors. Local storage is not encryption; users remain responsible for their device security. The current storage is scoped to the app/webview profile. Source previews are reduced in size before saving.
 

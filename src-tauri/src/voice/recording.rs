@@ -25,6 +25,9 @@ pub fn start(app: tauri::AppHandle, job_id: String, output: PathBuf) -> Result<R
                 .map_err(|_| "Microphone unavailable or permission denied")?;
             let rate = config.sample_rate().0;
             let channels = config.channels() as usize;
+            if !(8000..=192000).contains(&rate) || !(1..=8).contains(&channels) {
+                return Err("Microphone format unsupported".into());
+            }
             let data = Arc::new(Mutex::new(Vec::<f32>::new()));
             let failure = Arc::new(Mutex::new(false));
             let err = failure.clone();

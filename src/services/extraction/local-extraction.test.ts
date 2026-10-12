@@ -83,3 +83,36 @@ it('preserves multilingual text, temporal context and bounded prompts', () => {
   }
   expect(() => extractionPrompt({ type: 'text', text: 'x'.repeat(20001) })).toThrow('too long');
 });
+
+it('supplies capture time and resolves the reference date in the capture timezone', () => {
+  const prompt = extractionPrompt({
+    type: 'text',
+    text: 'Tomorrow at noon',
+    capturedAt: '2026-10-11T20:30:00.000Z',
+    timezone: 'Asia/Manila',
+  });
+  expect(prompt).toContain('"referenceDate":"2026-10-12"');
+  expect(prompt).toContain('"referenceTime":"04:30:00"');
+  expect(prompt).toContain('"captureTimestamp":"2026-10-11T20:30:00.000Z"');
+});
+
+it('corrects model weekday arithmetic with a visible review warning', () => {
+  const result = parseExtraction(
+    JSON.stringify({
+      actions: [rawAction({ type: 'deadline', dateExpression: 'Friday', date: '2026-10-12' })],
+      ambiguities: [],
+    }),
+    { ...source, timezone: 'Asia/Manila' },
+  );
+  expect(result.actions[0].date).toBe('2026-10-16');
+  expect(result.ambiguities.join()).toContain('relative date resolved');
+});
+
+it('keeps a blank reminder time unresolved instead of fabricating a schedule', () => {
+  const result = parseExtraction(
+    JSON.stringify({ actions: [rawAction({ reminderTimes: [''] })], ambiguities: [] }),
+    source,
+  );
+  expect(result.actions[0].reminders).toEqual([]);
+  expect(result.ambiguities.join()).toContain('reminder time is unspecified');
+});

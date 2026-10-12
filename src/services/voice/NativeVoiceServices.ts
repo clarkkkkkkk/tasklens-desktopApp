@@ -4,6 +4,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import {
   audioPreprocessor,
   transcriptSchema,
+  type AudioPreprocessor,
   type AudioSource,
   type VoiceCaptureService,
   type SpeechToTextService,
@@ -26,12 +27,21 @@ export async function nativeCall<T>(command: string, args?: Record<string, unkno
 }
 export class NativeVoiceCapture implements VoiceCaptureService {
   readonly available = nativeAvailable();
+  constructor(private readonly preprocessor: AudioPreprocessor = audioPreprocessor) {}
   private unlisten?: () => void;
+  private activeId?: string;
+  private release(source: AudioSource) {
+    if (this.activeId === source.jobId) {
+      this.unlisten?.();
+      this.activeId = undefined;
+    }
+  }
   async start(onLevel: (elapsed: number, level: number) => void) {
     const capturedAt = new Date().toISOString();
     let id: string | undefined;
     if (!this.available) throw new Error(unavailable);
     this.unlisten?.();
+    this.activeId = undefined;
     this.unlisten = await listen<{ jobId: string; elapsedMs: number; level: number }>(
       'voice-level',
       ({ payload }) => {
@@ -40,6 +50,7 @@ export class NativeVoiceCapture implements VoiceCaptureService {
     );
     try {
       id = await nativeCall<string>('voice_start');
+      this.activeId = id;
       return { jobId: id, capturedAt };
     } catch (error) {
       this.unlisten?.();
@@ -50,11 +61,12 @@ export class NativeVoiceCapture implements VoiceCaptureService {
     try {
       await nativeCall('voice_stop', { id: source.jobId });
     } finally {
-      this.unlisten?.();
+      this.release(source);
     }
   }
   async importFile(file: File, signal: AbortSignal) {
-    audioPreprocessor.validateFile(file);
+    this.preprocessor.validateFile(file);
+    signal.throwIfAborted();
     const jobId = await nativeCall<string>('voice_import_begin', {
       name: file.name,
       size: file.size,
@@ -75,15 +87,21 @@ export class NativeVoiceCapture implements VoiceCaptureService {
     }
   }
   async cancel(source: AudioSource) {
-    this.unlisten?.();
+    this.release(source);
     await nativeCall('voice_cancel', { id: source.jobId });
   }
-  async guardClose(onRequest: () => void) {
+  async guardClose(onRequest: (close: () => Promise<void>) => void) {
     if (!this.available) return () => {};
-    return getCurrentWindow().onCloseRequested((event) => {
+    const window = getCurrentWindow();
+    let dispose = () => {};
+    dispose = await window.onCloseRequested((event) => {
       event.preventDefault();
-      onRequest();
+      onRequest(async () => {
+        dispose();
+        await window.close();
+      });
     });
+    return dispose;
   }
 }
 export class NativeSpeechToText implements SpeechToTextService {
@@ -104,6 +122,7 @@ export class NativeSpeechToText implements SpeechToTextService {
     };
     signal.addEventListener('abort', cancel, { once: true });
     try {
+      signal.throwIfAborted();
       const result = await nativeCall('voice_transcribe', { id: source.jobId });
       signal.throwIfAborted();
       return transcriptSchema.parse(result);
