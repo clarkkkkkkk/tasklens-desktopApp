@@ -21,7 +21,10 @@ async function source(key) {
   // Restore sources from the verified archive on every build. Preserve only compiled
   // build artifacts, whose paths remain identical; added/edited source files cannot leak in.
   const cache = `${folder}-build-cache`;
-  if (existsSync(path.join(folder, 'build'))) renameSync(path.join(folder, 'build'), cache);
+  if (existsSync(path.join(folder, 'build'))) {
+    rmSync(cache, { recursive: true, force: true });
+    renameSync(path.join(folder, 'build'), cache);
+  }
   rmSync(folder, { recursive: true, force: true });
   mkdirSync(folder, { recursive: true });
   const tar =

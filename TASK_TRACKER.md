@@ -64,14 +64,14 @@ Phase 1 implementation tracker, updated 2026-10-08. Owners are responsibility as
 ## IN PROGRESS
 No frontend implementation tasks remain in progress. Native acceptance is explicitly blocked below.
 
-## BLOCKED
+## Native acceptance pending
 - [ ] Compile and launch the native Linux application.
   - Owner: Developer 2; UI smoke test by Developer 1
   - Priority: P0
-  - Status: BLOCKED
-  - Dependency: WebKitGTK/JavaScriptCoreGTK 4.1 and libsoup 3 development libraries
+  - Status: BUILD VERIFIED · INSTALLED ACCEPTANCE IN PROGRESS
+  - Dependency: Installed-package runtime acceptance
   - Definition of done: `cargo check` and `npm run tauri build` pass; upload/drop/paste and persistence after native restart are verified.
-  - Evidence: `cargo check --manifest-path src-tauri/Cargo.toml` fails in javascriptcore-rs-sys and soup3-sys pkg-config probes; GTK 3 and Rust are present.
+  - Current evidence (2026-10-16): Fedora release executable builds successfully and 14 Rust tests pass; earlier system-library blockers are resolved. RPM packaging and installed-window/inference checks are in progress. Historical failures below remain historical.
 
 ## REVIEW
 - [ ] Product/team review of Phase 1 and the design contract.

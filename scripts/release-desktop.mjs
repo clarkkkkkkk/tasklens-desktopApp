@@ -48,6 +48,10 @@ if (process.platform === 'win32') {
       recursive: true,
     });
   copyFileSync(
+    path.join(root, 'src-tauri/resources/models.json'),
+    path.join(stage, 'resources/models.json'),
+  );
+  copyFileSync(
     path.join(root, 'THIRD_PARTY_NOTICES.md'),
     path.join(stage, 'resources/notices/THIRD_PARTY_NOTICES.md'),
   );

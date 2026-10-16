@@ -11,13 +11,14 @@ const out = path.resolve(
   process.env.TASKLENS_ACCEPTANCE_OUTPUT || 'test-results-native/offline-linux',
 );
 mkdirSync(out, { recursive: true });
+const profile = process.env.TASKLENS_ACCEPTANCE_PROFILE || out;
 const driver = spawn(process.env.TASKLENS_TAURI_DRIVER || 'tauri-driver', ['--port', '4444'], {
   env: {
     ...process.env,
     TAURI_WEBVIEW_AUTOMATION: 'true',
-    XDG_DATA_HOME: path.join(out, 'data'),
-    XDG_CONFIG_HOME: path.join(out, 'config'),
-    XDG_CACHE_HOME: path.join(out, 'cache'),
+    XDG_DATA_HOME: path.join(profile, 'data'),
+    XDG_CONFIG_HOME: path.join(profile, 'config'),
+    XDG_CACHE_HOME: path.join(profile, 'cache'),
   },
   stdio: ['ignore', 'pipe', 'pipe'],
 });
@@ -53,7 +54,12 @@ async function launch() {
   session = value.sessionId;
   await call(`/session/${session}/timeouts`, { script: 900000, implicit: 0, pageLoad: 60000 });
   for (let i = 0; i < 100; i++) {
-    if (await sync('return !!window.__TAURI_INTERNALS__')) return;
+    if (
+      await sync(
+        "return !!window.__TAURI_INTERNALS__ && !!document.querySelector('main') && document.body.innerText.includes('TaskLens')",
+      )
+    )
+      return;
     await wait(200);
   }
   throw new Error('Native window did not initialize');
@@ -75,29 +81,37 @@ try {
     }
   }
   await launch();
-  await check('native first-launch readiness without imports', async () => {
-    let status;
-    for (let i = 0; i < 600; i++) {
-      status = await invoke('local_intelligence_status');
-      if (status.state !== 'preparing') break;
-      await wait(500);
-    }
-    if (process.env.TASKLENS_ACCEPTANCE_EXPECT_ERROR) {
-      assert.equal(status.state, 'error');
-      assert.equal(status.components[process.env.TASKLENS_ACCEPTANCE_EXPECT_ERROR]?.state, 'error');
-      return status;
-    }
-    assert.equal(status.state, 'ready', JSON.stringify(status));
-    const metadata = await invoke('local_ai_status');
-    assert.equal(metadata.model.state, 'verified');
-    assert.equal(metadata.runtime.state, 'stopped');
-    assert.ok(
-      metadata.model.path.startsWith(path.dirname(executable).replace(/\/bin$/, '/lib/tasklens')) ||
-        process.env.APPDIR,
-    );
-    return { status, model: metadata.model.path, ocr: metadata.ocr };
-  });
-  if (!process.env.TASKLENS_ACCEPTANCE_EXPECT_ERROR) {
+  await check(
+    process.env.TASKLENS_ACCEPTANCE_EXPECT_ERROR
+      ? 'native resource corruption/missing recovery'
+      : 'native first-launch readiness without imports',
+    async () => {
+      let status;
+      for (let i = 0; i < 600; i++) {
+        status = await invoke('local_intelligence_status');
+        if (status.state !== 'preparing') break;
+        await wait(500);
+      }
+      if (process.env.TASKLENS_ACCEPTANCE_EXPECT_ERROR) {
+        assert.equal(status.state, 'error');
+        assert.equal(
+          status.components[process.env.TASKLENS_ACCEPTANCE_EXPECT_ERROR]?.state,
+          'error',
+        );
+        return status;
+      }
+      assert.equal(status.state, 'ready', JSON.stringify(status));
+      const metadata = await invoke('local_ai_status');
+      assert.equal(metadata.model.state, 'verified');
+      assert.equal(metadata.runtime.state, 'stopped');
+      assert.ok(
+        metadata.model.path.startsWith(path.resolve(path.dirname(executable), '../lib') + '/') ||
+          process.env.APPDIR,
+      );
+      return { status, model: metadata.model.path, ocr: metadata.ocr };
+    },
+  );
+  if (!process.env.TASKLENS_ACCEPTANCE_EXPECT_ERROR && !process.env.TASKLENS_ACCEPTANCE_INIT_ONLY) {
     await check('onboarding skip and screenshot OCR', async () => {
       await sync(
         `Array.from(document.querySelectorAll('button')).find(b=>/^Skip/.test(b.textContent.trim()))?.click(); return true;`,

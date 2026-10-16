@@ -1,5 +1,14 @@
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  copyFileSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync,
+  rmSync,
+} from 'node:fs';
 import path from 'node:path';
 import { root, manifest } from './ai-assets.mjs';
 const destination = path.join(root, 'src-tauri/resources/notices/dependencies');
@@ -99,7 +108,9 @@ for (const folder of readdirSync(path.join(root, '.local-ai/sources'))) {
   }
 }
 // Include common terms for packages that publish only SPDX metadata/source headers.
-for (const spec of manifest.notices.filter((s) => /(?:tesseract|llama.cpp)-LICENSE/.test(s.file)))
+for (const spec of manifest.notices.filter((s) =>
+  /(?:tesseract|llama.cpp)-LICENSE|^SPDX-/.test(s.file),
+))
   cpSync(
     path.join(root, 'src-tauri/resources/notices', spec.file),
     path.join(destination, spec.file),
@@ -107,15 +118,25 @@ for (const spec of manifest.notices.filter((s) => /(?:tesseract|llama.cpp)-LICEN
 if (process.platform === 'linux') {
   // AppImage tooling may bundle host shared libraries. Preserve the host's license corpus
   // rather than assuming Rust/npm notices cover native system libraries too.
-  try {
-    cpSync('/usr/share/licenses', path.join(destination, 'linux-system-licenses'), {
-      recursive: true,
-    });
-  } catch {
-    console.warn(
-      'No host license corpus found; audit AppImage system-library notices before distribution.',
-    );
+  const systemNotices = path.join(destination, 'linux-system-licenses');
+  rmSync(systemNotices, { recursive: true, force: true });
+  function copyReadable(source, target) {
+    let info;
+    try {
+      info = statSync(source);
+    } catch {
+      return;
+    } // dangling upstream symlink
+    if (info.isDirectory()) {
+      mkdirSync(target, { recursive: true });
+      for (const name of readdirSync(source))
+        copyReadable(path.join(source, name), path.join(target, name));
+    } else if (info.isFile()) {
+      mkdirSync(path.dirname(target), { recursive: true });
+      copyFileSync(source, target);
+    }
   }
+  copyReadable('/usr/share/licenses', systemNotices);
 }
 writeFileSync(path.join(destination, 'index.json'), JSON.stringify(report, null, 2) + '\n');
 console.info(`Collected notices for ${report.length} dependencies.`);

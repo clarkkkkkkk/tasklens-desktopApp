@@ -50,6 +50,13 @@
       "binaries/tasklens-llama-server",
       "binaries/tasklens-whisper-cli",
       "binaries/tasklens-tesseract"
-    ]
+    ],
+    "linux": {
+      "rpm": {
+        "compression": {
+          "type": "none"
+        }
+      }
+    }
   }
 }
