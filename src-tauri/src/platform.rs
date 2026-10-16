@@ -42,7 +42,42 @@ pub fn resource(app: &tauri::AppHandle, relative: &str) -> Result<PathBuf, Strin
 }
 
 /// Tauri externalBin sidecars are installed beside TaskLens with their target suffix removed.
-pub fn bundled_binary(_app: &tauri::AppHandle, name: &str) -> Option<PathBuf> {
+pub fn bundled_binary(app: &tauri::AppHandle, name: &str) -> Option<PathBuf> {
+    select_binary(name, avx2_runtime_supported(), |name| {
+        bundled_binary_exact(app, name)
+    })
+}
+
+fn select_binary(
+    name: &str,
+    accelerated: bool,
+    lookup: impl Fn(&str) -> Option<PathBuf>,
+) -> Option<PathBuf> {
+    if accelerated && matches!(name, "llama-server" | "whisper-cli") {
+        if let Some(binary) = lookup(&format!("{name}-avx2")) {
+            return Some(binary);
+        }
+    }
+    lookup(name)
+}
+
+fn avx2_runtime_supported() -> bool {
+    #[cfg(target_arch = "x86_64")]
+    {
+        std::is_x86_feature_detected!("avx")
+            && std::is_x86_feature_detected!("avx2")
+            && std::is_x86_feature_detected!("fma")
+            && std::is_x86_feature_detected!("f16c")
+            && std::is_x86_feature_detected!("bmi2")
+            && std::is_x86_feature_detected!("sse4.2")
+    }
+    #[cfg(not(target_arch = "x86_64"))]
+    {
+        false
+    }
+}
+
+fn bundled_binary_exact(_app: &tauri::AppHandle, name: &str) -> Option<PathBuf> {
     let installed = std::env::current_exe()
         .ok()?
         .parent()?
@@ -274,4 +309,43 @@ pub const CANCELLED: &str = "Processing was cancelled.";
 
 pub fn file_size(path: &Path) -> Option<u64> {
     fs::metadata(path).ok().map(|m| m.len())
+}
+
+#[cfg(test)]
+mod runtime_selection_tests {
+    use super::*;
+    #[test]
+    fn unsupported_cpu_never_selects_accelerated_instructions() {
+        let lookup = |name: &str| Some(PathBuf::from(name));
+        assert_eq!(
+            select_binary("llama-server", false, lookup),
+            Some(PathBuf::from("llama-server"))
+        );
+        assert_eq!(
+            select_binary("whisper-cli", false, lookup),
+            Some(PathBuf::from("whisper-cli"))
+        );
+        assert_eq!(
+            select_binary("llama-server", true, lookup),
+            Some(PathBuf::from("llama-server-avx2"))
+        );
+        assert_eq!(
+            select_binary("whisper-cli", true, lookup),
+            Some(PathBuf::from("whisper-cli-avx2"))
+        );
+        assert_eq!(
+            select_binary("tesseract", true, lookup),
+            Some(PathBuf::from("tesseract"))
+        );
+    }
+    #[test]
+    fn missing_accelerated_runtime_preserves_baseline_fallback() {
+        assert_eq!(
+            select_binary("llama-server", true, |name| {
+                (!name.ends_with("-avx2")).then(|| PathBuf::from(name))
+            }),
+            Some(PathBuf::from("llama-server"))
+        );
+        assert_eq!(select_binary("llama-server", true, |_| None), None);
+    }
 }

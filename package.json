@@ -23,7 +23,8 @@
     "verify:assets": "node scripts/verify-assets.mjs",
     "release:desktop": "node scripts/release-desktop.mjs",
     "test:assets": "node --test scripts/ai-assets.test.mjs",
-    "prepare:notices": "node scripts/collect-ai-notices.mjs"
+    "prepare:notices": "node scripts/collect-ai-notices.mjs",
+    "prepare:packaging": "node scripts/prepare-packaging-tools.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.0",

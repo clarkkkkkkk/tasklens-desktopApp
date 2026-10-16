@@ -22,20 +22,29 @@ for (const [s, dir] of specs) {
 const receipt = JSON.parse(
   readFileSync(path.join(root, 'src-tauri/resources/notices/runtime-build.json')),
 );
-if (receipt.target !== targetTriple() || receipt.manifestVersion !== manifest.manifestVersion)
+if (
+  receipt.target !== targetTriple() ||
+  receipt.manifestVersion !== manifest.manifestVersion ||
+  receipt.buildVersion !== manifest.runtimeBuildVersion
+)
   throw new Error('Runtime build target/version mismatch');
-for (const [name, key] of [
+const runtimes = [
   ['llama-server', 'llamaCpp'],
   ['whisper-cli', 'whisper'],
   ['tesseract', 'tesseract'],
-]) {
+];
+if (process.arch === 'x64')
+  runtimes.push(['llama-server-avx2', 'llamaCpp'], ['whisper-cli-avx2', 'whisper']);
+for (const [name, key] of runtimes) {
   const file = path.join(root, 'src-tauri/binaries', sidecar(name));
   if (
     receipt.runtimes[name]?.revision !== manifest[key].revision ||
+    receipt.runtimes[name]?.archiveSha256 !== manifest[key].archive.sha256 ||
     receipt.runtimes[name]?.sha256 !== (await hash(file))
   )
     throw new Error(`Runtime provenance mismatch: ${name}`);
-  execFileSync(file, ['--help'], { stdio: 'ignore', timeout: 20000 });
+  // An older build host may lack AVX2. Startup probes the CPU-selected variant.
+  if (!name.endsWith('-avx2')) execFileSync(file, ['--help'], { stdio: 'ignore', timeout: 20000 });
   if (process.platform === 'linux') {
     const output = execFileSync('ldd', [file], { encoding: 'utf8' });
     if (output.includes('not found')) throw new Error(`Unresolved runtime dependencies: ${name}`);

@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
  *
  *   TASKLENS_EVAL=1 npx vitest run src/services/extraction/evaluation
  *
- * Starts the pinned llama-server (src-tauri/resources/bin) on 127.0.0.1 with the installed
+ * Starts the pinned llama-server (src-tauri/binaries) on 127.0.0.1 with the installed
  * Qwen3-4B model, runs every regression case through the production prompt and
  * validator, and writes docs/evaluation/local-ai-eval.{md,json}. A handful of fixtures is a
  * regression signal, not a production accuracy claim.
@@ -13,6 +13,8 @@ import { execFileSync } from 'node:child_process';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
+import { request as httpRequest } from 'node:http';
+import { StringDecoder } from 'node:string_decoder';
 import os from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, expect, it } from 'vitest';
@@ -32,7 +34,7 @@ const binary =
   process.env.TASKLENS_RUNTIME ??
   path.resolve(
     'src-tauri/binaries',
-    `tasklens-llama-server-${target}${process.platform === 'win32' ? '.exe' : ''}`,
+    `tasklens-llama-server${process.env.TASKLENS_EVAL_CPU === 'avx2' ? '-avx2' : ''}-${target}${process.platform === 'win32' ? '.exe' : ''}`,
   );
 const model =
   process.env.TASKLENS_MODEL ?? path.resolve('src-tauri/resources/models', assets.extraction.file);
@@ -49,12 +51,100 @@ async function freePort() {
   });
 }
 
-async function request(pathname: string, body?: object) {
-  // Loopback only: the evaluation never contacts another host.
-  return fetch(`http://127.0.0.1:${port}${pathname}`, {
-    method: body ? 'POST' : 'GET',
-    headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-    body: body ? JSON.stringify(body) : undefined,
+async function request(pathname: string, body?: object, progressId?: string): Promise<Response> {
+  // Built-in HTTP avoids fetch's independent five-minute header deadline during
+  // slow CPU inference. The bounded overall timeout matches native completion.
+  return new Promise((resolve, reject) => {
+    const payload = body ? JSON.stringify(body) : undefined;
+    const req = httpRequest(
+      {
+        hostname: '127.0.0.1',
+        port,
+        path: pathname,
+        method: body ? 'POST' : 'GET',
+        headers: {
+          authorization: `Bearer ${key}`,
+          'content-type': 'application/json',
+          ...(payload ? { 'content-length': Buffer.byteLength(payload) } : {}),
+        },
+      },
+      (res) => {
+        const chunks: Buffer[] = [];
+        let bytes = 0;
+        let pending = '';
+        let updates = 0;
+        const decoder = new StringDecoder('utf8');
+        const completion = {
+          content: '',
+          stopped_limit: false,
+          timings: undefined as Record<string, number> | undefined,
+        };
+        const streaming = !!body && 'stream' in body && body.stream === true;
+        const saveProgress = () => {
+          if (!progressId) return;
+          mkdirSync(path.resolve('.local-ai/evaluation-raw'), { recursive: true });
+          writeFileSync(
+            path.resolve('.local-ai/evaluation-raw', `${progressId}.json`),
+            JSON.stringify(completion, null, 2),
+          );
+        };
+        res.on('data', (chunk: Buffer) => {
+          bytes += chunk.length;
+          if (bytes > 8 * 1024 * 1024) req.destroy(new Error('Oversized local completion'));
+          else {
+            chunks.push(chunk);
+            if (streaming && res.statusCode === 200) {
+              pending += decoder.write(chunk);
+              let newline;
+              while ((newline = pending.indexOf('\n')) >= 0) {
+                const line = pending.slice(0, newline).trim();
+                pending = pending.slice(newline + 1);
+                if (!line.startsWith('data:') || line.slice(5).trim() === '[DONE]') continue;
+                try {
+                  const event = JSON.parse(line.slice(5));
+                  if (typeof event.content === 'string') {
+                    completion.content += event.content;
+                    updates++;
+                  }
+                  if (event.stop) {
+                    completion.stopped_limit = !!event.stopped_limit;
+                    completion.timings = event.timings;
+                  }
+                  if (updates % 64 === 0 || event.stop) saveProgress();
+                } catch (error) {
+                  req.destroy(error instanceof Error ? error : new Error(String(error)));
+                }
+              }
+            }
+          }
+        });
+        res.on('error', (error) => {
+          clearTimeout(timeout);
+          reject(error);
+        });
+        res.on('end', () => {
+          clearTimeout(timeout);
+          if (streaming && res.statusCode === 200) saveProgress();
+          resolve(
+            new Response(
+              streaming && res.statusCode === 200
+                ? JSON.stringify(completion)
+                : Buffer.concat(chunks),
+              { status: res.statusCode ?? 500 },
+            ),
+          );
+        });
+      },
+    );
+    const timeout = setTimeout(
+      () => req.destroy(new Error('Local inference exceeded its deadline')),
+      body ? 900_000 : 5_000,
+    );
+    req.on('error', (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
+    req.end(payload);
   });
 }
 
@@ -94,7 +184,18 @@ beforeAll(async () => {
   throw new Error('llama-server did not become healthy');
 }, 320_000);
 
-afterAll(() => server?.kill());
+afterAll(async () => {
+  if (!server || server.exitCode !== null) return;
+  const child = server;
+  await new Promise<void>((resolve) => {
+    const timeout = setTimeout(() => child.kill('SIGKILL'), 3000);
+    child.once('exit', () => {
+      clearTimeout(timeout);
+      resolve();
+    });
+    child.kill('SIGTERM');
+  });
+});
 
 it.skipIf(!enabled)(
   'local Qwen3 extraction regression suite',
@@ -108,6 +209,7 @@ it.skipIf(!enabled)(
       output: unknown;
       issues: string[];
       error?: string;
+      timings?: Record<string, number>;
     }[] = [];
     for (const testCase of extractionCases.filter((c) => !only || only.includes(c.id))) {
       const context = contextForCase(testCase);
@@ -116,19 +218,37 @@ it.skipIf(!enabled)(
       let record: (typeof results)[number] | undefined;
       for (let attempt = 1; attempt <= 2 && !record?.output; attempt++) {
         const built = buildExtractionPrompt(context, repair);
-        const response = await request('/completion', {
-          prompt: built.prompt,
-          json_schema: built.schema,
-          n_predict: 2048,
-          temperature: 0,
-          top_k: 1,
-          top_p: 1,
-          seed: 7,
-          cache_prompt: true,
-          stop: assets.extraction.stopTokens,
-        });
-        const data = (await response.json()) as { content: string; stopped_limit?: boolean };
-        const result = validateExtraction(data.content, context);
+        console.info(`${testCase.id}: attempt ${attempt} started`);
+        const response = await request(
+          '/completion',
+          {
+            prompt: built.prompt,
+            json_schema: built.schema,
+            n_predict: 2048,
+            temperature: 0,
+            top_k: 1,
+            top_p: 1,
+            seed: 7,
+            cache_prompt: true,
+            stream: true,
+            stop: assets.extraction.stopTokens,
+          },
+          `${testCase.id}-${attempt}`,
+        );
+        if (!response.ok) throw new Error(`Completion failed: HTTP ${response.status}`);
+        const data = (await response.json()) as {
+          content: string;
+          stopped_limit?: boolean;
+          timings?: Record<string, number>;
+        };
+        const result = data.stopped_limit
+          ? {
+              ok: false as const,
+              stage: 'generation',
+              error: 'OUTPUT_TRUNCATED',
+              issues: [] as string[],
+            }
+          : validateExtraction(data.content, context);
         const seconds = (performance.now() - started) / 1000;
         if (result.ok) {
           const bundle = { actions: result.actions, ambiguities: result.ambiguities };
@@ -170,8 +290,14 @@ it.skipIf(!enabled)(
             error: `${result.stage}: ${result.error}`,
           };
         }
+        record.timings = data.timings;
       }
       results.push(record!);
+      mkdirSync(path.resolve('.local-ai'), { recursive: true });
+      writeFileSync(
+        path.resolve('.local-ai/evaluation-progress.json'),
+        JSON.stringify(results, null, 2),
+      );
       const failed = record!.checks.filter((c) => !c.ok);
       console.info(
         `${record!.id}: ${record!.checks.length - failed.length}/${record!.checks.length} checks, ${record!.seconds.toFixed(1)}s` +
@@ -186,6 +312,7 @@ it.skipIf(!enabled)(
       '',
       `- Prompt version: ${TASKLENS_EXTRACTION_PROMPT_VERSION}`,
       `- Model: Qwen3-4B Q4_K_M (llama.cpp, CPU, temperature 0)`,
+      `- Runtime: ${path.basename(binary)}`,
       `- Run: ${new Date().toISOString()} on ${os.cpus()[0]?.model ?? 'unknown CPU'}`,
       `- Checks passed: ${passed}/${total.length} across ${results.length} cases`,
       '',

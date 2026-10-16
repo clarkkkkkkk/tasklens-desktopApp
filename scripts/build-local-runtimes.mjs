@@ -20,20 +20,24 @@ async function source(key) {
   const folder = path.join(root, '.local-ai/sources', `${key}-${spec.revision}`);
   // Restore sources from the verified archive on every build. Preserve only compiled
   // build artifacts, whose paths remain identical; added/edited source files cannot leak in.
-  const cache = `${folder}-build-cache`;
-  if (existsSync(path.join(folder, 'build'))) {
-    rmSync(cache, { recursive: true, force: true });
-    renameSync(path.join(folder, 'build'), cache);
+  const caches = ['build', 'build-avx2'].map((name) => [name, `${folder}-${name}-cache`]);
+  for (const [name, cache] of caches) {
+    if (existsSync(path.join(folder, name))) {
+      rmSync(cache, { recursive: true, force: true });
+      renameSync(path.join(folder, name), cache);
+    }
   }
   rmSync(folder, { recursive: true, force: true });
   mkdirSync(folder, { recursive: true });
   const tar =
     process.platform === 'win32' ? path.join(process.env.SystemRoot, 'System32/tar.exe') : 'tar';
   run(tar, ['-xf', archive, '-C', folder, '--strip-components=1']);
-  if (existsSync(cache)) renameSync(cache, path.join(folder, 'build'));
+  for (const [name, cache] of caches)
+    if (existsSync(cache)) renameSync(cache, path.join(folder, name));
   // Never retain unpinned UI downloads from an older llama.cpp build cache.
   if (key === 'llamaCpp')
-    rmSync(path.join(folder, 'build/tools/ui'), { recursive: true, force: true });
+    for (const [name] of caches)
+      rmSync(path.join(folder, name, 'tools/ui'), { recursive: true, force: true });
   return folder;
 }
 const common = [
@@ -55,13 +59,13 @@ const ggml = [
   '-DGGML_BMI2=OFF',
   '-DGGML_SSE42=OFF',
 ];
-function configure(folder, options) {
-  run('cmake', ['-S', folder, '-B', `${folder}/build`, ...common, ...options]);
+function configure(folder, options, variant = '') {
+  run('cmake', ['-S', folder, '-B', `${folder}/build${variant}`, ...common, ...options]);
 }
-function build(folder, target) {
+function build(folder, target, variant = '') {
   run('cmake', [
     '--build',
-    `${folder}/build`,
+    `${folder}/build${variant}`,
     '--config',
     'Release',
     '--target',
@@ -70,19 +74,26 @@ function build(folder, target) {
     process.env.TASKLENS_BUILD_JOBS || '2',
   ]);
 }
-const receipt = { target: targetTriple(), manifestVersion: manifest.manifestVersion, runtimes: {} };
-async function install(folder, binary, key) {
+const receipt = {
+  target: targetTriple(),
+  manifestVersion: manifest.manifestVersion,
+  buildVersion: manifest.runtimeBuildVersion,
+  runtimes: {},
+};
+async function install(folder, binary, key, variant = '') {
   const candidates = [
     `build/bin/${exe(binary)}`,
     `build/bin/Release/${exe(binary)}`,
     `build/${exe(binary)}`,
     `build/Release/${exe(binary)}`,
   ];
-  const file = candidates.map((p) => path.join(folder, p)).find(existsSync);
+  const file = candidates
+    .map((p) => path.join(folder, p.replace('build/', `build${variant}/`)))
+    .find(existsSync);
   if (!file) throw new Error(`Missing ${binary}`);
-  const target = path.join(destination, sidecar(binary));
+  const target = path.join(destination, sidecar(binary + variant));
   copyFileSync(file, target);
-  receipt.runtimes[binary] = {
+  receipt.runtimes[binary + variant] = {
     revision: manifest[key].revision,
     archiveSha256: manifest[key].archive.sha256,
     sha256: await hash(target),
@@ -94,7 +105,7 @@ for (const [key, binary] of [
   ['whisper', 'whisper-cli'],
 ]) {
   const folder = await source(key);
-  configure(folder, [
+  const options = [
     ...ggml,
     '-DLLAMA_BUILD_TESTS=OFF',
     '-DLLAMA_CURL=OFF',
@@ -103,9 +114,20 @@ for (const [key, binary] of [
     '-DLLAMA_BUILD_UI=OFF',
     '-DLLAMA_SUBPROCESS=OFF',
     '-DWHISPER_BUILD_TESTS=OFF',
-  ]);
+  ];
+  configure(folder, options);
   build(folder, binary);
   await install(folder, binary, key);
+  // Static AVX2 variant is selected only after native CPU feature checks. The baseline
+  // remains usable on older x86 CPUs; neither build uses -march=native.
+  if (process.arch === 'x64') {
+    const optimized = options.map((o) =>
+      /^-DGGML_(AVX|AVX2|FMA|F16C|BMI2|SSE42)=OFF$/.test(o) ? o.replace('=OFF', '=ON') : o,
+    );
+    configure(folder, optimized, '-avx2');
+    build(folder, binary, '-avx2');
+    await install(folder, binary, key, '-avx2');
+  }
 }
 const lep = await source('leptonica');
 const prefix = path.join(root, '.local-ai/ocr-prefix', targetTriple());
@@ -128,6 +150,8 @@ configure(tess, [
   '-DBUILD_TRAINING_TOOLS=OFF',
   '-DBUILD_TESTS=OFF',
   '-DOPENMP_BUILD=OFF',
+  '-DENABLE_NATIVE=OFF',
+  '-DWIN32_MT_BUILD=ON',
   '-DDISABLE_ARCHIVE=ON',
   '-DDISABLE_CURL=ON',
   `-DCMAKE_PREFIX_PATH=${prefix}`,

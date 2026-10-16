@@ -59,5 +59,8 @@ jobs:
           name: TaskLens-offline-${{ matrix.target }}
           path: |
             src-tauri/target/${{ matrix.target }}/release/bundle/
+            src-tauri/target/${{ matrix.target }}/release/tasklens.exe
+            src-tauri/target/${{ matrix.target }}/release/tasklens-*.exe
+            src-tauri/target/${{ matrix.target }}/release/resources/
             src-tauri/resources/notices/runtime-build.json
           if-no-files-found: error

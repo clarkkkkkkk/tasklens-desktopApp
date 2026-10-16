@@ -1,0 +1,11 @@
+{
+  "bundle": {
+    "externalBin": [
+      "binaries/tasklens-llama-server",
+      "binaries/tasklens-whisper-cli",
+      "binaries/tasklens-tesseract",
+      "binaries/tasklens-llama-server-avx2",
+      "binaries/tasklens-whisper-cli-avx2"
+    ]
+  }
+}

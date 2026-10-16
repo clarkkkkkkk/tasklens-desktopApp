@@ -2,7 +2,7 @@ import { LocalIntelligenceStatus } from './components/LocalIntelligenceStatus';
 import { BundleReview } from './features/voice/BundleReview';
 import { MotionToast } from './components/motion/MotionToast';
 import { BrandHandoff } from './components/motion/BrandHandoff';
-import { animateMotion, prepareExit, reducedMotion, useEntrance } from './components/motion/motion';
+import { prepareExit, reducedMotion, useEntrance } from './components/motion/motion';
 import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
 import { CURRENT_ONBOARDING_VERSION } from './features/onboarding/onboarding.constants';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -142,7 +142,7 @@ export default function App() {
             if (tour) {
               tour.inert = true;
               tour.setAttribute('aria-hidden', 'true');
-              await animateMotion(tour, 'fade', 0, true);
+              prepareExit(tour, 160)();
             }
             const showBrand = reason === 'complete' && !reducedMotion();
             if (showBrand) setBrandHandoff({ firstRun: !replay });

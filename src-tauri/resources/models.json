@@ -550,5 +550,14 @@
         }
       ]
     }
-  ]
+  ],
+  "runtimeBuildVersion": 2,
+  "cpuVariants": {
+    "baseline": "Portable CPU; no host-specific instruction tuning",
+    "avx2": {
+      "platforms": ["linux-x64", "win32-x64"],
+      "features": ["avx", "avx2", "fma", "f16c", "bmi2", "sse4.2"],
+      "selection": "Native CPUID and OS AVX state support; otherwise baseline"
+    }
+  }
 }

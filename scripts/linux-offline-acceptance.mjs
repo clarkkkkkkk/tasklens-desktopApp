@@ -52,6 +52,7 @@ async function launch() {
     capabilities: { alwaysMatch: { 'tauri:options': { application: executable } } },
   });
   session = value.sessionId;
+  writeFileSync(path.join(out, 'session.id'), session);
   await call(`/session/${session}/timeouts`, { script: 900000, implicit: 0, pageLoad: 60000 });
   for (let i = 0; i < 100; i++) {
     if (
@@ -105,8 +106,11 @@ try {
       assert.equal(metadata.model.state, 'verified');
       assert.equal(metadata.runtime.state, 'stopped');
       assert.ok(
-        metadata.model.path.startsWith(path.resolve(path.dirname(executable), '../lib') + '/') ||
-          process.env.APPDIR,
+        executable.endsWith('.AppImage')
+          ? /^\/tmp\/\.mount_[^/]+\/usr\/lib\/TaskLens\/resources\/models\//.test(
+              metadata.model.path,
+            )
+          : metadata.model.path.startsWith(path.resolve(path.dirname(executable), '../lib') + '/'),
       );
       return { status, model: metadata.model.path, ocr: metadata.ocr };
     },
@@ -116,7 +120,16 @@ try {
       await sync(
         `Array.from(document.querySelectorAll('button')).find(b=>/^Skip/.test(b.textContent.trim()))?.click(); return true;`,
       );
-      await wait(1000);
+      for (let i = 0; i < 100; i++) {
+        if (
+          await sync(
+            "return !document.querySelector('.onboarding') && !document.querySelector('.app-shell')?.hidden",
+          )
+        )
+          break;
+        await wait(100);
+      }
+      assert.equal(await sync("return !!document.querySelector('.onboarding')"), false);
       const image = readFileSync('tests/fixtures/screenshots/pictorial.png').toString('base64');
       const value = await call(`/session/${session}/execute/async`, {
         script: `const done=arguments[arguments.length-1]; const bytes=Uint8Array.from(atob(arguments[0]),c=>c.charCodeAt(0));window.__TAURI_INTERNALS__.invoke('ocr_recognize',bytes,{headers:{'x-tasklens-job':crypto.randomUUID()}}).then(v=>done({ok:true,value:v}),e=>done({ok:false,error:String(e)}));`,
@@ -150,8 +163,12 @@ try {
       }
       assert.match(text, /Math|exam/i);
       assert.match(text, /Confirm|Save draft/);
-      const shot = await call(`/session/${session}/screenshot`);
-      writeFileSync(path.join(out, 'review.png'), Buffer.from(shot, 'base64'));
+      // Native compositors may suspend screenshots of occluded windows. DOM/IPC acceptance
+      // must not block on an optional visual artifact while the app is backgrounded.
+      if (process.env.TASKLENS_ACCEPTANCE_SCREENSHOT) {
+        const shot = await call(`/session/${session}/screenshot`);
+        writeFileSync(path.join(out, 'review.png'), Buffer.from(shot, 'base64'));
+      }
       await sync(
         `Array.from(document.querySelectorAll('button')).find(b=>!b.disabled && /Confirm & save|Save draft/.test(b.textContent))?.click(); return true;`,
       );
@@ -163,7 +180,67 @@ try {
       await sync(
         `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Close review')?.click(); return true;`,
       );
-      return { review: text, saved: saved.length };
+      return {
+        review: text,
+        saved: saved.length,
+        runtime: (await invoke('local_ai_status')).runtime,
+        diagnostics: await invoke('local_ai_diagnostics'),
+      };
+    });
+    await check('warm text extraction reuses prompt cache', async () => {
+      await sync(
+        `if(!document.querySelector('.voice-text textarea')) Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Capture text').click(); return true;`,
+      );
+      await sync(
+        `const t=document.querySelector('.voice-text textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(t,'Math exam on October 20, 2026 at 10:00 AM in Room 204. Bring a calculator.');t.dispatchEvent(new Event('input',{bubbles:true}));return true;`,
+      );
+      await wait(300);
+      await sync(
+        `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Extract actions').click(); return true;`,
+      );
+      for (let i = 0; i < 1800; i++) {
+        if (await sync("return !!document.querySelector('dialog.bundle-review[open]')")) break;
+        await wait(500);
+      }
+      assert.equal(
+        await sync("return !!document.querySelector('dialog.bundle-review[open]')"),
+        true,
+      );
+      const diagnostics = await invoke('local_ai_diagnostics');
+      await sync(
+        `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Close review')?.click(); return true;`,
+      );
+      return diagnostics;
+    });
+    await check('real screenshot OCR-to-action review', async () => {
+      const base64 = readFileSync('tests/fixtures/screenshots/pictorial.png').toString('base64');
+      await sync(
+        `const f=new File([Uint8Array.from(atob(arguments[0]),c=>c.charCodeAt(0))],'pictorial.png',{type:'image/png'}); const transfer=new DataTransfer(); transfer.items.add(f); document.querySelector('.dropzone').dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:transfer}));return true;`,
+        [base64],
+      );
+      for (let i = 0; i < 1800; i++) {
+        if (await sync("return !!document.querySelector('dialog.inbox-result-dialog[open]')"))
+          break;
+        await wait(500);
+      }
+      const text = await sync('return document.body.innerText');
+      assert.equal(
+        await sync("return !!document.querySelector('dialog.inbox-result-dialog[open]')"),
+        true,
+        text,
+      );
+      assert.match(text, /pictorial/i);
+      await sync(`document.querySelector('button.trace-button')?.click();return true;`);
+      assert.equal(
+        await sync("return !!document.querySelector('details.source-trace[open]')"),
+        true,
+      );
+      assert.ok((await sync("return document.querySelectorAll('.trace-box').length")) > 0);
+      const diagnostics = await invoke('local_ai_diagnostics');
+      await sync(
+        `document.querySelector('[aria-label="Close details"]')?.click(); Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Close review')?.click(); return true;`,
+      );
+      return { review: text, diagnostics };
     });
     await check('real imported audio transcription unloads extraction', async () => {
       const bytes = readFileSync(

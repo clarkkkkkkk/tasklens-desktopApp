@@ -505,7 +505,7 @@ export function VoiceCapture({
         </div>
       )}
       <p className="field-help">
-        Voice and text use local models installed in Settings. Drop audio into Inbox to import it.
+        Voice and text use built-in local models. Drop audio into Inbox to import it.
       </p>
     </div>
   );

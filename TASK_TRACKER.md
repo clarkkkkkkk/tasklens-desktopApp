@@ -71,7 +71,7 @@ No frontend implementation tasks remain in progress. Native acceptance is explic
   - Status: BUILD VERIFIED · INSTALLED ACCEPTANCE IN PROGRESS
   - Dependency: Installed-package runtime acceptance
   - Definition of done: `cargo check` and `npm run tauri build` pass; upload/drop/paste and persistence after native restart are verified.
-  - Current evidence (2026-10-16): Fedora release executable builds successfully and 14 Rust tests pass; earlier system-library blockers are resolved. RPM packaging and installed-window/inference checks are in progress. Historical failures below remain historical.
+  - Current evidence (2026-10-16): Fedora release executable builds successfully and 16 Rust tests pass; earlier system-library blockers are resolved. RPM packaging and installed-window/inference checks are in progress. Historical failures below remain historical.
 
 ## REVIEW
 - [ ] Product/team review of Phase 1 and the design contract.
@@ -350,3 +350,9 @@ Current work supersedes manual model-import setup and the stale claim that scree
 - [ ] Actual-microphone language/noise quality and clean end-to-end latency/RSS acceptance; synthetic speech checks are distinct.
 
 Full browser run: 30 passed, three failed during concurrent native builds and development-server changes. Focused reruns and final results must be recorded before claiming an existing-test pass. No user task storage or schema version was changed.
+
+### Offline performance follow-up (2026-10-17)
+
+- Added static AVX2 llama.cpp/Whisper sidecars with native feature checks and baseline fallback. All 54 frontend unit tests and 16 Rust tests pass.
+- Four-thread Qwen microbenchmark on i5-10210U: prompt throughput 0.40 → 20.94 tokens/s; generation 0.42 → 5.28 tokens/s. Short single-run measurements are not end-to-end acceptance. Raw data: `docs/evaluation/cpu-performance.json`.
+- Rebuilt native release reports `cpuVariant: avx2`; offline full workflow validation and refreshed packaging remain in progress.

@@ -28,6 +28,7 @@ run(npm, ['run', 'prepare:models']);
 run(npm, ['run', 'build:runtimes']);
 run(npm, ['run', 'prepare:notices']);
 run(npm, ['run', 'verify:assets']);
+run(npm, ['run', 'prepare:packaging']);
 const target = targetTriple();
 if (process.platform === 'win32') {
   // Tauri's normal NSIS payload exceeds its size limit. Stage the same resource layout for Inno.
@@ -38,7 +39,13 @@ if (process.platform === 'win32') {
     path.join(root, 'src-tauri/target/release/tasklens.exe'),
     path.join(stage, 'tasklens.exe'),
   );
-  for (const name of ['llama-server', 'whisper-cli', 'tesseract'])
+  for (const name of [
+    'llama-server',
+    'whisper-cli',
+    'tesseract',
+    'llama-server-avx2',
+    'whisper-cli-avx2',
+  ])
     copyFileSync(
       path.join(root, 'src-tauri/binaries', sidecar(name)),
       path.join(stage, `tasklens-${name}.exe`),
@@ -85,8 +92,8 @@ function walk(dir) {
   for (const name of readdirSync(dir)) {
     const p = path.join(dir, name);
     if (statSync(p).isDirectory()) {
-      if (!name.endsWith('.app')) walk(p);
-    } else files.push(p);
+      if (!name.endsWith('.app') && !name.endsWith('.AppDir')) walk(p);
+    } else if (/\.(rpm|AppImage|dmg|exe|msi|deb|zip)$/.test(name)) files.push(p);
   }
 }
 walk(bundle);

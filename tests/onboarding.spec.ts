@@ -151,3 +151,22 @@ test('demo failure can retry and pending demo can be left without creating tasks
   await expect(button(page, 'Replay onboarding')).toBeFocused();
   expect((await data(page)).actions).toEqual([]);
 });
+
+test('skip remains usable when a background compositor pauses animations', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    const animate = Element.prototype.animate;
+    Element.prototype.animate = function (keyframes, options) {
+      const animation = animate.call(this, keyframes, options);
+      animation.pause();
+      return animation;
+    };
+  });
+  await button(page, 'Skip tour').click();
+  await expect(page.locator('.onboarding')).toHaveCount(0);
+  await expect(page.locator('.motion-exit-snapshot')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Inbox', exact: true })).toBeVisible();
+  expect((await data(page)).settings.onboardingCompletedVersion).toBe(1);
+  await button(page, 'New item').click();
+  await expect(page.getByLabel('Title', { exact: true })).toBeVisible();
+});

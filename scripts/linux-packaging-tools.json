@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "tauriCli": "2.12.1",
+  "assets": [
+    {
+      "file": "AppRun-x86_64",
+      "bytes": 31552,
+      "sha256": "f30140a43a0a59e46db21bdefdf749b9e9f2c6946e92afabbacf98b8ae73fb4f",
+      "source": "https://github.com/tauri-apps/binary-releases/releases/download/apprun-old/AppRun-x86_64"
+    },
+    {
+      "file": "linuxdeploy-07333c6-x86_64.AppImage",
+      "bytes": 19810808,
+      "sha256": "bd9521cd5ff3ca351fecb78cd9b236a4e37b3621014ac05cac0c2d767ffa0474",
+      "source": "https://github.com/tauri-apps/binary-releases/releases/download/linuxdeploy-07333c6/linuxdeploy-x86_64.AppImage"
+    },
+    {
+      "file": "linuxdeploy-plugin-appimage.AppImage",
+      "bytes": 16488952,
+      "sha256": "49d6a17160675a6bd1781699aae6bdf7692d98552e02a3671d2183d10547842e",
+      "source": "https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous/linuxdeploy-plugin-appimage-x86_64.AppImage"
+    }
+  ],
+  "notices": [
+    {
+      "file": "AppImageKit-LICENSE",
+      "source": "https://raw.githubusercontent.com/AppImage/AppImageKit/939ff4d4c033caa0170d0cac643098b5b5664528/LICENSE",
+      "bytes": 1491,
+      "sha256": "9cb22a08334c3a108ec4da96c1d6aea7a17a732fa9f5ca3413a9b4ce651397d8"
+    },
+    {
+      "file": "type2-runtime-LICENSE",
+      "source": "https://raw.githubusercontent.com/AppImage/type2-runtime/8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa/LICENSE",
+      "bytes": 1678,
+      "sha256": "aa154fc9070614bbe7921f89db11efd1dba7a1f3a41685958110e2230f9c0ca1"
+    }
+  ]
+}

@@ -129,11 +129,18 @@ export function prepareExit(element: HTMLElement | null, durationMs = 140) {
       if (preference.matches) animation.cancel();
     };
     preference.addEventListener('change', stop);
-    void animation.finished
-      .catch(() => {})
-      .finally(() => {
-        preference.removeEventListener('change', stop);
-        clone.remove();
-      });
+    // A compositor can suspend background-window animations indefinitely. Visual
+    // snapshots must still disappear and must never delay navigation or persistence.
+    let settled = false;
+    const cleanup = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      preference.removeEventListener('change', stop);
+      clone.remove();
+      animation.cancel();
+    };
+    const timeout = window.setTimeout(cleanup, durationMs + 150);
+    void animation.finished.catch(() => {}).finally(cleanup);
   };
 }

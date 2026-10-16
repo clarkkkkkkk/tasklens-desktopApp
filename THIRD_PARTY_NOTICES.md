@@ -71,3 +71,7 @@ Native audio dependencies include CPAL (Apache-2.0), Symphonia (MPL-2.0), Rubato
 ## Bundled OCR and complete release notices
 
 Tesseract 5.5.1 and tessdata are Apache-2.0. Leptonica 1.85.0 uses its BSD-style two-clause license; its full upstream text is bundled. OCR source/dependency revisions and all distributed model/data license hashes are recorded in the manifest. `prepare:models` includes full model, inference runtime, Tesseract, tessdata and Leptonica license texts. `prepare:notices` additionally copies available Cargo/npm dependency license/copyright/notice files and runtime vendor license directories into `resources/notices/dependencies`, with a version/license inventory. Preserve this entire directory in every installer. Windows WebView2 retains Microsoft's redistribution terms and installer notices.
+
+## AppImage packaging
+
+The optional Linux AppImage includes AppImageKit AppRun and the type-2 runtime. Their MIT texts are prepared from pinned upstream revisions into the bundled notices directory; exact files and hashes are in `scripts/linux-packaging-tools.json`. The type-2 runtime reports upstream commit `8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa`. Build-tool binaries are size/SHA-256 pinned separately from application inference runtimes. The Fedora system license corpus accompanies bundled desktop libraries. Verify static launcher dependency notices and corresponding-source provenance for the final AppImage before public distribution; the RPM does not embed that launcher. TaskLens source licensing remains MIT.

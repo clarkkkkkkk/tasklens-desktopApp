@@ -21,6 +21,8 @@ export interface RuntimeStatus {
   state: RuntimeState;
   message: string;
   binaryFound?: boolean;
+  binaryName?: string;
+  cpuVariant?: 'baseline' | 'avx2';
 }
 export interface LocalAIStatus {
   model: ModelMetadata;

@@ -39,7 +39,20 @@ async fn blocking<T: Send + 'static>(
 fn status(app: &tauri::AppHandle) -> Value {
     let runtime = server::runtime(app);
     let mut runtime_status = runtime.status_json();
-    runtime_status["binaryFound"] = json!(platform::bundled_binary(app, "llama-server").is_some());
+    let binary = platform::bundled_binary(app, "llama-server");
+    runtime_status["binaryFound"] = json!(binary.is_some());
+    runtime_status["binaryName"] = json!(binary
+        .as_ref()
+        .and_then(|p| p.file_name())
+        .map(|s| s.to_string_lossy().into_owned()));
+    runtime_status["cpuVariant"] = json!(if binary
+        .as_ref()
+        .is_some_and(|p| p.to_string_lossy().contains("-avx2"))
+    {
+        "avx2"
+    } else {
+        "baseline"
+    });
     json!({
         "model": model::status(app),
         "runtime": runtime_status,

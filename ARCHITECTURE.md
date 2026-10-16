@@ -102,3 +102,7 @@ The versioned model manifest pins Qwen3-4B Q4_K_M, Whisper Small multilingual, l
 Screenshot inputs still decode in Rust; their temporary grayscale copy is BMP so the pinned static Leptonica build needs no separate PNG/JPEG/TIFF runtime. Text/speech/screenshots retain the existing validator, review and persistence contracts. Prompt version 2 uses Qwen3 non-thinking markers and manifest stop tokens. LocalStorage and onboarding versions are unchanged.
 
 Linux x86_64, Windows x86_64 and Apple Silicon macOS are the release targets; Intel macOS is deferred. Windows uses a single Inno offline installer with an offline WebView2 payload; oversized files require hosting outside GitHub Releases. See LOCAL_AI.md and OFFLINE_AI_IMPLEMENTATION_REPORT.md for commands, measurements and actual acceptance status.
+
+### CPU runtime selection and responsive first launch
+
+Runtime recipe 2 bundles separate static baseline and AVX2 x86_64 llama.cpp/Whisper sidecars. `platform::bundled_binary` checks CPU and OS support before selecting AVX2, retaining baseline fallback. Model lifecycle, inference serialization and persistence are unchanged. Onboarding completion updates navigation immediately and uses a disposable visual exit snapshot; paused background-window animations cannot hold the workspace in a saving state.

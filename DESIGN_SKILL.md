@@ -103,3 +103,7 @@ On-device extraction keeps the existing review surfaces; it adds no new colors, 
 ## Built-in intelligence readiness
 
 Show the existing neutral status treatment with “Preparing local intelligence…” and “Local AI is ready.” Initialization must not block onboarding, navigation or manual editing. Failed resources offer Retry validation, concise repair details and reinstall guidance. Restrict only affected inference actions. Keep model import under Developer mode; normal onboarding never opens a model picker. Samples stay explicitly mock-labelled. Settings can show verified assets as Ready while the on-demand inference runtime is stopped. Use existing tokens and accessible live status, without progress percentages or a new setup wizard.
+
+### First-launch transition resilience
+
+Onboarding completion must not await visual animation completion. Fade a disposable inert, aria-hidden snapshot while updating the workspace state and focus immediately. Remove snapshots after their bounded visual duration even when a background compositor pauses animations. Preserve the existing motion appearance and reduced-motion behavior.
