@@ -1,3 +1,4 @@
+import assets from '../../../../src-tauri/resources/models.json';
 import type { OcrDocument } from '../../ocr/types';
 import type { TranscriptDocument } from '../../voice/types';
 import { TASKLENS_EXTRACTION_PROMPT_VERSION } from './extraction-prompt-version';
@@ -166,10 +167,12 @@ export function buildUserMessage(context: PromptContext): string {
   return lines.join('\n');
 }
 
-/** Phi-4-mini-instruct chat template. */
-export function phiChatPrompt(system: string, user: string, repair?: string): string {
+/** Qwen3 non-thinking template. The empty thought block prevents reasoning in JSON output. */
+export function qwenChatPrompt(system: string, user: string, repair?: string): string {
   const reminder = repair ? `\n\nPREVIOUS_ATTEMPT_PROBLEM\n${repair}` : '';
-  return `<|system|>${system}<|end|><|user|>${user}${reminder}<|end|><|assistant|>`;
+  if (assets.extraction.promptTemplate !== 'qwen3-non-thinking')
+    throw new Error('Unsupported extraction template');
+  return `<|im_start|>system\n${system}<|im_end|>\n<|im_start|>user\n${user}${reminder}\n/no_think<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n`;
 }
 
 export interface BuiltPrompt {
@@ -182,7 +185,7 @@ export interface BuiltPrompt {
 
 export function buildExtractionPrompt(context: PromptContext, repair?: string): BuiltPrompt {
   if (!context.units.length) throw new Error('No source text to extract from.');
-  const prompt = phiChatPrompt(TASKLENS_SYSTEM_PROMPT, buildUserMessage(context), repair);
+  const prompt = qwenChatPrompt(TASKLENS_SYSTEM_PROMPT, buildUserMessage(context), repair);
   return {
     version: TASKLENS_EXTRACTION_PROMPT_VERSION,
     prompt,

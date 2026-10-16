@@ -1,7 +1,7 @@
 //! Local OCR through Tesseract 5.x.
 //!
 //! The webview sends the screenshot bytes over IPC (it has no filesystem path for dropped
-//! or pasted images). Bytes are decoded, preprocessed into a temporary PNG and recognised
+//! or pasted images). Bytes are decoded, preprocessed into a temporary BMP and recognised
 //! by the Tesseract CLI with structured arguments. The user's original file is never read
 //! or modified. Output is line-level regions with confidence and bounding boxes in the
 //! original image's pixel coordinates, which Source Trace uses for highlighting.
@@ -258,9 +258,9 @@ pub fn recognize_bytes(
     let (width, height) = (image.width(), image.height());
     let (prepared, scale) = ScreenshotPreprocessor.prepare(&image);
     drop(image);
-    let input = folder.join("input.png");
+    let input = folder.join("input.bmp");
     prepared
-        .save_with_format(&input, ImageFormat::Png)
+        .save_with_format(&input, ImageFormat::Bmp)
         .map_err(|_| platform::GENERIC_ERROR.to_string())?;
     drop(prepared);
     if cancel.load(std::sync::atomic::Ordering::SeqCst) {

@@ -1,3 +1,4 @@
+import { componentsReady, useLocalIntelligence } from '../../services/localai/useLocalIntelligence';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApp } from '../../app/context';
 import { Button, ErrorState } from '../../components/ui';
@@ -23,6 +24,14 @@ export function VoiceCapture({
   onResult: (actions: ExtractedAction[]) => void;
   onGuardChange: (cancel: (() => Promise<void>) | null) => void;
 }) {
+  const { status: intelligence } = useLocalIntelligence();
+  const textReady = componentsReady(intelligence, ['extraction', 'llama-server']);
+  const speechReady = componentsReady(intelligence, [
+    'extraction',
+    'llama-server',
+    'whisper',
+    'whisper-cli',
+  ]);
   const { services } = useApp();
   const [status, setStatus] = useState<CaptureStatus>('idle'),
     [error, setError] = useState(''),
@@ -164,6 +173,10 @@ export function VoiceCapture({
     }
   }
   async function record() {
+    if (!speechReady) {
+      setError(intelligence.message);
+      return;
+    }
     const job = begin();
     if (!job) return;
     setSource(undefined);
@@ -232,6 +245,10 @@ export function VoiceCapture({
     if (elapsed >= 300000 && status === 'recording') doneRef.current();
   }, [elapsed, status]);
   async function importAudio(selected: File) {
+    if (!speechReady) {
+      setError(intelligence.message);
+      return;
+    }
     const job = begin();
     if (!job) return;
     setSource(undefined);
@@ -254,6 +271,10 @@ export function VoiceCapture({
     }
   }
   async function fromText() {
+    if (!textReady) {
+      setError(intelligence.message);
+      return;
+    }
     const job = begin();
     if (!job) return;
     const input: ExtractedAction['source'] = {
@@ -314,17 +335,23 @@ export function VoiceCapture({
       <div className="action-pair">
         <Button
           data-voice-open
-          disabled={locked || working.has(status)}
+          disabled={!speechReady || locked || working.has(status)}
           onClick={() => void record()}
         >
           <Microphone size={18} />
           Voice
         </Button>
-        <Button disabled={locked || working.has(status)} onClick={() => file.current?.click()}>
+        <Button
+          disabled={!speechReady || locked || working.has(status)}
+          onClick={() => file.current?.click()}
+        >
           <FileImage size={18} />
           Import audio
         </Button>
-        <Button disabled={locked || working.has(status)} onClick={() => setTextOpen((v) => !v)}>
+        <Button
+          disabled={!textReady || locked || working.has(status)}
+          onClick={() => setTextOpen((v) => !v)}
+        >
           <Pencil size={18} />
           Capture text
         </Button>
@@ -335,7 +362,7 @@ export function VoiceCapture({
         ref={file}
         aria-label="Import audio file"
         accept=".wav,.mp3,.m4a,.ogg"
-        disabled={locked || working.has(status)}
+        disabled={!speechReady || locked || working.has(status)}
         onChange={(e) => {
           const selected = e.target.files?.[0];
           e.target.value = '';
@@ -349,12 +376,12 @@ export function VoiceCapture({
             <textarea
               value={text}
               maxLength={20000}
-              disabled={working.has(status)}
+              disabled={!textReady || working.has(status)}
               onChange={(e) => setText(e.target.value)}
             />
           </label>
           <Button
-            disabled={locked || working.has(status) || text.trim().length < 3}
+            disabled={!textReady || locked || working.has(status) || text.trim().length < 3}
             onClick={() => void fromText()}
           >
             Extract actions
@@ -418,11 +445,17 @@ export function VoiceCapture({
           {error && (
             <ErrorState message={error}>
               {!source && (
-                <Button onClick={() => void record()} disabled={working.has(status)}>
+                <Button
+                  onClick={() => void record()}
+                  disabled={!speechReady || working.has(status)}
+                >
                   Try recording again
                 </Button>
               )}
-              <Button onClick={() => file.current?.click()} disabled={working.has(status)}>
+              <Button
+                onClick={() => file.current?.click()}
+                disabled={!speechReady || working.has(status)}
+              >
                 Use audio file instead
               </Button>
             </ErrorState>
@@ -459,7 +492,7 @@ export function VoiceCapture({
                 type="date"
                 value={recordingDate}
                 onChange={(e) => setRecordingDate(e.target.value)}
-                disabled={working.has(status)}
+                disabled={!speechReady || working.has(status)}
               />
               <small>
                 Use the actual recording date to resolve “tomorrow” and other relative dates.

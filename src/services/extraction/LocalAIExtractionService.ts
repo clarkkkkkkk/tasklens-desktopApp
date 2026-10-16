@@ -24,7 +24,7 @@ const MAX_OUTPUT_TOKENS = 2048;
 const MIN_OCR_CHARACTERS = 8;
 
 /**
- * Screenshot/voice/text → local OCR (screenshots) → Phi-4-mini-instruct through the
+ * Screenshot/voice/text → local OCR (screenshots) → Qwen3-4B through the
  * TaskLens-managed llama.cpp runtime → validation → review. Everything runs on this device.
  */
 export class LocalAIExtractionService implements ExtractionService {

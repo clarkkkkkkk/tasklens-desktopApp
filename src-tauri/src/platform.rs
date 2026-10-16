@@ -35,13 +35,32 @@ fn resource_roots(app: &tauri::AppHandle) -> Vec<PathBuf> {
     roots
 }
 
-/// A runtime shipped with TaskLens (`resources/bin/<name>`), e.g. llama-server or whisper-cli.
-pub fn bundled_binary(app: &tauri::AppHandle, name: &str) -> Option<PathBuf> {
-    let file = exe_name(name);
-    resource_roots(app)
-        .into_iter()
-        .map(|root| root.join("bin").join(&file))
-        .find(|path| path.is_file())
+/// Resolve packaged read-only resources. Repository fallback exists only in debug builds.
+pub fn resource(app: &tauri::AppHandle, relative: &str) -> Result<PathBuf, String> {
+    resource_roots(app).into_iter().map(|p| p.join(relative)).find(|p| p.is_file())
+        .ok_or_else(|| "MODEL_NOT_INSTALLED: A bundled local intelligence resource is missing. Reinstall TaskLens.".into())
+}
+
+/// Tauri externalBin sidecars are installed beside TaskLens with their target suffix removed.
+pub fn bundled_binary(_app: &tauri::AppHandle, name: &str) -> Option<PathBuf> {
+    let installed = std::env::current_exe()
+        .ok()?
+        .parent()?
+        .join(exe_name(&format!("tasklens-{name}")));
+    if installed.is_file() {
+        return Some(installed);
+    }
+    #[cfg(debug_assertions)]
+    {
+        let triple = env!("TASKLENS_TARGET_TRIPLE");
+        let p = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("binaries")
+            .join(exe_name(&format!("tasklens-{name}-{triple}")));
+        if p.is_file() {
+            return Some(p);
+        }
+    }
+    None
 }
 
 fn system_tesseract_candidates() -> Vec<PathBuf> {
@@ -80,6 +99,9 @@ fn system_tesseract_candidates() -> Vec<PathBuf> {
 /// Tesseract OCR: a bundled copy first, then a system installation.
 pub fn tesseract_binary(app: &tauri::AppHandle) -> Option<PathBuf> {
     bundled_binary(app, "tesseract").or_else(|| {
+        if !cfg!(debug_assertions) {
+            return None;
+        }
         system_tesseract_candidates()
             .into_iter()
             .find(|p| p.is_file())
@@ -90,11 +112,12 @@ pub fn tesseract_binary(app: &tauri::AppHandle) -> Option<PathBuf> {
 /// so user-imported languages (Cebuano, Tagalog) are used together with English.
 pub fn tessdata_candidates(app: &tauri::AppHandle, tesseract: Option<&Path>) -> Vec<PathBuf> {
     let mut list = Vec::new();
-    if let Ok(data) = app_data(app) {
-        list.push(data.join("tessdata"));
-    }
+
     for root in resource_roots(app) {
         list.push(root.join("tessdata"));
+    }
+    if !cfg!(debug_assertions) {
+        return list;
     }
     if let Some(binary) = tesseract {
         if let Some(dir) = binary.parent() {

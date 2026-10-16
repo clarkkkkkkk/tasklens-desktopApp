@@ -1,3 +1,4 @@
+import { useLocalIntelligence } from '../../services/localai/useLocalIntelligence';
 import { useCallback, useEffect, useState } from 'react';
 import { useApp } from '../../app/context';
 import { LoaderCircle, ShieldCheck, Sparkles } from '../../components/icons';
@@ -16,7 +17,7 @@ function headline(status: LocalAIStatus): Headline {
   if (runtime.state === 'processing') return 'Processing';
   if (model.state === 'corrupted' || runtime.state === 'failed' || !runtime.binaryFound)
     return 'Error';
-  if (runtime.state === 'ready') return 'Ready';
+  if (model.state === 'verified') return 'Ready';
   return 'Stopped';
 }
 
@@ -41,6 +42,7 @@ export function LocalAISettings({
 }) {
   const { services } = useApp();
   const manager = services.localAI;
+  const { status: intelligence } = useLocalIntelligence();
   const [status, setStatus] = useState<LocalAIStatus | null>(null),
     [busy, setBusy] = useState(''),
     [error, setError] = useState('');
@@ -66,7 +68,7 @@ export function LocalAISettings({
       alive = false;
       dispose?.();
     };
-  }, [manager, refresh]);
+  }, [manager, refresh, intelligence.state]);
   async function act(label: string, operation: () => Promise<unknown>) {
     setBusy(label);
     setError('');
@@ -94,8 +96,8 @@ export function LocalAISettings({
         </span>
       </h2>
       <p>
-        TaskLens reads screenshots with Tesseract OCR and understands them with Phi-4-mini-instruct,
-        both running on this computer. Screenshots, text and results never leave this device, and
+        TaskLens reads screenshots with bundled Tesseract OCR and understands them with Qwen3, both
+        running on this computer. Screenshots, text and results never leave this device, and
         extraction works offline.
       </p>
       {!manager.available ? (
@@ -163,12 +165,14 @@ export function LocalAISettings({
           )}
           {error && <ErrorState message={error.replace(/^[A-Z_]+: /, '')} />}
           <div className="action-pair">
-            <Button
-              disabled={!!busy}
-              onClick={() => void act('import', () => manager.importModel())}
-            >
-              Select / Import model
-            </Button>
+            {local.developerMode && (
+              <Button
+                disabled={!!busy}
+                onClick={() => void act('import', () => manager.importModel())}
+              >
+                Import supported developer override
+              </Button>
+            )}
             <Button
               disabled={!!busy || status.model.state === 'not_installed'}
               onClick={() => void act('validate', () => manager.validateModel())}
@@ -181,19 +185,11 @@ export function LocalAISettings({
             >
               Reload model
             </Button>
-            <Button
-              disabled={!!busy}
-              onClick={() => void act('languages', () => manager.importOcrLanguages())}
-            >
-              Import OCR languages
-            </Button>
           </div>
           <p className="field-help">
-            Installing the model is a one-time setup: import <strong>{status.model.file}</strong> (
-            {size(status.model.expectedBytes)}). Its SHA-256 is checked before use. TaskLens never
-            downloads models by itself. Source: {status.model.source}. OCR language files (eng, ceb,
-            tgl .traineddata) come from the Tesseract project. See LOCAL_AI.md for setup and
-            licenses.
+            Models and OCR language data are included with TaskLens. Validation checks their
+            integrity; no downloads or accounts are needed. If a bundled resource is missing or
+            damaged, retry validation or reinstall TaskLens. Your saved tasks are preserved.
           </p>
         </>
       )}

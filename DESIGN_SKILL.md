@@ -99,3 +99,7 @@ On-device extraction keeps the existing review surfaces; it adds no new colors, 
 - **Settings › Local AI.** One section with an "On-device" badge, a plain status word (Not installed, Ready, Loading, Processing, Error, Stopped) as a badge with a spinner only while busy, a two-column fact list (model file, location, size, runtime, text recognition, OCR languages) and secondary actions: Select / Import model, Validate model, Reload model, Import OCR languages. Developer mode is a checkbox row; its optional context-size and thread selects are native selects.
 - **Indicator.** The sidebar status reads "On your device. Only." and switches to "Processing locally" while the local model works.
 - **Developer details.** Shown only in developer mode, inside a collapsed disclosure under the processing card, in secondary text with monospaced blocks on the secondary surface.
+
+## Built-in intelligence readiness
+
+Show the existing neutral status treatment with “Preparing local intelligence…” and “Local AI is ready.” Initialization must not block onboarding, navigation or manual editing. Failed resources offer Retry validation, concise repair details and reinstall guidance. Restrict only affected inference actions. Keep model import under Developer mode; normal onboarding never opens a model picker. Samples stay explicitly mock-labelled. Settings can show verified assets as Ready while the on-demand inference runtime is stopped. Use existing tokens and accessible live status, without progress percentages or a new setup wizard.

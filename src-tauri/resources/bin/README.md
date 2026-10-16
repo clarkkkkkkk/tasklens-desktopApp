@@ -1,9 +1,5 @@
-# Local runtime binaries
+# Legacy runtime directory
 
-Prepared by `npm run build:runtimes` and bundled with TaskLens. Never committed.
-
-- `llama-server` (llama.cpp, pinned in `../models.json` → `llamaCpp`) plus its shared libraries
-- `whisper-cli` (whisper.cpp) for voice capture
-- optionally `tesseract`; otherwise a system Tesseract 5.x installation is used
-
-Binary lookup is centralised in `src-tauri/src/platform.rs`.
+Current releases use Tauri `bundle.externalBin` sidecars prepared in `src-tauri/binaries`
+by `npm run build:runtimes`. This legacy directory is no longer included in packaging.
+Do not copy inference executables here. See LOCAL_AI.md for the native build workflow.

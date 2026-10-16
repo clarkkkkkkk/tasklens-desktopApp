@@ -333,3 +333,20 @@ Native execution remains separately blocked; browser-process restart coverage is
 All 32 final browser tests pass; native-close choice coverage uses injected services. macOS includes microphone usage metadata and the hardened-runtime audio-input entitlement; actual-platform permission verification remains pending. Screenshots were inspected at 1440×920, 900×640 and 600×640, including centered review, stable actions and scrollable content. The independent synthetic-English Whisper run took 27.38 seconds for 6.7 seconds of audio, peaking at 768,196 KiB RSS. The six-case Qwen evaluation peaked at 5,484,236 KiB RSS; completed cases took 154.5–403.9 seconds while builds were running. The corrected focused pictorial run took 383.1 seconds and peaked at 5,490,096 KiB RSS; the mixed-language task rerun took 153.3 seconds and peaked at 5,470,212 KiB RSS. The final prompt was verified with focused reruns after the original six-case sweep, not a second complete six-case sweep. These are subprocess smoke measurements, not clean end-to-end platform benchmarks. Model output can omit details or introduce unnecessary warnings; every action requires review.
 
 Setup, supported codecs, retention, troubleshooting and limitations: VOICE_CAPTURE.md. File inventory and delivery evidence: VOICE_IMPLEMENTATION_REPORT.md.
+
+## All-in-one offline intelligence — 2026-10-16
+
+Current work supersedes manual model-import setup and the stale claim that screenshots remain mock-only. Real OCR and local extraction are implemented; samples/onboarding remain explicitly mock. Historical Windows installers and Qwen/Phi smoke measurements do not certify this release.
+
+- [x] Versioned central manifest for official Qwen3-4B Q4_K_M, Whisper Small multilingual, native source archives, Tesseract/Leptonica and eng/ceb/tgl data; exact sizes/SHA-256 pins.
+- [x] Build-only streaming asset preparation, format validation and native target-suffixed sidecar configuration. Weights remain ignored by Git.
+- [x] Shared bundled-resource resolver, application-data validation receipts, background readiness query/events, repair errors and developer-only model import controls.
+- [x] Qwen3 non-thinking prompt version 2 and model stop tokens; existing schema/evidence/temporal validation retained.
+- [x] Shared model gate: stop the reused extraction server before Whisper loads. Startup loads neither model.
+- [x] Frontend TypeScript/lint and 54 unit tests; two asset-preparation tests. Rust tests: 14 passed, two opt-in checks skipped (sidecar packaging excluded while runtimes compile).
+- [ ] Complete native sidecar dependency audit and Fedora release packaging/inference acceptance; current evidence is in OFFLINE_AI_IMPLEMENTATION_REPORT.md.
+- [ ] Windows x86_64 single offline installer and native acceptance. Inno staging/script prepared; actual Windows host, offline WebView2 payload and signing remain needed.
+- [ ] Apple Silicon app/DMG, signing/notarization and native acceptance on macOS. Intel macOS deferred.
+- [ ] Actual-microphone language/noise quality and clean end-to-end latency/RSS acceptance; synthetic speech checks are distinct.
+
+Full browser run: 30 passed, three failed during concurrent native builds and development-server changes. Focused reruns and final results must be recorded before claiming an existing-test pass. No user task storage or schema version was changed.

@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://127.0.0.1:1420",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "npm run build && npm run verify:assets",
     "frontendDist": "../dist"
   },
   "app": {
@@ -35,14 +35,21 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [
-      "resources/models.json",
-      "resources/bin/*",
-      "resources/tessdata/*"
-    ],
+    "resources": {
+      "resources/models/": "resources/models/",
+      "resources/tessdata/": "resources/tessdata/",
+      "resources/notices/": "resources/notices/",
+      "resources/models.json": "resources/models.json",
+      "../THIRD_PARTY_NOTICES.md": "resources/notices/THIRD_PARTY_NOTICES.md"
+    },
     "macOS": {
       "infoPlist": "Info.plist",
       "entitlements": "Entitlements.plist"
-    }
+    },
+    "externalBin": [
+      "binaries/tasklens-llama-server",
+      "binaries/tasklens-whisper-cli",
+      "binaries/tasklens-tesseract"
+    ]
   }
 }

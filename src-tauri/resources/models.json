@@ -6,19 +6,31 @@
     "file": "ggml-small.bin",
     "sha256": "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b",
     "bytes": 487601967,
-    "source": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.bin"
+    "source": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.bin",
+    "modelRevision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+    "license": "MIT",
+    "format": "ggml",
+    "archive": {
+      "source": "https://codeload.github.com/ggml-org/whisper.cpp/tar.gz/d1be6fde11ac6e0407606b4e42fe72d34add8037",
+      "sha256": "645445da884df6dbd52b30f82d7be7c01d1767c938714e477e786b88d529e9f4",
+      "bytes": 9631456
+    }
   },
   "extraction": {
-    "model": "Phi-4-mini-instruct",
-    "publisher": "Microsoft",
-    "license": "MIT",
+    "model": "Qwen3-4B",
+    "publisher": "Qwen",
+    "license": "Apache-2.0",
     "quantization": "Q4_K_M",
-    "quantizedBy": "Unsloth (GGUF conversion of microsoft/Phi-4-mini-instruct)",
-    "file": "Phi-4-mini-instruct-Q4_K_M.gguf",
-    "sha256": "88c00229914083cd112853aab84ed51b87bdf6b9ce42f532d8c85c7c63b1730a",
-    "bytes": 2491874272,
-    "source": "https://huggingface.co/unsloth/Phi-4-mini-instruct-GGUF/resolve/78eb92a46fc37e6b524df991ed9aca9bc6aa7b80/Phi-4-mini-instruct-Q4_K_M.gguf",
-    "upstream": "https://huggingface.co/microsoft/Phi-4-mini-instruct"
+    "file": "Qwen3-4B-Q4_K_M.gguf",
+    "sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+    "bytes": 2497280256,
+    "modelRevision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+    "source": "https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/bc640142c66e1fdd12af0bd68f40445458f3869b/Qwen3-4B-Q4_K_M.gguf",
+    "upstream": "https://huggingface.co/Qwen/Qwen3-4B",
+    "format": "gguf",
+    "architecture": "qwen3",
+    "promptTemplate": "qwen3-non-thinking",
+    "stopTokens": ["<|im_end|>", "<|endoftext|>"]
   },
   "llamaCpp": {
     "repository": "https://github.com/ggml-org/llama.cpp",
@@ -47,12 +59,478 @@
         "file": "llama-b11505-bin-ubuntu-x64.tar.gz",
         "sha256": "9e23bb8c48e0abbd03a558e8c341ec768fa32d56146a09e5fd13db5b0461e60c"
       }
+    },
+    "archive": {
+      "source": "https://codeload.github.com/ggml-org/llama.cpp/tar.gz/ff5888f999f24e2f9eaf6537b4eb6b85fd559188",
+      "sha256": "a4057a4a396e46de2bf78502300150348bc3704f845ed1de6ca05b2935eceb9b",
+      "bytes": 37975225
     }
   },
   "tesseract": {
-    "version": "5.x",
+    "version": "5.5.1",
     "license": "Apache-2.0",
     "languages": ["eng", "ceb", "tgl"],
-    "languageData": "https://github.com/tesseract-ocr/tessdata"
-  }
+    "languageData": "https://github.com/tesseract-ocr/tessdata",
+    "repository": "https://github.com/tesseract-ocr/tesseract",
+    "revision": "3b7c70e34dea179549ed3e995872e2e019eb8477",
+    "dataRevision": "ced78752cc61322fb554c280d13360b35b8684e4",
+    "data": [
+      {
+        "source": "https://raw.githubusercontent.com/tesseract-ocr/tessdata/ced78752cc61322fb554c280d13360b35b8684e4/eng.traineddata",
+        "sha256": "daa0c97d651c19fba3b25e81317cd697e9908c8208090c94c3905381c23fc047",
+        "bytes": 23466654,
+        "file": "eng.traineddata",
+        "format": "traineddata"
+      },
+      {
+        "source": "https://raw.githubusercontent.com/tesseract-ocr/tessdata/ced78752cc61322fb554c280d13360b35b8684e4/ceb.traineddata",
+        "sha256": "391d8ac6317933c1d3cee56a0eeb4517442180b5794b68aa5584611888dd26a1",
+        "bytes": 2402839,
+        "file": "ceb.traineddata",
+        "format": "traineddata"
+      },
+      {
+        "source": "https://raw.githubusercontent.com/tesseract-ocr/tessdata/ced78752cc61322fb554c280d13360b35b8684e4/tgl.traineddata",
+        "sha256": "767262b949901ea733023999f1b2d451f0fe82004166bd6b1074f8361967da8b",
+        "bytes": 7321367,
+        "file": "tgl.traineddata",
+        "format": "traineddata"
+      }
+    ],
+    "archive": {
+      "source": "https://codeload.github.com/tesseract-ocr/tesseract/tar.gz/3b7c70e34dea179549ed3e995872e2e019eb8477",
+      "sha256": "1dabbf429162bdf0c920541bdfa053d5f8eabb901bc1150a5264d678b0e3fa13",
+      "bytes": 1900120
+    }
+  },
+  "manifestVersion": 1,
+  "leptonica": {
+    "version": "1.85.0",
+    "repository": "https://github.com/DanBloomberg/leptonica",
+    "revision": "63aef18d98432b8582a1565e241f7bd2ee9cc8d9",
+    "license": "BSD-2-Clause",
+    "archive": {
+      "source": "https://codeload.github.com/DanBloomberg/leptonica/tar.gz/63aef18d98432b8582a1565e241f7bd2ee9cc8d9",
+      "sha256": "beb4804d5cc9d274986e22b01a9c7e1ad4858d8487bfe9215728eb5e906f07dc",
+      "bytes": 13691830
+    }
+  },
+  "notices": [
+    {
+      "source": "https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/bc640142c66e1fdd12af0bd68f40445458f3869b/LICENSE",
+      "sha256": "5de36594c10839788a8c589443a8ef9d8b8d17c65a1b5807206ae037fc36c6bd",
+      "bytes": 11544,
+      "file": "Qwen3-LICENSE.txt"
+    },
+    {
+      "source": "https://raw.githubusercontent.com/openai/whisper/v20250625/LICENSE",
+      "sha256": "b5d65a59060e68c4ff940e1eddfa6f94b2d68fdf58ed7f4dd57721c997e35e9d",
+      "bytes": 1063,
+      "file": "Whisper-model-LICENSE.txt"
+    },
+    {
+      "source": "https://raw.githubusercontent.com/tesseract-ocr/tessdata/ced78752cc61322fb554c280d13360b35b8684e4/LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "bytes": 11358,
+      "file": "tessdata-LICENSE.txt"
+    },
+    {
+      "source": "https://raw.githubusercontent.com/ggml-org/llama.cpp/ff5888f999f24e2f9eaf6537b4eb6b85fd559188/LICENSE",
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d",
+      "bytes": 1078,
+      "file": "llama.cpp-LICENSE.txt"
+    },
+    {
+      "source": "https://raw.githubusercontent.com/ggml-org/whisper.cpp/d1be6fde11ac6e0407606b4e42fe72d34add8037/LICENSE",
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d",
+      "bytes": 1078,
+      "file": "whisper.cpp-LICENSE.txt"
+    },
+    {
+      "source": "https://raw.githubusercontent.com/tesseract-ocr/tesseract/3b7c70e34dea179549ed3e995872e2e019eb8477/LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "bytes": 11358,
+      "file": "tesseract-LICENSE.txt"
+    },
+    {
+      "source": "https://raw.githubusercontent.com/DanBloomberg/leptonica/63aef18d98432b8582a1565e241f7bd2ee9cc8d9/leptonica-license.txt",
+      "sha256": "87829abb5bbb00b55a107365da89e9a33f86c4250169e5a1e5588505be7d5806",
+      "bytes": 1521,
+      "file": "leptonica-LICENSE.txt"
+    },
+    {
+      "file": "dropbox__rust-alloc-no-stdlib-0a81fd6928ea-LICENSE",
+      "source": "https://raw.githubusercontent.com/dropbox/rust-alloc-no-stdlib/0a81fd6928ea3b33c8cd484aa4575d50ffb98012/LICENSE",
+      "bytes": 1483,
+      "sha256": "c0c56f26d9c051cac4d200c34c84e7ae9aaa853e01a982a1df08b09931e518ae"
+    },
+    {
+      "file": "madsmtm__objc2-b4167b582b2f-LICENSE.md",
+      "source": "https://raw.githubusercontent.com/madsmtm/objc2/b4167b582b2f75f9a1be75495c41b765344fd03c/LICENSE.md",
+      "bytes": 1339,
+      "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+    },
+    {
+      "file": "rustaudio__sample-97c3bb9b2363-LICENSE-APACHE",
+      "source": "https://raw.githubusercontent.com/rustaudio/sample/97c3bb9b2363c0b46ac1633858bf1054fd02a980/LICENSE-APACHE",
+      "bytes": 561,
+      "sha256": "756c8d2ab2dc24f256e1455b5f03937f4933d83d7bc9f2d55009fc962377d512"
+    },
+    {
+      "file": "rustaudio__sample-97c3bb9b2363-LICENSE-MIT",
+      "source": "https://raw.githubusercontent.com/rustaudio/sample/97c3bb9b2363c0b46ac1633858bf1054fd02a980/LICENSE-MIT",
+      "bytes": 1087,
+      "sha256": "b1d6df41ed3aa96806e74c729444d7c121d90e6660a6aed01d298e03fde475a0"
+    },
+    {
+      "file": "knurling-rs__defmt-4a8cdb44891e-LICENSE-APACHE",
+      "source": "https://raw.githubusercontent.com/knurling-rs/defmt/4a8cdb44891ed57b8ff5a023b6bec7137c48708f/LICENSE-APACHE",
+      "bytes": 10850,
+      "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
+    },
+    {
+      "file": "knurling-rs__defmt-4a8cdb44891e-LICENSE-MIT",
+      "source": "https://raw.githubusercontent.com/knurling-rs/defmt/4a8cdb44891ed57b8ff5a023b6bec7137c48708f/LICENSE-MIT",
+      "bytes": 1053,
+      "sha256": "2710a622a896bba67356913d4d0492cab5465f61b2ecce6d880aeb483834fb50"
+    },
+    {
+      "file": "madsmtm__objc2-8852b424193c-LICENSE.md",
+      "source": "https://raw.githubusercontent.com/madsmtm/objc2/8852b424193ca41602281b3d7540d7c8ed51e49a/LICENSE.md",
+      "bytes": 1339,
+      "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+    },
+    {
+      "file": "OpenByteDev__dlopen2-cc80e4a0a90d-LICENSE",
+      "source": "https://raw.githubusercontent.com/OpenByteDev/dlopen2/cc80e4a0a90d499b677fdf7743699b4b3a43a989/LICENSE",
+      "bytes": 1184,
+      "sha256": "39fa265207450e77c62e90c5594a06c085b655d8374c7ced4bf7894b6bd95dd2"
+    },
+    {
+      "file": "jni-rs__jni-sys-64d77b7a5f11-LICENSE-APACHE",
+      "source": "https://raw.githubusercontent.com/jni-rs/jni-sys/64d77b7a5f119d7b55b4e2c169a4668067ff59e6/LICENSE-APACHE",
+      "bytes": 11358,
+      "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+    },
+    {
+      "file": "jni-rs__jni-sys-64d77b7a5f11-LICENSE-MIT",
+      "source": "https://raw.githubusercontent.com/jni-rs/jni-sys/64d77b7a5f119d7b55b4e2c169a4668067ff59e6/LICENSE-MIT",
+      "bytes": 1071,
+      "sha256": "1d85bd754b04ceec93e98e890edd1fa3c6a22e81bcb32135806beeccefa51cd1"
+    },
+    {
+      "file": "rust-mobile__ndk-f414cabc1221-LICENSE-APACHE",
+      "source": "https://raw.githubusercontent.com/rust-mobile/ndk/f414cabc12211ebcba4edb3da90950967d4a1933/LICENSE-APACHE",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "file": "rust-mobile__ndk-f414cabc1221-LICENSE-MIT",
+      "source": "https://raw.githubusercontent.com/rust-mobile/ndk/f414cabc12211ebcba4edb3da90950967d4a1933/LICENSE-MIT",
+      "bytes": 1036,
+      "sha256": "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1"
+    },
+    {
+      "file": "rust-mobile__ndk-49bbbba16c58-LICENSE-APACHE",
+      "source": "https://raw.githubusercontent.com/rust-mobile/ndk/49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25/LICENSE-APACHE",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "file": "rust-mobile__ndk-49bbbba16c58-LICENSE-MIT",
+      "source": "https://raw.githubusercontent.com/rust-mobile/ndk/49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25/LICENSE-MIT",
+      "bytes": 1036,
+      "sha256": "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1"
+    },
+    {
+      "file": "rust-windowing__android-ndk-rs-10f2ba388fca-LICENSE-APACHE",
+      "source": "https://raw.githubusercontent.com/rust-windowing/android-ndk-rs/10f2ba388fca20f7349996ebae26ccda7a6fda5c/LICENSE-APACHE",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "file": "rust-windowing__android-ndk-rs-10f2ba388fca-LICENSE-MIT",
+      "source": "https://raw.githubusercontent.com/rust-windowing/android-ndk-rs/10f2ba388fca20f7349996ebae26ccda7a6fda5c/LICENSE-MIT",
+      "bytes": 1036,
+      "sha256": "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1"
+    },
+    {
+      "file": "madsmtm__objc2-d7d2fa23ceaa-LICENSE.md",
+      "source": "https://raw.githubusercontent.com/madsmtm/objc2/d7d2fa23ceaa5e6096c923b081040e5d81b3b9df/LICENSE.md",
+      "bytes": 1339,
+      "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+    },
+    {
+      "file": "madsmtm__objc2-7b1abfd750a2-LICENSE.md",
+      "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+      "bytes": 1339,
+      "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+    },
+    {
+      "file": "madsmtm__objc2-8d214f547736-LICENSE.md",
+      "source": "https://raw.githubusercontent.com/madsmtm/objc2/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md",
+      "bytes": 1339,
+      "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+    },
+    {
+      "file": "pdeljanov__Symphonia-6d533f261509-LICENSE",
+      "source": "https://raw.githubusercontent.com/pdeljanov/Symphonia/6d533f26150953a882a6a111ebd13f0abf7129d5/LICENSE",
+      "bytes": 16725,
+      "sha256": "c76f740d1521b9bed9ca7a04ad526c310493c62621b1341d623b431736533b30"
+    },
+    {
+      "file": "wravery__webview2-rs-edc2caf88617-LICENSE",
+      "source": "https://raw.githubusercontent.com/wravery/webview2-rs/edc2caf886175ccaebe86078c9cfe1ae2a187328/LICENSE",
+      "bytes": 1067,
+      "sha256": "0dcf41516e608bbcb6cdc5229feb7b86fe4a643b85e7df251133c93408fdac73"
+    },
+    {
+      "file": "wravery__webview2-rs-dffa41a8a46d-LICENSE",
+      "source": "https://raw.githubusercontent.com/wravery/webview2-rs/dffa41a8a46d3f5565eefbff2de57d38d399f158/LICENSE",
+      "bytes": 1067,
+      "sha256": "0dcf41516e608bbcb6cdc5229feb7b86fe4a643b85e7df251133c93408fdac73"
+    }
+  ],
+  "dependencyNotices": [
+    {
+      "packages": ["alloc-stdlib"],
+      "notices": [
+        {
+          "file": "dropbox__rust-alloc-no-stdlib-0a81fd6928ea-LICENSE",
+          "source": "https://raw.githubusercontent.com/dropbox/rust-alloc-no-stdlib/0a81fd6928ea3b33c8cd484aa4575d50ffb98012/LICENSE",
+          "bytes": 1483,
+          "sha256": "c0c56f26d9c051cac4d200c34c84e7ae9aaa853e01a982a1df08b09931e518ae"
+        }
+      ]
+    },
+    {
+      "packages": ["block2"],
+      "notices": [
+        {
+          "file": "madsmtm__objc2-b4167b582b2f-LICENSE.md",
+          "source": "https://raw.githubusercontent.com/madsmtm/objc2/b4167b582b2f75f9a1be75495c41b765344fd03c/LICENSE.md",
+          "bytes": 1339,
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+        }
+      ]
+    },
+    {
+      "packages": ["dasp_sample"],
+      "notices": [
+        {
+          "file": "rustaudio__sample-97c3bb9b2363-LICENSE-APACHE",
+          "source": "https://raw.githubusercontent.com/rustaudio/sample/97c3bb9b2363c0b46ac1633858bf1054fd02a980/LICENSE-APACHE",
+          "bytes": 561,
+          "sha256": "756c8d2ab2dc24f256e1455b5f03937f4933d83d7bc9f2d55009fc962377d512"
+        },
+        {
+          "file": "rustaudio__sample-97c3bb9b2363-LICENSE-MIT",
+          "source": "https://raw.githubusercontent.com/rustaudio/sample/97c3bb9b2363c0b46ac1633858bf1054fd02a980/LICENSE-MIT",
+          "bytes": 1087,
+          "sha256": "b1d6df41ed3aa96806e74c729444d7c121d90e6660a6aed01d298e03fde475a0"
+        }
+      ]
+    },
+    {
+      "packages": ["defmt-parser"],
+      "notices": [
+        {
+          "file": "knurling-rs__defmt-4a8cdb44891e-LICENSE-APACHE",
+          "source": "https://raw.githubusercontent.com/knurling-rs/defmt/4a8cdb44891ed57b8ff5a023b6bec7137c48708f/LICENSE-APACHE",
+          "bytes": 10850,
+          "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
+        },
+        {
+          "file": "knurling-rs__defmt-4a8cdb44891e-LICENSE-MIT",
+          "source": "https://raw.githubusercontent.com/knurling-rs/defmt/4a8cdb44891ed57b8ff5a023b6bec7137c48708f/LICENSE-MIT",
+          "bytes": 1053,
+          "sha256": "2710a622a896bba67356913d4d0492cab5465f61b2ecce6d880aeb483834fb50"
+        }
+      ]
+    },
+    {
+      "packages": ["dispatch2"],
+      "notices": [
+        {
+          "file": "madsmtm__objc2-8852b424193c-LICENSE.md",
+          "source": "https://raw.githubusercontent.com/madsmtm/objc2/8852b424193ca41602281b3d7540d7c8ed51e49a/LICENSE.md",
+          "bytes": 1339,
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+        }
+      ]
+    },
+    {
+      "packages": ["dlopen2", "dlopen2_derive"],
+      "notices": [
+        {
+          "file": "OpenByteDev__dlopen2-cc80e4a0a90d-LICENSE",
+          "source": "https://raw.githubusercontent.com/OpenByteDev/dlopen2/cc80e4a0a90d499b677fdf7743699b4b3a43a989/LICENSE",
+          "bytes": 1184,
+          "sha256": "39fa265207450e77c62e90c5594a06c085b655d8374c7ced4bf7894b6bd95dd2"
+        }
+      ]
+    },
+    {
+      "packages": ["jni-sys-macros"],
+      "notices": [
+        {
+          "file": "jni-rs__jni-sys-64d77b7a5f11-LICENSE-APACHE",
+          "source": "https://raw.githubusercontent.com/jni-rs/jni-sys/64d77b7a5f119d7b55b4e2c169a4668067ff59e6/LICENSE-APACHE",
+          "bytes": 11358,
+          "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+        },
+        {
+          "file": "jni-rs__jni-sys-64d77b7a5f11-LICENSE-MIT",
+          "source": "https://raw.githubusercontent.com/jni-rs/jni-sys/64d77b7a5f119d7b55b4e2c169a4668067ff59e6/LICENSE-MIT",
+          "bytes": 1071,
+          "sha256": "1d85bd754b04ceec93e98e890edd1fa3c6a22e81bcb32135806beeccefa51cd1"
+        }
+      ]
+    },
+    {
+      "packages": ["ndk", "ndk-sys"],
+      "notices": [
+        {
+          "file": "rust-mobile__ndk-f414cabc1221-LICENSE-APACHE",
+          "source": "https://raw.githubusercontent.com/rust-mobile/ndk/f414cabc12211ebcba4edb3da90950967d4a1933/LICENSE-APACHE",
+          "bytes": 11357,
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        },
+        {
+          "file": "rust-mobile__ndk-f414cabc1221-LICENSE-MIT",
+          "source": "https://raw.githubusercontent.com/rust-mobile/ndk/f414cabc12211ebcba4edb3da90950967d4a1933/LICENSE-MIT",
+          "bytes": 1036,
+          "sha256": "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1"
+        }
+      ]
+    },
+    {
+      "packages": ["ndk", "ndk-sys"],
+      "notices": [
+        {
+          "file": "rust-mobile__ndk-49bbbba16c58-LICENSE-APACHE",
+          "source": "https://raw.githubusercontent.com/rust-mobile/ndk/49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25/LICENSE-APACHE",
+          "bytes": 11357,
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        },
+        {
+          "file": "rust-mobile__ndk-49bbbba16c58-LICENSE-MIT",
+          "source": "https://raw.githubusercontent.com/rust-mobile/ndk/49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25/LICENSE-MIT",
+          "bytes": 1036,
+          "sha256": "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1"
+        }
+      ]
+    },
+    {
+      "packages": ["ndk-context"],
+      "notices": [
+        {
+          "file": "rust-windowing__android-ndk-rs-10f2ba388fca-LICENSE-APACHE",
+          "source": "https://raw.githubusercontent.com/rust-windowing/android-ndk-rs/10f2ba388fca20f7349996ebae26ccda7a6fda5c/LICENSE-APACHE",
+          "bytes": 11357,
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        },
+        {
+          "file": "rust-windowing__android-ndk-rs-10f2ba388fca-LICENSE-MIT",
+          "source": "https://raw.githubusercontent.com/rust-windowing/android-ndk-rs/10f2ba388fca20f7349996ebae26ccda7a6fda5c/LICENSE-MIT",
+          "bytes": 1036,
+          "sha256": "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1"
+        }
+      ]
+    },
+    {
+      "packages": ["objc2"],
+      "notices": [
+        {
+          "file": "madsmtm__objc2-d7d2fa23ceaa-LICENSE.md",
+          "source": "https://raw.githubusercontent.com/madsmtm/objc2/d7d2fa23ceaa5e6096c923b081040e5d81b3b9df/LICENSE.md",
+          "bytes": 1339,
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+        }
+      ]
+    },
+    {
+      "packages": [
+        "objc2-app-kit",
+        "objc2-cloud-kit",
+        "objc2-core-data",
+        "objc2-core-foundation",
+        "objc2-core-graphics",
+        "objc2-core-image",
+        "objc2-core-location",
+        "objc2-core-text",
+        "objc2-foundation",
+        "objc2-io-surface",
+        "objc2-quartz-core",
+        "objc2-ui-kit",
+        "objc2-user-notifications",
+        "objc2-web-kit"
+      ],
+      "notices": [
+        {
+          "file": "madsmtm__objc2-7b1abfd750a2-LICENSE.md",
+          "source": "https://raw.githubusercontent.com/madsmtm/objc2/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md",
+          "bytes": 1339,
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+        }
+      ]
+    },
+    {
+      "packages": ["objc2-encode", "objc2-exception-helper"],
+      "notices": [
+        {
+          "file": "madsmtm__objc2-8d214f547736-LICENSE.md",
+          "source": "https://raw.githubusercontent.com/madsmtm/objc2/8d214f5477365ffcbcbb7de058c86ed9a518efb7/LICENSE.md",
+          "bytes": 1339,
+          "sha256": "7f976f7e9cb2d87df7230606feb932c3f21ac0e664045a775b600046ff850c54"
+        }
+      ]
+    },
+    {
+      "packages": [
+        "symphonia",
+        "symphonia-bundle-mp3",
+        "symphonia-codec-aac",
+        "symphonia-codec-alac",
+        "symphonia-codec-pcm",
+        "symphonia-codec-vorbis",
+        "symphonia-core",
+        "symphonia-format-isomp4",
+        "symphonia-format-ogg",
+        "symphonia-format-riff",
+        "symphonia-metadata",
+        "symphonia-utils-xiph"
+      ],
+      "notices": [
+        {
+          "file": "pdeljanov__Symphonia-6d533f261509-LICENSE",
+          "source": "https://raw.githubusercontent.com/pdeljanov/Symphonia/6d533f26150953a882a6a111ebd13f0abf7129d5/LICENSE",
+          "bytes": 16725,
+          "sha256": "c76f740d1521b9bed9ca7a04ad526c310493c62621b1341d623b431736533b30"
+        }
+      ]
+    },
+    {
+      "packages": ["webview2-com", "webview2-com-sys"],
+      "notices": [
+        {
+          "file": "wravery__webview2-rs-edc2caf88617-LICENSE",
+          "source": "https://raw.githubusercontent.com/wravery/webview2-rs/edc2caf886175ccaebe86078c9cfe1ae2a187328/LICENSE",
+          "bytes": 1067,
+          "sha256": "0dcf41516e608bbcb6cdc5229feb7b86fe4a643b85e7df251133c93408fdac73"
+        }
+      ]
+    },
+    {
+      "packages": ["webview2-com-macros"],
+      "notices": [
+        {
+          "file": "wravery__webview2-rs-dffa41a8a46d-LICENSE",
+          "source": "https://raw.githubusercontent.com/wravery/webview2-rs/dffa41a8a46d3f5565eefbff2de57d38d399f158/LICENSE",
+          "bytes": 1067,
+          "sha256": "0dcf41516e608bbcb6cdc5229feb7b86fe4a643b85e7df251133c93408fdac73"
+        }
+      ]
+    }
+  ]
 }

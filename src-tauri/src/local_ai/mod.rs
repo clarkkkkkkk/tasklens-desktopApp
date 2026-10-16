@@ -130,8 +130,8 @@ pub async fn local_ai_load(
     let config = config.unwrap_or_default().sanitized();
     blocking(move || {
         let runtime = server::runtime(&app);
+        let _gate = runtime.gate.lock().unwrap();
         if restart == Some(true) {
-            let _gate = runtime.gate.lock().unwrap();
             runtime.stop(&app);
         }
         runtime.ensure(&app, config)?;
@@ -220,7 +220,7 @@ fn complete(
         "seed": 7,
         "cache_prompt": true,
         "stream": true,
-        "stop": ["<|end|>", "<|endoftext|>"],
+        "stop": model::spec()["stopTokens"],
     })
     .to_string();
     let started = Instant::now();

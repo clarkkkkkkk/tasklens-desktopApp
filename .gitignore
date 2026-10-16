@@ -20,3 +20,8 @@ src-tauri/resources/tessdata/*
 ggml-*.bin
 
 test-results-native/
+
+# Reproducible release assets and native sidecars.
+src-tauri/binaries/
+src-tauri/resources/models/
+src-tauri/resources/notices/

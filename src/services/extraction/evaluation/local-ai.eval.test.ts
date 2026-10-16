@@ -1,10 +1,12 @@
+import assets from '../../../../src-tauri/resources/models.json';
+import { execFileSync } from 'node:child_process';
 /**
  * Local model evaluation. Opt-in and slow; never part of `npm test`:
  *
  *   TASKLENS_EVAL=1 npx vitest run src/services/extraction/evaluation
  *
  * Starts the pinned llama-server (src-tauri/resources/bin) on 127.0.0.1 with the installed
- * Phi-4-mini-instruct model, runs every regression case through the production prompt and
+ * Qwen3-4B model, runs every regression case through the production prompt and
  * validator, and writes docs/evaluation/local-ai-eval.{md,json}. A handful of fixtures is a
  * regression signal, not a production accuracy claim.
  */
@@ -23,20 +25,17 @@ import { validateExtraction } from '../validation/validate-extraction';
 
 const enabled = !!process.env.TASKLENS_EVAL;
 const only = process.env.TASKLENS_EVAL_ONLY?.split(',');
-const binary = path.resolve(
-  'src-tauri/resources/bin',
-  `llama-server${process.platform === 'win32' ? '.exe' : ''}`,
-);
-const model =
-  process.env.TASKLENS_MODEL ??
-  path.join(
-    process.platform === 'win32'
-      ? process.env.APPDATA!
-      : process.platform === 'darwin'
-        ? path.join(os.homedir(), 'Library/Application Support')
-        : path.join(os.homedir(), '.local/share'),
-    'app.tasklens.desktop/models/Phi-4-mini-instruct-Q4_K_M.gguf',
+const target = enabled
+  ? execFileSync('rustc', ['--print', 'host-tuple'], { encoding: 'utf8' }).trim()
+  : 'unused';
+const binary =
+  process.env.TASKLENS_RUNTIME ??
+  path.resolve(
+    'src-tauri/binaries',
+    `tasklens-llama-server-${target}${process.platform === 'win32' ? '.exe' : ''}`,
   );
+const model =
+  process.env.TASKLENS_MODEL ?? path.resolve('src-tauri/resources/models', assets.extraction.file);
 const key = crypto.randomUUID();
 let server: ChildProcess | undefined;
 let port = 0;
@@ -98,7 +97,7 @@ beforeAll(async () => {
 afterAll(() => server?.kill());
 
 it.skipIf(!enabled)(
-  'local Phi-4-mini extraction regression suite',
+  'local Qwen3 extraction regression suite',
   async () => {
     const results: {
       id: string;
@@ -126,7 +125,7 @@ it.skipIf(!enabled)(
           top_p: 1,
           seed: 7,
           cache_prompt: true,
-          stop: ['<|end|>', '<|endoftext|>'],
+          stop: assets.extraction.stopTokens,
         });
         const data = (await response.json()) as { content: string; stopped_limit?: boolean };
         const result = validateExtraction(data.content, context);
@@ -186,7 +185,7 @@ it.skipIf(!enabled)(
       '# Local AI evaluation report',
       '',
       `- Prompt version: ${TASKLENS_EXTRACTION_PROMPT_VERSION}`,
-      `- Model: Phi-4-mini-instruct Q4_K_M (llama.cpp, CPU, temperature 0)`,
+      `- Model: Qwen3-4B Q4_K_M (llama.cpp, CPU, temperature 0)`,
       `- Run: ${new Date().toISOString()} on ${os.cpus()[0]?.model ?? 'unknown CPU'}`,
       `- Checks passed: ${passed}/${total.length} across ${results.length} cases`,
       '',
@@ -216,6 +215,10 @@ it.skipIf(!enabled)(
     writeFileSync(path.join(folder, 'local-ai-eval.md'), lines.join('\n'));
     writeFileSync(path.join(folder, 'local-ai-eval.json'), JSON.stringify(results, null, 2));
     expect(results.length).toBeGreaterThan(0);
+    expect(
+      total.filter((c) => !c.ok),
+      'Real extraction regression failures',
+    ).toEqual([]);
   },
   3_600_000,
 );

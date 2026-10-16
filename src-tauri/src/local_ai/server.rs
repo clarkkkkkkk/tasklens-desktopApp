@@ -152,10 +152,10 @@ impl Runtime {
         )?;
         match model::state(app) {
             model::ModelState::NotInstalled => {
-                return Err("MODEL_NOT_INSTALLED: The local model is not installed.".into())
+                return Err("MODEL_NOT_INSTALLED: A bundled extraction model is missing. Reinstall TaskLens.".into())
             }
             model::ModelState::Corrupted => {
-                return Err("MODEL_CORRUPTED: The model file is damaged or not the supported build. Import it again.".into())
+                return Err("MODEL_CORRUPTED: The bundled extraction model is damaged. Retry validation or reinstall TaskLens.".into())
             }
             model::ModelState::Unverified => {
                 self.set(app, State::Loading, "Checking model integrity…");

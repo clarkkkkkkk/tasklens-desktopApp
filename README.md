@@ -2,7 +2,7 @@
 
 **Turn information into action. Privately.**
 
-A calm, local desktop workspace for screenshots, tasks, events, and deadlines. Phase 2 reads screenshots with **on-device OCR (Tesseract)** and understands them with **Microsoft Phi-4-mini-instruct running locally through llama.cpp**: capture → local extraction → review with Source Trace → save. **Nothing leaves your computer. No cloud services, API keys, accounts, or telemetry. Works offline once the model is installed.** See [LOCAL_AI.md](LOCAL_AI.md).
+A calm, local desktop workspace for screenshots, tasks, events, and deadlines. Phase 2 reads screenshots with **on-device OCR (Tesseract)** and understands them with **bundled Qwen3-4B running locally through llama.cpp**: capture → local extraction → review with Source Trace → save. **Nothing leaves your computer. No cloud services, API keys, accounts, or telemetry. Models, transcription and OCR are included in all-in-one desktop releases.** See [LOCAL_AI.md](LOCAL_AI.md).
 
 ![TaskLens Inbox](docs/screenshots/inbox.png)
 
@@ -20,20 +20,21 @@ Open http://127.0.0.1:1420. Browser development uses the same frontend and persi
 For a desktop window, install the [Tauri system prerequisites](https://v2.tauri.app/start/prerequisites/) and Rust, then:
 
 ```sh
-npm run tauri dev
+npm run prepare:models
 npm run build:runtimes
-npm run tauri build
+npm run prepare:notices
+npm run tauri dev
+# Native release packaging:
+npm run release:desktop
 ```
 
 Linux needs GTK 3, WebKitGTK 4.1/JavaScriptCoreGTK 4.1, libsoup 3, ALSA development headers and normal compiler/package prerequisites. Linux automated native checks and a debug Debian bundle are verified; real microphone and packaged workflow acceptance remain pending. Earlier Windows screenshot-workflow acceptance does not verify the new voice pipeline. Windows/macOS voice packages and permissions require actual-platform checks. See [VOICE_CAPTURE.md](VOICE_CAPTURE.md).
 
-## Set up local AI (desktop, one time)
+## Built-in local AI
 
-1. `npm run build:runtimes -- --prebuilt --llama-only` places the pinned llama.cpp `llama-server` in `src-tauri/resources/bin` (packaged builds include it).
-2. Install Tesseract 5 (Windows: `winget install UB-Mannheim.TesseractOCR`).
-3. Run `npm run tauri dev`, open **Settings › Local AI**, then **Select / Import model** (`Phi-4-mini-instruct-Q4_K_M.gguf`, 2.49 GB, checksum-verified) and **Import OCR languages** (`ceb`, `tgl`).
+Install TaskLens, open it, and wait for “Local AI is ready.” Models are verified locally in the background; no account, model import or runtime installation is needed. The desktop release includes Qwen3-4B Q4_K_M, multilingual Whisper Small, llama.cpp, whisper.cpp, Tesseract and eng/ceb/tgl data. Imports remain an optional developer feature.
 
-Details, checksums, storage locations, privacy and the offline test procedure are in [LOCAL_AI.md](LOCAL_AI.md). In a browser (`npm run dev`) TaskLens uses the labelled mock instead.
+Missing/corrupt bundled resources show a repair message. Retry validation or reinstall TaskLens; saved tasks remain intact. See [LOCAL_AI.md](LOCAL_AI.md) for pinned assets, native build commands, installed paths and offline acceptance. Browser development and sample extraction remain labelled mock workflows.
 
 ## Try the complete flow
 
@@ -92,4 +93,5 @@ The sole original asset found was **`TaskLens.png`**. It is preserved byte-for-b
 [MIT](LICENSE) © 2026 TaskLens contributors.
 
 ## Local voice and text capture
-Inbox includes Voice, Import audio and Capture text. Desktop processing uses locally installed Whisper Small (transcription) and the same Phi-4-mini-instruct model as screenshots; review and confirm each extracted action before saving. Build bundled runtimes with `npm run build:runtimes` before packaging, then import Whisper in Settings › Voice transcription and Phi-4-mini in Settings › Local AI. See [VOICE_CAPTURE.md](VOICE_CAPTURE.md) for model setup, native prerequisites, supported codecs, privacy and verification limitations.
+
+Inbox includes Voice, Import audio and Capture text. Desktop processing uses bundled Whisper Small and Qwen3-4B; review each result before saving. See [VOICE_CAPTURE.md](VOICE_CAPTURE.md) for supported codecs, retention, permissions and acceptance limitations. All-in-one downloads contain roughly 3 GB of model/data assets before other resources; see [LOCAL_AI.md](LOCAL_AI.md) for installer and hosting requirements.

@@ -1,5 +1,5 @@
-# Bundled OCR language data (optional)
+# Bundled OCR language data
 
-Place `eng.traineddata`, `ceb.traineddata` and `tgl.traineddata` here to bundle them.
-Users can also import them in Settings › Local AI; those are stored in the app data
-`tessdata` directory, which takes precedence. Files are never committed.
+`npm run prepare:models` prepares SHA-256 pinned eng/ceb/tgl files from the versioned model
+manifest. All-in-one releases include them as read-only resources. Generated trained data
+is ignored by Git. See LOCAL_AI.md for preparation and verification.

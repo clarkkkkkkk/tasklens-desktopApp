@@ -1,153 +1,135 @@
-// Prepares local inference runtimes in src-tauri/resources/bin (git-ignored, bundled).
-//
-//   npm run build:runtimes                 build llama-server and whisper-cli from pinned sources
-//   npm run build:runtimes -- --prebuilt   download the pinned official llama.cpp release for
-//                                          this platform (SHA-256 verified) and build whisper-cli
-//   add --llama-only to skip whisper.cpp
-//
-// Developer tooling only. TaskLens itself never downloads runtimes or models.
+// Native host builds only. No application-time downloader or system runtime lookup.
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import {
-  readFileSync,
-  mkdirSync,
-  existsSync,
-  copyFileSync,
-  readdirSync,
-  rmSync,
-  statSync,
-  chmodSync,
-} from 'node:fs';
+import { mkdirSync, existsSync, copyFileSync, rmSync, writeFileSync, renameSync } from 'node:fs';
 import path from 'node:path';
-
-const root = process.cwd();
-const specs = JSON.parse(readFileSync('src-tauri/resources/models.json', 'utf8'));
-const destination = path.join(root, 'src-tauri/resources/bin');
-const args = new Set(process.argv.slice(2));
-const exe = (name) => name + (process.platform === 'win32' ? '.exe' : '');
+import { root, manifest, prepare, sidecar, targetTriple, hash } from './ai-assets.mjs';
+const destination = path.join(root, 'src-tauri/binaries');
+const notices = path.join(root, 'src-tauri/resources/notices');
 mkdirSync(destination, { recursive: true });
-
-function buildFromSource(repository, revision, folder, target) {
-  const source = path.join(root, '.local-ai', folder);
-  if (!existsSync(source))
-    execFileSync('git', ['clone', '--filter=blob:none', '--no-checkout', repository, source], {
-      stdio: 'inherit',
-    });
-  execFileSync('git', ['fetch', 'origin', revision, '--depth=1'], {
-    cwd: source,
+mkdirSync(notices, { recursive: true });
+const exe = (name) => name + (process.platform === 'win32' ? '.exe' : '');
+const run = (cmd, args) =>
+  execFileSync(cmd, args, {
     stdio: 'inherit',
+    env: { ...process.env, GIT_CEILING_DIRECTORIES: path.join(root, '.local-ai/sources') },
   });
-  execFileSync('git', ['checkout', '--detach', 'FETCH_HEAD'], { cwd: source, stdio: 'inherit' });
-  execFileSync(
-    'cmake',
-    [
-      '-S',
-      source,
-      '-B',
-      `${source}/build`,
-      '-DCMAKE_BUILD_TYPE=Release',
-      '-DBUILD_SHARED_LIBS=OFF',
-      '-DGGML_NATIVE=OFF',
-      '-DGGML_OPENMP=OFF',
-      '-DGGML_METAL=OFF',
-      '-DGGML_BLAS=OFF',
-      '-DWHISPER_BUILD_TESTS=OFF',
-      '-DLLAMA_BUILD_TESTS=OFF',
-      '-DLLAMA_CURL=OFF',
-      '-DGGML_CCACHE=OFF',
-    ],
-    { stdio: 'inherit' },
-  );
-  execFileSync(
-    'cmake',
-    ['--build', `${source}/build`, '--config', 'Release', '--target', target, '-j', '4'],
-    { stdio: 'inherit' },
-  );
-  const binary = [
-    `${source}/build/bin/${exe(target)}`,
-    `${source}/build/bin/Release/${exe(target)}`,
-  ].find(existsSync);
-  if (!binary) throw new Error(`Missing ${exe(target)}`);
-  copyFileSync(binary, path.join(destination, exe(target)));
-  copyFileSync(path.join(source, 'LICENSE'), path.join(destination, `${folder}-LICENSE.txt`));
-}
-
-async function downloadVerified(url, file, sha256) {
-  const downloads = path.join(root, '.local-ai', 'downloads');
-  mkdirSync(downloads, { recursive: true });
-  const target = path.join(downloads, file);
-  const digest = () => createHash('sha256').update(readFileSync(target)).digest('hex');
-  if (!existsSync(target) || digest() !== sha256) {
-    console.info(`Downloading ${url}`);
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Download failed: ${response.status}`);
-    const { writeFileSync } = await import('node:fs');
-    writeFileSync(target, Buffer.from(await response.arrayBuffer()));
-  }
-  if (digest() !== sha256) {
-    rmSync(target);
-    throw new Error(`Checksum mismatch for ${file}. The download was removed.`);
-  }
-  return target;
-}
-
-async function prebuiltLlama() {
-  const llama = specs.llamaCpp;
-  const key = `${process.platform}-${process.arch}`;
-  const asset = llama.prebuilt[key];
-  if (!asset) throw new Error(`No pinned llama.cpp release for ${key}. Build from source instead.`);
-  const archive = await downloadVerified(
-    `${llama.repository}/releases/download/${llama.release}/${asset.file}`,
-    asset.file,
-    asset.sha256,
-  );
-  // Extract into an empty folder of its own, then copy only the server and its libraries.
-  const unpacked = path.join(root, '.local-ai', 'unpacked', llama.release);
-  rmSync(unpacked, { recursive: true, force: true });
-  mkdirSync(unpacked, { recursive: true });
-  // Windows: use the system bsdtar (handles zip); a GNU tar from Git would misread "C:".
+async function source(key) {
+  const spec = manifest[key];
+  const archive = path.join(root, '.local-ai/downloads', `${key}-${spec.revision}.tar.gz`);
+  await prepare(spec.archive, archive);
+  const folder = path.join(root, '.local-ai/sources', `${key}-${spec.revision}`);
+  // Restore sources from the verified archive on every build. Preserve only compiled
+  // build artifacts, whose paths remain identical; added/edited source files cannot leak in.
+  const cache = `${folder}-build-cache`;
+  if (existsSync(path.join(folder, 'build'))) renameSync(path.join(folder, 'build'), cache);
+  rmSync(folder, { recursive: true, force: true });
+  mkdirSync(folder, { recursive: true });
   const tar =
-    process.platform === 'win32'
-      ? path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe')
-      : 'tar';
-  execFileSync(tar, ['-xf', archive, '-C', unpacked], { stdio: 'inherit' });
-  const files = [];
-  const walk = (dir) => {
-    for (const name of readdirSync(dir)) {
-      const full = path.join(dir, name);
-      if (statSync(full).isDirectory()) walk(full);
-      else files.push(full);
-    }
-  };
-  walk(unpacked);
-  const server = files.find((f) => path.basename(f) === exe(llama.binary));
-  if (!server) throw new Error(`${exe(llama.binary)} not found in ${asset.file}`);
-  const libraries = files.filter(
-    (f) =>
-      path.dirname(f) === path.dirname(server) &&
-      /\.(dll|dylib|so(\.\d+)*)$/.test(f) &&
-      // Skip libraries that only back llama.cpp's other command-line tools.
-      !/llama-(?!server|common)[\w-]+-impl/.test(path.basename(f)),
-  );
-  for (const file of [server, ...libraries]) {
-    const target = path.join(destination, path.basename(file));
-    copyFileSync(file, target);
-    if (process.platform !== 'win32') chmodSync(target, 0o755);
-  }
-  const license = files.find((f) => /^LICENSE(\.txt|\.md)?$/i.test(path.basename(f)));
-  if (license) copyFileSync(license, path.join(destination, 'llama-LICENSE.txt'));
-  console.info(
-    `Installed ${path.basename(server)} and ${libraries.length} libraries from ${llama.release}.`,
-  );
+    process.platform === 'win32' ? path.join(process.env.SystemRoot, 'System32/tar.exe') : 'tar';
+  run(tar, ['-xf', archive, '-C', folder, '--strip-components=1']);
+  if (existsSync(cache)) renameSync(cache, path.join(folder, 'build'));
+  // Never retain unpinned UI downloads from an older llama.cpp build cache.
+  if (key === 'llamaCpp')
+    rmSync(path.join(folder, 'build/tools/ui'), { recursive: true, force: true });
+  return folder;
 }
-
-if (args.has('--prebuilt')) await prebuiltLlama();
-else
-  buildFromSource(
-    specs.llamaCpp.repository,
-    specs.llamaCpp.revision,
-    'llama',
-    specs.llamaCpp.binary,
-  );
-if (!args.has('--llama-only'))
-  buildFromSource(specs.whisper.repository, specs.whisper.revision, 'whisper', 'whisper-cli');
+const common = [
+  '-DCMAKE_BUILD_TYPE=Release',
+  '-DBUILD_SHARED_LIBS=OFF',
+  '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
+  '-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded',
+];
+const ggml = [
+  '-DGGML_NATIVE=OFF',
+  '-DGGML_OPENMP=OFF',
+  '-DGGML_METAL=OFF',
+  '-DGGML_BLAS=OFF',
+  '-DGGML_CCACHE=OFF',
+  '-DGGML_AVX=OFF',
+  '-DGGML_AVX2=OFF',
+  '-DGGML_FMA=OFF',
+  '-DGGML_F16C=OFF',
+  '-DGGML_BMI2=OFF',
+  '-DGGML_SSE42=OFF',
+];
+function configure(folder, options) {
+  run('cmake', ['-S', folder, '-B', `${folder}/build`, ...common, ...options]);
+}
+function build(folder, target) {
+  run('cmake', [
+    '--build',
+    `${folder}/build`,
+    '--config',
+    'Release',
+    '--target',
+    target,
+    '--parallel',
+    process.env.TASKLENS_BUILD_JOBS || '2',
+  ]);
+}
+const receipt = { target: targetTriple(), manifestVersion: manifest.manifestVersion, runtimes: {} };
+async function install(folder, binary, key) {
+  const candidates = [
+    `build/bin/${exe(binary)}`,
+    `build/bin/Release/${exe(binary)}`,
+    `build/${exe(binary)}`,
+    `build/Release/${exe(binary)}`,
+  ];
+  const file = candidates.map((p) => path.join(folder, p)).find(existsSync);
+  if (!file) throw new Error(`Missing ${binary}`);
+  const target = path.join(destination, sidecar(binary));
+  copyFileSync(file, target);
+  receipt.runtimes[binary] = {
+    revision: manifest[key].revision,
+    archiveSha256: manifest[key].archive.sha256,
+    sha256: await hash(target),
+    file: path.basename(target),
+  };
+}
+for (const [key, binary] of [
+  ['llamaCpp', 'llama-server'],
+  ['whisper', 'whisper-cli'],
+]) {
+  const folder = await source(key);
+  configure(folder, [
+    ...ggml,
+    '-DLLAMA_BUILD_TESTS=OFF',
+    '-DLLAMA_CURL=OFF',
+    '-DLLAMA_OPENSSL=OFF',
+    '-DLLAMA_USE_PREBUILT_UI=OFF',
+    '-DLLAMA_BUILD_UI=OFF',
+    '-DLLAMA_SUBPROCESS=OFF',
+    '-DWHISPER_BUILD_TESTS=OFF',
+  ]);
+  build(folder, binary);
+  await install(folder, binary, key);
+}
+const lep = await source('leptonica');
+const prefix = path.join(root, '.local-ai/ocr-prefix', targetTriple());
+configure(lep, [
+  '-DBUILD_PROG=OFF',
+  '-DSW_BUILD=OFF',
+  '-DENABLE_ZLIB=OFF',
+  '-DENABLE_PNG=OFF',
+  '-DENABLE_JPEG=OFF',
+  '-DENABLE_TIFF=OFF',
+  '-DENABLE_WEBP=OFF',
+  '-DENABLE_OPENJPEG=OFF',
+  '-DENABLE_GIF=OFF',
+  `-DCMAKE_INSTALL_PREFIX=${prefix}`,
+]);
+build(lep, 'leptonica');
+run('cmake', ['--install', `${lep}/build`, '--config', 'Release']);
+const tess = await source('tesseract');
+configure(tess, [
+  '-DBUILD_TRAINING_TOOLS=OFF',
+  '-DBUILD_TESTS=OFF',
+  '-DOPENMP_BUILD=OFF',
+  '-DDISABLE_ARCHIVE=ON',
+  '-DDISABLE_CURL=ON',
+  `-DCMAKE_PREFIX_PATH=${prefix}`,
+]);
+build(tess, 'tesseract');
+await install(tess, 'tesseract', 'tesseract');
+writeFileSync(path.join(notices, 'runtime-build.json'), JSON.stringify(receipt, null, 2) + '\n');
+console.info(`Prepared native sidecars for ${targetTriple()}.`);

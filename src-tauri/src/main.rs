@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod assets;
 mod jobs;
 mod local_ai;
 mod ocr;
@@ -12,6 +13,7 @@ fn main() {
         .plugin(tauri_plugin_single_instance::init(|_, _, _| {}))
         .manage(voice::VoiceState::default())
         .manage(jobs::Jobs::default())
+        .manage(assets::Initialization::default())
         .manage(local_ai::server::Runtime::default())
         .setup(|app| {
             if let Err(message) = voice::initialize(app.handle()) {
@@ -22,9 +24,13 @@ fn main() {
             }
             ocr::initialize(app.handle()).map_err(std::io::Error::other)?;
             local_ai::initialize(app.handle()).map_err(std::io::Error::other)?;
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn_blocking(move || assets::initialize(&handle, false));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            assets::local_intelligence_status,
+            assets::local_intelligence_retry,
             voice::voice_models,
             voice::voice_validate_model,
             voice::voice_start,

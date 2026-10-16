@@ -1,3 +1,4 @@
+import { componentsReady, useLocalIntelligence } from '../../services/localai/useLocalIntelligence';
 import { VoiceCapture } from '../voice/VoiceCapture';
 import { MotionHeading } from '../../components/motion/MotionHeading';
 import { createDemoScreenshot } from '../../services/extraction/demoSource';
@@ -66,6 +67,7 @@ export function Inbox({
   onOpenSettings: () => void;
 }) {
   const { services, snapshot } = useApp();
+  const { status: intelligence } = useLocalIntelligence();
   const [job, setJob] = useState<Job | null>(null),
     [step, setStep] = useState(-1),
     [busy, setBusy] = useState(false),
@@ -89,6 +91,20 @@ export function Inbox({
   const defaults = snapshot.settings.defaultReminders;
   const process = useCallback(
     async (next: Job) => {
+      if (
+        !next.demo &&
+        !componentsReady(intelligence, [
+          'extraction',
+          'llama-server',
+          'tesseract',
+          'eng.traineddata',
+          'ceb.traineddata',
+          'tgl.traineddata',
+        ])
+      ) {
+        setError({ message: intelligence.message });
+        return;
+      }
       controller.current?.abort();
       const abort = new AbortController();
       controller.current = abort;
@@ -145,7 +161,7 @@ export function Inbox({
         }
       }
     },
-    [services, defaults],
+    [intelligence, services, defaults],
   );
   const accept = useCallback(
     async (file: File, origin: Origin) => {

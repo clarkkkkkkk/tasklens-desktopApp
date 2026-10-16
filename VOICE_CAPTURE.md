@@ -6,16 +6,9 @@ TaskLens captures information, transcribes it locally, extracts structured actio
 
 Use the desktop application. Browser builds preserve the screenshot demo and manual editing, but voice/text inference reports that a desktop runtime is required. Browser integration fixtures are separate test entrypoints and are not included in the production build.
 
-Build the native inference executables with `npm run build:runtimes` before `npm run tauri build`. CMake, a C/C++ compiler, Git, Node and the normal Tauri/Rust platform prerequisites are required. Linux recording also requires ALSA development headers. The build script checks out exact revisions from `src-tauri/resources/models.json`, builds CPU executables for the current host architecture and bundles them as application resources. Build on each target OS/architecture; Linux binaries cannot be shipped in Windows/macOS packages.
+Desktop releases bundle and automatically verify Whisper Small, Qwen3-4B, their native runtimes and OCR. No manual model setup is needed. During background validation TaskLens shows “Preparing local intelligence…” and then “Local AI is ready.” Validation receipts live in application data; models load directly from installed read-only resources.
 
-Install Whisper through Settings › Voice transcription › Import model, and the extraction model through Settings › Local AI › Select / Import model (see LOCAL_AI.md):
-
-- Multilingual Whisper Small: `ggml-small.bin`, 487,601,967 bytes, SHA-256 `1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b`.
-- Phi-4-mini-instruct Q4_K_M: `Phi-4-mini-instruct-Q4_K_M.gguf`, 2,491,874,272 bytes, SHA-256 `88c00229914083cd112853aab84ed51b87bdf6b9ce42f532d8c85c7c63b1730a` (shared with screenshot extraction).
-
-Pinned original model URLs and runtime commit IDs are recorded in the model manifest. Obtain weights yourself; TaskLens never downloads models automatically. Imports are copied into the Tauri application-data `models` directory, checked against the pinned size/hash, then loaded for validation. Originals remain unchanged. Weights and compiled runtimes are ignored by Git.
-
-Application data normally resides under `$XDG_DATA_HOME/app.tasklens.desktop` (or `~/.local/share/app.tasklens.desktop`) on Linux, `%APPDATA%/app.tasklens.desktop` on Windows and `~/Library/Application Support/app.tasklens.desktop` on macOS. The native Tauri path resolver is authoritative.
+For development run `npm run prepare:models`, `npm run build:runtimes`, `npm run prepare:notices`, then `npm run tauri dev`. Native CMake/C++/Rust and Tauri prerequisites are developer requirements only. See [LOCAL_AI.md](LOCAL_AI.md) for exact pins, storage paths, release commands and distribution size limits. Developer mode exposes optional supported-model overrides.
 
 ## Capture and review
 
@@ -23,7 +16,7 @@ Choose Voice in Inbox to request microphone access and start a compact recorder.
 
 Import audio through the picker or drop audio into Inbox. Accepted containers/codecs: WAV/PCM, MP3, M4A with AAC-LC or ALAC, OGG with Vorbis. WebM, Opus and unsupported variants are rejected. Validation uses extension/MIME, a 100 MB transfer limit, decoding, sample-rate/channel bounds and decoded duration. Recordings stop at five minutes; imports are limited to fifteen minutes.
 
-Audio is decoded on a native worker, downmixed and resampled to mono 16 kHz 16-bit PCM. whisper.cpp returns original-language text and timestamped segments. No translation option is enabled. Voice transcripts, typed text and screenshots use the same LocalAIExtractionService, Phi-4-mini prompt and validator.
+Audio is decoded on a native worker, downmixed and resampled to mono 16 kHz 16-bit PCM. whisper.cpp returns original-language text and timestamped segments. No translation option is enabled. Voice transcripts, typed text and screenshots use the same LocalAIExtractionService, Qwen3 non-thinking prompt and validator.
 
 The centered result dialog lists all extracted actions. Switching actions preserves mounted editors and drafts. Saving/confirming affects only the selected action. Source Transcript exposes segment times and an export action. Evidence links reveal supported quotations/segment IDs. Invalid references are dropped, and evidence is hidden when the corresponding value has been edited. Evidence is model attribution and still requires human review.
 
@@ -35,7 +28,7 @@ Raw recordings and converted import copies are temporary. Transcription success/
 
 Each job has an opaque identifier and cancellation flag. Cancellation stops capture, interrupts inference and discards late UI results. Navigation during processing requires stop/discard confirmation. Startup cleans orphaned temporary jobs; a single-instance guard prevents another TaskLens instance from removing active jobs.
 
-Only one inference process runs at a time. Models unload when their processes exit; cold loading is intentional to avoid keeping both models resident. There is no server or network fallback. Model import/build setup may require an external download outside the app; installed inference uses local files and IPC only. Source content is never shell-interpolated or written to application logs.
+Speech and extraction share a native inference gate. TaskLens stops its reused loopback-only llama-server before loading Whisper; Whisper exits before extraction restarts. Neither model is loaded during asset preparation. There is no remote fallback. Build-time preparation downloads verified pinned assets; installed inference uses local files, IPC and the private loopback extraction server only. Source content is never shell-interpolated or written to application logs.
 
 Transcripts are bounded at 100,000 characters/3,000 segments. The extraction runtime uses an 8,192-token context with context shifting disabled; prompts that exceed it fail instead of discarding earlier content. Initial extraction accepts at most 20,000 UTF-8 bytes of source text and at most 20 actions. Longer transcripts remain inspectable/exportable and require shorter passages. Persistent transcripts share the existing localStorage quota; storage failures keep edits available for retry/export.
 

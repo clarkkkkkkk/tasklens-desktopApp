@@ -4,7 +4,7 @@
 Own `src/types/`, `src/lib/`, `src/repositories/`, `src/services/`, application context/composition in `src/app/`, `src-tauri/`, architecture documentation and integration tests. Coordinate product-facing semantics with Developer 1.
 
 ## Current sprint
-Local voice/text capture, native model/runtime lifecycle, shared structured extraction, temporal/evidence validation and additive persistence. Screenshot extraction remains a demo. Real platform and language-quality acceptance stays separate from automated checks.
+Local voice/text capture, native model/runtime lifecycle, shared structured extraction, temporal/evidence validation and additive persistence. Real screenshot OCR/extraction is implemented; onboarding and samples remain labelled demos. Real platform and language-quality acceptance stays separate from automated checks.
 
 ## Task checklist
 - [x] Define and validate shared action/settings/snapshot schemas. P0 · DONE · dependency: product contract · done when malformed dates/times and source previews are rejected.
@@ -86,3 +86,9 @@ Onboarding version persistence, legacy settings defaults, immediate preference s
 
 ## Voice/native responsibilities
 Own CPAL permissions/capture, Symphonia/Rubato preprocessing, pinned whisper.cpp/llama.cpp packaging, checksum/model lifecycle, timestamped transcription, shared extraction bundle contracts, job cancellation/stale-result protection and safe temporary-file cleanup. Preserve legacy storage and recoverable quota errors. Measure latency/RSS on the 16 GB baseline and verify offline processing and real microphone workflows on Linux, Windows and macOS. Source manifest/build setup and acceptance limitations are documented in VOICE_CAPTURE.md.
+
+## Built-in intelligence migration — 2026-10-16
+
+The current implementation bundles Qwen3-4B Q4_K_M and Whisper Small, uses pinned native source archives and target-suffixed Tauri sidecars, and includes Tesseract/Leptonica plus eng/ceb/tgl data. `assets.rs` owns resource discovery, hash/format checks, fingerprinted application-data receipts and non-blocking readiness. Model imports are optional developer overrides; legacy Phi files and task/settings storage are preserved.
+
+Qwen prompt version 2 uses non-thinking chat markers and manifest stop tokens. Speech takes the extraction runtime gate and unloads llama-server before Whisper loads; the server remains reused across text/screenshot extractions. Native setup, packaging commands and exact pins: LOCAL_AI.md. Fedora and actual-platform acceptance are reported in OFFLINE_AI_IMPLEMENTATION_REPORT.md; do not infer inference success from compilation or browser mocks.

@@ -1,3 +1,4 @@
+import { LocalIntelligenceStatus } from './components/LocalIntelligenceStatus';
 import { BundleReview } from './features/voice/BundleReview';
 import { MotionToast } from './components/motion/MotionToast';
 import { BrandHandoff } from './components/motion/BrandHandoff';
@@ -130,6 +131,7 @@ export default function App() {
   if (loading) return <LoadingState />;
   return (
     <>
+      <LocalIntelligenceStatus />
       {touring && (
         <OnboardingFlow
           replay={replay}

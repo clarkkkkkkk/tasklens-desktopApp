@@ -1,10 +1,10 @@
 # Third-party notices
 
-TaskLens source code is MIT licensed (see LICENSE). The components below are owned by their authors and distributed or used under their own licenses. TaskLens does not claim ownership of them, and no endorsement is implied. Model weights and OCR language data are not stored in this repository; users install them locally.
+TaskLens source code is MIT licensed (see LICENSE). The components below are owned by their authors and distributed or used under their own licenses. TaskLens does not claim ownership of them, and no endorsement is implied. Model weights and OCR language data are not stored in Git; release preparation includes verified copies and their full license texts.
 
 | Component | Use in TaskLens | Owner | License |
 | --- | --- | --- | --- |
-| Phi-4-mini-instruct (GGUF Q4_K_M conversion by Unsloth) | On-device extraction model | Microsoft Corporation | MIT |
+| Qwen3-4B (official GGUF Q4_K_M) | Bundled on-device extraction model | Qwen / Alibaba Cloud | Apache-2.0 |
 | llama.cpp / ggml (`llama-server`) | Local model runtime, bundled binary | The ggml authors | MIT |
 | whisper.cpp | Local voice transcription runtime | The ggml authors | MIT |
 | Whisper Small (ggml) | Voice transcription model | OpenAI | MIT |
@@ -14,18 +14,9 @@ TaskLens source code is MIT licensed (see LICENSE). The components below are own
 | Rust crates (`tauri`, `image`, `serde`, `sha2`, `uuid`, `rfd`, `cpal`, `hound`, `rubato`, `symphonia`, …) | Native layer | Their respective authors | MIT and/or Apache-2.0 (see each crate) |
 | npm packages (`react`, `zod`, `@tauri-apps/api`, …) | Frontend | Their respective authors | MIT (see each package) |
 
-## Phi-4-mini-instruct
+## Qwen3-4B
 
-Model: https://huggingface.co/microsoft/Phi-4-mini-instruct · GGUF used: https://huggingface.co/unsloth/Phi-4-mini-instruct-GGUF (revision 78eb92a). Use of the model is also subject to Microsoft’s model card and responsible-AI guidance.
-
-```
-Microsoft.
-Copyright (c) Microsoft Corporation.
-
-MIT License
-```
-
-The full MIT permission notice is reproduced at the end of this file and applies to this component.
+Official weights: https://huggingface.co/Qwen/Qwen3-4B-GGUF at revision `bc640142c66e1fdd12af0bd68f40445458f3869b`, Apache-2.0. The full pinned upstream license is bundled as `resources/notices/Qwen3-LICENSE.txt`. TaskLens source remains MIT; this does not relicense model weights. Existing user-imported Phi weights are not redistributed by this release.
 
 ## llama.cpp and whisper.cpp
 
@@ -73,6 +64,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## Local processing components
 
-whisper.cpp and llama.cpp are MIT licensed; their exact pinned source revisions and upstream model locations are recorded in `src-tauri/resources/models.json`. The runtime build copies each upstream LICENSE alongside its executable. Whisper model weights are MIT licensed; Qwen3-4B model weights are Apache-2.0 licensed and imported separately by the user. No weights are distributed in this repository.
+whisper.cpp and llama.cpp are MIT licensed; their exact pinned source revisions and upstream model locations are recorded in `src-tauri/resources/models.json`. The runtime build copies each upstream LICENSE alongside its executable. Whisper model weights are MIT licensed; Qwen3-4B model weights are Apache-2.0 licensed and included in installed offline releases. No weights are distributed in this repository.
 
 Native audio dependencies include CPAL (Apache-2.0), Symphonia (MPL-2.0), Rubato (MIT), and Hound (Apache-2.0). Preserve their upstream notices when distributing builds; Symphonia remains an unmodified Cargo dependency. Dependency license details are available in their pinned Cargo registry sources and Cargo.lock.
+
+## Bundled OCR and complete release notices
+
+Tesseract 5.5.1 and tessdata are Apache-2.0. Leptonica 1.85.0 uses its BSD-style two-clause license; its full upstream text is bundled. OCR source/dependency revisions and all distributed model/data license hashes are recorded in the manifest. `prepare:models` includes full model, inference runtime, Tesseract, tessdata and Leptonica license texts. `prepare:notices` additionally copies available Cargo/npm dependency license/copyright/notice files and runtime vendor license directories into `resources/notices/dependencies`, with a version/license inventory. Preserve this entire directory in every installer. Windows WebView2 retains Microsoft's redistribution terms and installer notices.

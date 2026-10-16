@@ -1457,3 +1457,20 @@
     scroll-behavior: auto !important;
   }
 }
+
+.local-intelligence-notice {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 60;
+  max-width: 352px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.local-intelligence-notice p {
+  margin: 0;
+}

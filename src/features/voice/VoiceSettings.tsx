@@ -1,9 +1,11 @@
+import { useLocalIntelligence } from '../../services/localai/useLocalIntelligence';
 import { useEffect, useState } from 'react';
 import { useApp } from '../../app/context';
 import { Button, ErrorState } from '../../components/ui';
 import type { ModelStatus } from '../../services/voice/types';
 export function VoiceSettings() {
-  const { services } = useApp();
+  const { services, snapshot } = useApp();
+  const { status: intelligence } = useLocalIntelligence();
   const [models, setModels] = useState<ModelStatus[]>([]),
     [pending, setPending] = useState(''),
     [error, setError] = useState('');
@@ -20,7 +22,7 @@ export function VoiceSettings() {
     return () => {
       active = false;
     };
-  }, [services]);
+  }, [services, intelligence.state]);
   async function validate(kind: ModelStatus['kind'], importFile: boolean) {
     setPending(kind);
     setError('');
@@ -63,15 +65,17 @@ export function VoiceSettings() {
               {pending === model.kind
                 ? 'Validating model…'
                 : model.status === 'error'
-                  ? 'Validation needed · validate or re-import the model'
+                  ? 'Validation needed · retry validation or reinstall TaskLens'
                   : model.status.replaceAll('_', ' ')}
               {!model.runtimeAvailable ? ' · Runtime not installed' : ''}
             </p>
           </div>
           <div className="action-pair">
-            <Button disabled={!!pending} onClick={() => void validate(model.kind, true)}>
-              Import model
-            </Button>
+            {snapshot.settings.localAI.developerMode && (
+              <Button disabled={!!pending} onClick={() => void validate(model.kind, true)}>
+                Import supported developer override
+              </Button>
+            )}
             <Button
               disabled={!!pending || model.status === 'not_installed'}
               onClick={() => void validate(model.kind, false)}
@@ -83,9 +87,9 @@ export function VoiceSettings() {
       ))}
       {error && <ErrorState message={error} />}
       <p className="field-help">
-        Models are installed manually. No automatic downloads. Voice supports WAV, MP3, M4A
-        (AAC-LC/ALAC), and OGG/Vorbis; up to 15 minutes and 100 MB. Recording stops at 5 minutes.
-        Recognition accuracy varies by language; always inspect the transcript.
+        Models are bundled and verified locally. No downloads are needed. Voice supports WAV, MP3,
+        M4A (AAC-LC/ALAC), and OGG/Vorbis; up to 15 minutes and 100 MB. Recording stops at 5
+        minutes. Recognition accuracy varies by language; always inspect the transcript.
       </p>
     </section>
   );

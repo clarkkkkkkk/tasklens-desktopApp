@@ -1,11 +1,12 @@
 mod audio;
 mod recording;
 use serde_json::{json, Value};
+#[cfg(test)]
 use sha2::{Digest, Sha256};
 use std::{
     collections::HashMap,
     fs,
-    io::{Read, Write},
+    io::Write,
     path::{Path, PathBuf},
     process::Stdio,
     sync::{
@@ -59,9 +60,7 @@ fn manifest(kind: &str) -> Result<Value, String> {
         .ok_or_else(|| "Unknown model".into())
 }
 fn model(app: &tauri::AppHandle, kind: &str) -> Result<PathBuf, String> {
-    Ok(root(app)?
-        .join("models")
-        .join(manifest(kind)?["file"].as_str().unwrap()))
+    crate::assets::model_path(app, kind)
 }
 fn executable(app: &tauri::AppHandle, name: &str) -> Result<PathBuf, String> {
     crate::platform::bundled_binary(app, name).ok_or_else(|| {
@@ -69,7 +68,9 @@ fn executable(app: &tauri::AppHandle, name: &str) -> Result<PathBuf, String> {
             .into()
     })
 }
+#[cfg(test)]
 fn hash(path: &Path, spec: &Value) -> Result<(), String> {
+    use std::io::Read;
     let mut file = fs::File::open(path).map_err(|_| "Model file is missing")?;
     if file.metadata().map_err(|_| error())?.len() != spec["bytes"].as_u64().unwrap() {
         return Err("Model size does not match the supported model".into());
@@ -190,13 +191,12 @@ pub async fn voice_models(window: tauri::Window, app: tauri::AppHandle) -> Resul
     let kind = "whisper";
     let spec = manifest(kind)?;
     let path = model(&app, kind)?;
-    let receipt = fs::read_to_string(path.with_extension("validated")).unwrap_or_default();
     let prior = if !path.is_file() {
         "not_installed"
-    } else if receipt == spec["sha256"].as_str().unwrap() {
+    } else if crate::assets::cached(&app, kind, &path, &spec) {
         "ready"
     } else {
-        "error"
+        "validating"
     };
     result.push(json!({"kind": kind, "name": spec["model"], "status": status.get(kind).map(String::as_str).unwrap_or(prior), "runtimeAvailable": executable(&app, "whisper-cli").is_ok(), "source": spec["source"]}));
     Ok(json!(result))
@@ -228,31 +228,20 @@ pub async fn voice_validate_model(
             .unwrap()
             .insert(kind.clone(), "validating".into());
         let result = (|| {
-            let target = model(&app, &kind)?;
+            let runtime = crate::local_ai::server::runtime(&app);
+            let _model_gate = runtime.gate.lock().unwrap();
+            runtime.stop(&app);
+            let cancel = AtomicBool::new(false);
             if import {
                 let source = rfd::FileDialog::new()
                     .set_title("Import the supported local model")
                     .pick_file()
                     .ok_or("Model import cancelled")?;
-                if fs::metadata(&source)
-                    .map_err(|_| "Cannot read model")?
-                    .len()
-                    != manifest(&kind)?["bytes"].as_u64().unwrap()
-                {
-                    return Err("Model size does not match the supported model".into());
-                }
-                let staged = target.with_extension("partial");
-                let operation = (|| {
-                    fs::copy(&source, &staged).map_err(|_| "Could not copy model")?;
-                    hash(&staged, &manifest(&kind)?)?;
-                    fs::rename(&staged, &target).map_err(|_| "Could not install model")?;
-                    Ok::<(), String>(())
-                })();
-                let _ = fs::remove_file(staged);
-                operation?;
+                crate::assets::import(&app, &kind, &source, &cancel)?;
             } else {
-                hash(&target, &manifest(&kind)?)?;
+                crate::assets::verify_model(&app, &kind, true, &cancel)?;
             }
+            let target = model(&app, &kind)?;
             let folder = root(&app)?.join("model-validation");
             fs::create_dir_all(&folder).map_err(|_| error())?;
             let cancel = AtomicBool::new(false);
@@ -274,11 +263,6 @@ pub async fn voice_validate_model(
             );
             let _ = fs::remove_dir_all(folder);
             result?;
-            fs::write(
-                target.with_extension("validated"),
-                manifest(&kind)?["sha256"].as_str().unwrap(),
-            )
-            .map_err(|_| "Could not save model validation status")?;
             Ok(())
         })();
         state
@@ -437,10 +421,12 @@ pub async fn voice_transcribe(
             .try_lock()
             .map_err(|_| "Local processing is busy")?;
         let (path, cancel) = job(&app, &id)?;
+        let runtime = crate::local_ai::server::runtime(&app);
+        let _model_gate = runtime.gate.lock().unwrap();
+        runtime.stop(&app);
         let result = (|| {
-            let spec = manifest("whisper")?;
             let model_path = model(&app, "whisper")?;
-            hash(&model_path, &spec)?;
+            crate::assets::verify_model(&app, "whisper", false, &cancel)?;
             state
                 .model_status
                 .lock()

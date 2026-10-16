@@ -18,7 +18,12 @@
     "tauri": "tauri",
     "format": "prettier --write src tests scripts *.ts *.js *.json",
     "format:check": "prettier --check src tests scripts *.ts *.js *.json",
-    "build:runtimes": "node scripts/build-local-runtimes.mjs"
+    "build:runtimes": "node scripts/build-local-runtimes.mjs",
+    "prepare:models": "node scripts/prepare-models.mjs",
+    "verify:assets": "node scripts/verify-assets.mjs",
+    "release:desktop": "node scripts/release-desktop.mjs",
+    "test:assets": "node --test scripts/ai-assets.test.mjs",
+    "prepare:notices": "node scripts/collect-ai-notices.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.0",
