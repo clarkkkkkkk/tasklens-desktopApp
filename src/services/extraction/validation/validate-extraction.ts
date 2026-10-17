@@ -9,7 +9,12 @@ import {
 import { buildReminders } from '../../reminders/ReminderScheduler';
 import type { PromptContext, SourceUnit } from '../prompts/build-prompt';
 import { localStamp } from '../prompts/build-prompt';
-import { rawBundleSchema, type RawBundle, type RawItem } from '../prompts/extraction-schema';
+import {
+  expandCompactBundle,
+  rawBundleSchema,
+  type RawBundle,
+  type RawItem,
+} from '../prompts/extraction-schema';
 import {
   dateSupport,
   findExplicitDates,
@@ -109,7 +114,7 @@ export function validateExtraction(raw: string, context: ValidationContext): Val
   } catch (e) {
     return { ok: false, stage: 'json', error: (e as Error).message, issues };
   }
-  const parsed = rawBundleSchema.safeParse(json);
+  const parsed = rawBundleSchema.safeParse(expandCompactBundle(json));
   if (!parsed.success)
     return {
       ok: false,
@@ -231,6 +236,26 @@ function buildResult(
       context.units,
       'end',
     );
+    // A start time written as a stated range ("8:00 AM - 1:00 PM") also states its end.
+    // Derive it deterministically, with the same source checks, when no end was given.
+    if (!endTime.value && time.value && item.time.text && !item.end_time.text) {
+      const written = findTimes(item.time.text).filter((t) => t.explicit);
+      if (/[-–—]|\bto\b/i.test(item.time.text) && written.length >= 2) {
+        const derived = checkTime(
+          { ...item.time, value: null },
+          time.ids,
+          textOf,
+          `${label} end time`,
+          issues,
+          context.units,
+          'end',
+        );
+        if (derived.value && toMinutes(derived.value) > toMinutes(time.value)) {
+          issues.push(`${label}: end time ${derived.value} taken from the stated range`);
+          endTime = derived;
+        }
+      }
+    }
     const arrival = checkTime(
       item.arrival_time,
       validIds(item.arrival_time.evidence, `${label} arrival`),

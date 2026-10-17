@@ -1,0 +1,319 @@
+{
+  "model": "Qwen3-1.7B-Q4_K_M.gguf",
+  "args": [],
+  "runtime": {
+    "loadSeconds": 3.081,
+    "prewarmSeconds": null,
+    "peakRssKiB": 2849940
+  },
+  "results": [
+    {
+      "id": "pictorial",
+      "languages": "Cebuano + English",
+      "seconds": 73.507806377,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "1 (expected 1)"
+        },
+        {
+          "name": "pictorial: found",
+          "ok": true,
+          "detail": "Pictorial"
+        },
+        {
+          "name": "pictorial: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "pictorial: date",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "pictorial: time",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "pictorial: arrival time",
+          "ok": true,
+          "detail": "\"13:30\" (expected \"13:30\")"
+        },
+        {
+          "name": "pictorial: location",
+          "ok": true,
+          "detail": "\"campus\""
+        },
+        {
+          "name": "pictorial: requirement black pants",
+          "ok": true,
+          "detail": "[\"Mag black pants\",\"No jeans\"]"
+        },
+        {
+          "name": "pictorial: requirement jeans",
+          "ok": true,
+          "detail": "[\"Mag black pants\",\"No jeans\"]"
+        },
+        {
+          "name": "pictorial: confidence.arrivalTime",
+          "ok": true,
+          "detail": "\"confirmed\" (expected \"confirmed\")"
+        },
+        {
+          "name": "pictorial: confidence.time",
+          "ok": true,
+          "detail": "\"needs_review\" (expected \"needs_review\")"
+        },
+        {
+          "name": "pictorial: confidence.date",
+          "ok": true,
+          "detail": "\"needs_review\" (expected \"needs_review\")"
+        },
+        {
+          "name": "ambiguity on date",
+          "ok": true,
+          "detail": "[\"date: The source says “ugma”, but when it was originally sent is unclear. Which date did it refer to?\"]"
+        },
+        {
+          "name": "no 1:30 PM interpreted as the event start time",
+          "ok": true
+        },
+        {
+          "name": "no “tomorrow/ugma” resolved without a known sending date",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "Pictorial",
+          "arrivalTime": "13:30",
+          "location": "campus",
+          "requirements": [
+            "Mag black pants",
+            "No jeans"
+          ],
+          "notes": [
+            "Final time not yet determined. Final announcement will be made later."
+          ],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "time": "needs_review",
+            "arrivalTime": "confirmed",
+            "location": "confirmed",
+            "requirements": "confirmed"
+          }
+        },
+        {
+          "ambiguities": [
+            "date: The source says “ugma”, but when it was originally sent is unclear. Which date did it refer to? [\"2026-10-13\"]"
+          ]
+        }
+      ],
+      "issues": [
+        "item 1 arrival time: cited r8, the only unit stating 13:30",
+        "item 1: relative date “ugma” left for review"
+      ],
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 1736,
+        "prompt_ms": 44963.253,
+        "prompt_per_token_ms": 25.900491359447003,
+        "prompt_per_second": 38.60930613716939,
+        "predicted_n": 196,
+        "predicted_ms": 28381.054,
+        "predicted_per_token_ms": 145.54386666666667,
+        "predicted_per_second": 6.870780768043358
+      }
+    },
+    {
+      "id": "midterm",
+      "languages": "English",
+      "seconds": 44.45620159,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "1 (expected 1–2)"
+        },
+        {
+          "name": "midterm|exam|cecc483: found",
+          "ok": true,
+          "detail": "MIDTERM EXAMINATION - CECC483"
+        },
+        {
+          "name": "midterm|exam|cecc483: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: date",
+          "ok": true,
+          "detail": "\"2026-10-11\" (expected \"2026-10-11\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: time",
+          "ok": true,
+          "detail": "\"08:00\" (expected \"08:00\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: end time",
+          "ok": true,
+          "detail": "\"13:00\" (expected \"13:00\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: location",
+          "ok": true,
+          "detail": "\"CIT-U Gymnasium\""
+        },
+        {
+          "name": "midterm|exam|cecc483: confidence.date",
+          "ok": true,
+          "detail": "\"confirmed\" (expected \"confirmed\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: confidence.time",
+          "ok": true,
+          "detail": "\"confirmed\" (expected \"confirmed\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: confidence.location",
+          "ok": true,
+          "detail": "\"confirmed\" (expected \"confirmed\")"
+        },
+        {
+          "name": "no unrelated coverage section merged into the CECC483 exam without an open question",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "MIDTERM EXAMINATION - CECC483",
+          "date": "2026-10-11",
+          "time": "08:00",
+          "endTime": "13:00",
+          "location": "CIT-U Gymnasium",
+          "requirements": [
+            "Multiple Choices (75pts) w/ terminologies",
+            "Coverage: Statics of Rigid Bodies",
+            "- Mechanics of Deformable Bodies",
+            "- Algebra",
+            "- Trigonometry",
+            "- Geometry",
+            "- Calculus"
+          ],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "confirmed",
+            "time": "confirmed",
+            "endTime": "confirmed",
+            "location": "confirmed",
+            "requirements": "inferred"
+          }
+        },
+        {
+          "ambiguities": [
+            "notes: This screenshot has more than one “Coverage” section. Do they all belong to “MIDTERM EXAMINATION - CECC483”? []"
+          ]
+        }
+      ],
+      "issues": [
+        "item 1 end time: “8:00 AM - 1:00 PM” converted to 13:00",
+        "item 1: end time 13:00 taken from the stated range",
+        "item 1: combines 2 separate “Coverage” sections"
+      ],
+      "timings": {
+        "cache_n": 1607,
+        "prompt_n": 154,
+        "prompt_ms": 5332.079,
+        "prompt_per_token_ms": 34.62388961038961,
+        "prompt_per_second": 28.881792636605724,
+        "predicted_n": 267,
+        "predicted_ms": 39087.603,
+        "predicted_per_token_ms": 146.94587593984963,
+        "predicted_per_second": 6.805226710883243
+      }
+    },
+    {
+      "id": "bundle-english",
+      "languages": "English",
+      "seconds": 27.692439601000004,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": false,
+          "detail": "1 (expected 2)"
+        },
+        {
+          "name": "chapter 3: found",
+          "ok": false,
+          "detail": "missing"
+        },
+        {
+          "name": "consultation: found",
+          "ok": false,
+          "detail": "missing"
+        },
+        {
+          "name": "no deadline and consultation merged into one item",
+          "ok": true
+        },
+        {
+          "name": "no deadline time used as consultation time",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "Thesis Advising",
+          "time": "09:14",
+          "requirements": [
+            "Consultation is Monday at 2 PM",
+            "Bring the revised questionnaire"
+          ],
+          "notes": [
+            "Submit Chapter 3 Friday before 5 PM"
+          ],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "inferred",
+            "date": "needs_review",
+            "time": "confirmed",
+            "requirements": "inferred"
+          }
+        },
+        {
+          "ambiguities": [
+            "date: Which date does this activity refer to? []"
+          ]
+        }
+      ],
+      "issues": [
+        "item 1: unsupported date 2026-10-12 removed"
+      ],
+      "timings": {
+        "cache_n": 1607,
+        "prompt_n": 73,
+        "prompt_ms": 2972.25,
+        "prompt_per_token_ms": 40.715753424657535,
+        "prompt_per_second": 24.560518125998826,
+        "predicted_n": 170,
+        "predicted_ms": 24674.644,
+        "predicted_per_token_ms": 146.00381065088757,
+        "predicted_per_second": 6.849136303648393
+      }
+    }
+  ]
+}

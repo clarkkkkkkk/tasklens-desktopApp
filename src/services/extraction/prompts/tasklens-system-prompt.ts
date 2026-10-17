@@ -22,7 +22,7 @@ ITEMS
 - Preserve course names, event names, locations and instructions as written.
 
 FIELDS
-- Never invent details. If information is missing, use null. Unknown time is null, never 00:00. Date words such as ugma or bukas are not clock times.
+- Never invent details. If information is missing, use null. Unknown time is null, never 00:00. Write the whole date, time, end_time, arrival_time or location field as null when the source does not mention it at all. Date words such as ugma or bukas are not clock times.
 - time is when an event starts or when a deadline is due. arrival_time is when people must already be present ("be there by", "naa na", "kinahanglan naa", "dapat nandoon"). Never assume an arrival time is the event start time: if only an arrival time is stated, time is null.
 - Never assume a deadline is an event time. Distinguish event start time, required arrival time, deadline, reminder and preparation task.
 - end_time only when an end or range is stated, such as "8:00 AM - 1:00 PM".
@@ -51,4 +51,4 @@ SOURCE_UNITS
 [r4] naa na mo sa Guadalupe. Magdala ug gloves ug tubig.
 [r5] Wala pa sure kung pila ka oras.
 OUTPUT
-{"items":[{"type":"event","title":{"evidence":["r3"],"value":"Tree planting","confidence":"confirmed"},"date":{"evidence":["r3"],"expression":"Sunod Monday","basis":"unknown","value":null,"confidence":"needs_review"},"time":{"evidence":[],"text":null,"value":null,"confidence":"needs_review"},"end_time":{"evidence":[],"text":null,"value":null,"confidence":"needs_review"},"arrival_time":{"evidence":["r3"],"text":"6:30AM","value":"06:30","confidence":"confirmed"},"location":{"evidence":["r4"],"value":"Guadalupe","confidence":"confirmed"},"requirements":[{"evidence":["r4"],"text":"Bring gloves"},{"evidence":["r4"],"text":"Bring water"}],"notes":["How long it will take is not yet known."],"reminders":[]}],"ambiguities":[{"item":0,"field":"date","question":"Which Monday is “Sunod Monday”? The sending date is not visible.","options":[],"evidence":["r3"]}]}`;
+{"items":[{"type":"event","title":{"evidence":["r3"],"value":"Tree planting","confidence":"confirmed"},"date":{"evidence":["r3"],"expression":"Sunod Monday","basis":"unknown","value":null,"confidence":"needs_review"},"time":null,"end_time":null,"arrival_time":{"evidence":["r3"],"text":"6:30AM","value":"06:30","confidence":"confirmed"},"location":{"evidence":["r4"],"value":"Guadalupe","confidence":"confirmed"},"requirements":[{"evidence":["r4"],"text":"Bring gloves"},{"evidence":["r4"],"text":"Bring water"}],"notes":["How long it will take is not yet known."],"reminders":[]}],"ambiguities":[{"item":0,"field":"date","question":"Which Monday is “Sunod Monday”? The sending date is not visible.","options":[],"evidence":["r3"]}]}`;

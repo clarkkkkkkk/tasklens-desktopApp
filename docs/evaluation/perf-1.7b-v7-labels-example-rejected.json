@@ -1,0 +1,350 @@
+{
+  "model": "Qwen3-1.7B-Q4_K_M.gguf",
+  "args": [],
+  "runtime": {
+    "loadSeconds": 5.779,
+    "prewarmSeconds": null,
+    "peakRssKiB": 2570496
+  },
+  "results": [
+    {
+      "id": "pictorial",
+      "languages": "Cebuano + English",
+      "seconds": 101.92553561,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": false,
+          "detail": "2 (expected 1)"
+        },
+        {
+          "name": "pictorial: found",
+          "ok": true,
+          "detail": "pictorial"
+        },
+        {
+          "name": "pictorial: type",
+          "ok": false,
+          "detail": "\"task\" (expected \"event\")"
+        },
+        {
+          "name": "pictorial: date",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "pictorial: time",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "pictorial: arrival time",
+          "ok": true,
+          "detail": "\"13:30\" (expected \"13:30\")"
+        },
+        {
+          "name": "pictorial: location",
+          "ok": true,
+          "detail": "\"campus\""
+        },
+        {
+          "name": "pictorial: requirement black pants",
+          "ok": true,
+          "detail": "[\"black pants\",\"no jeans\"]"
+        },
+        {
+          "name": "pictorial: requirement jeans",
+          "ok": true,
+          "detail": "[\"black pants\",\"no jeans\"]"
+        },
+        {
+          "name": "pictorial: confidence.arrivalTime",
+          "ok": true,
+          "detail": "\"confirmed\" (expected \"confirmed\")"
+        },
+        {
+          "name": "pictorial: confidence.time",
+          "ok": false,
+          "detail": "empty (expected \"needs_review\")"
+        },
+        {
+          "name": "pictorial: confidence.date",
+          "ok": true,
+          "detail": "\"needs_review\" (expected \"needs_review\")"
+        },
+        {
+          "name": "ambiguity on date",
+          "ok": true,
+          "detail": "[\"date: The source says “ugma”, but when it was originally sent is unclear. Which date did it refer to?\"]"
+        },
+        {
+          "name": "no 1:30 PM interpreted as the event start time",
+          "ok": true
+        },
+        {
+          "name": "no “tomorrow/ugma” resolved without a known sending date",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "task",
+          "title": "pictorial",
+          "arrivalTime": "13:30",
+          "location": "campus",
+          "requirements": [
+            "black pants",
+            "no jeans"
+          ],
+          "notes": [
+            "Wala pa final ang exact time sa pictorial, i-announce pa later."
+          ],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "arrivalTime": "confirmed",
+            "location": "confirmed",
+            "requirements": "confirmed"
+          }
+        },
+        {
+          "type": "task",
+          "title": "final",
+          "location": "campus",
+          "requirements": [],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "inferred",
+            "location": "needs_review"
+          }
+        },
+        {
+          "ambiguities": [
+            "date: The source says “ugma”, but when it was originally sent is unclear. Which date did it refer to? [\"2026-10-13\"]"
+          ]
+        }
+      ],
+      "issues": [
+        "item 1 arrival time: “1:30PM” converted to 13:30",
+        "item 1 arrival time: cited r8, the only unit stating 13:30",
+        "item 1: relative date “ugma” left for review",
+        "item 2 arrival time: unsupported time 00:00 removed"
+      ],
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 1797,
+        "prompt_ms": 50178.581,
+        "prompt_per_token_ms": 27.923528658875902,
+        "prompt_per_second": 35.812092813067,
+        "predicted_n": 338,
+        "predicted_ms": 51471.691,
+        "predicted_per_token_ms": 152.7349881305638,
+        "predicted_per_second": 6.547288294841528
+      }
+    },
+    {
+      "id": "midterm",
+      "languages": "English",
+      "seconds": 45.745674367999996,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "1 (expected 1–2)"
+        },
+        {
+          "name": "midterm|exam|cecc483: found",
+          "ok": true,
+          "detail": "MIDTERM EXAMINATION - CECC483"
+        },
+        {
+          "name": "midterm|exam|cecc483: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: date",
+          "ok": true,
+          "detail": "\"2026-10-11\" (expected \"2026-10-11\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: time",
+          "ok": true,
+          "detail": "\"08:00\" (expected \"08:00\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: end time",
+          "ok": true,
+          "detail": "\"13:00\" (expected \"13:00\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: location",
+          "ok": true,
+          "detail": "\"CIT-U Gymnasium\""
+        },
+        {
+          "name": "midterm|exam|cecc483: confidence.date",
+          "ok": true,
+          "detail": "\"confirmed\" (expected \"confirmed\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: confidence.time",
+          "ok": true,
+          "detail": "\"confirmed\" (expected \"confirmed\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: confidence.location",
+          "ok": true,
+          "detail": "\"confirmed\" (expected \"confirmed\")"
+        },
+        {
+          "name": "no unrelated coverage section merged into the CECC483 exam without an open question",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "MIDTERM EXAMINATION - CECC483",
+          "date": "2026-10-11",
+          "time": "08:00",
+          "endTime": "13:00",
+          "location": "CIT-U Gymnasium",
+          "requirements": [
+            "Multiple Choices (75pts) w/ terminologies",
+            "Coverage: Statics of Rigid Bodies",
+            "- Mechanics of Deformable Bodies",
+            "- Algebra",
+            "- Trigonometry",
+            "- Geometry",
+            "- Calculus"
+          ],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "confirmed",
+            "time": "confirmed",
+            "endTime": "confirmed",
+            "location": "confirmed",
+            "requirements": "inferred"
+          }
+        },
+        {
+          "ambiguities": [
+            "notes: This screenshot has more than one “Coverage” section. Do they all belong to “MIDTERM EXAMINATION - CECC483”? []"
+          ]
+        }
+      ],
+      "issues": [
+        "item 1 end time: “8:00 AM - 1:00 PM” converted to 13:00",
+        "item 1: end time 13:00 taken from the stated range",
+        "item 1: combines 2 separate “Coverage” sections"
+      ],
+      "timings": {
+        "cache_n": 1668,
+        "prompt_n": 154,
+        "prompt_ms": 5336.128,
+        "prompt_per_token_ms": 34.650181818181814,
+        "prompt_per_second": 28.859877424229705,
+        "predicted_n": 266,
+        "predicted_ms": 40368.806,
+        "predicted_per_token_ms": 152.33511698113207,
+        "predicted_per_second": 6.564474559886661
+      }
+    },
+    {
+      "id": "bundle-english",
+      "languages": "English",
+      "seconds": 35.45861185400002,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "2 (expected 2)"
+        },
+        {
+          "name": "chapter 3: found",
+          "ok": true,
+          "detail": "Submit Chapter 3 Friday before 5 PM"
+        },
+        {
+          "name": "chapter 3: type",
+          "ok": false,
+          "detail": "\"task\" (expected \"deadline\")"
+        },
+        {
+          "name": "chapter 3: date",
+          "ok": false,
+          "detail": "empty (expected \"2026-10-09\")"
+        },
+        {
+          "name": "chapter 3: time",
+          "ok": false,
+          "detail": "empty (expected \"17:00\")"
+        },
+        {
+          "name": "consultation: found",
+          "ok": false,
+          "detail": "missing"
+        },
+        {
+          "name": "no deadline and consultation merged into one item",
+          "ok": true
+        },
+        {
+          "name": "no deadline time used as consultation time",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "task",
+          "title": "Submit Chapter 3 Friday before 5 PM",
+          "requirements": [
+            "Consultation is Monday at 2 PM",
+            "Bring the revised questionnaire"
+          ],
+          "notes": [],
+          "confidence": {
+            "overall": "inferred",
+            "title": "inferred",
+            "requirements": "inferred"
+          }
+        },
+        {
+          "type": "event",
+          "title": "Engr. Santos",
+          "requirements": [],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "time": "needs_review"
+          }
+        },
+        {
+          "ambiguities": []
+        }
+      ],
+      "issues": [],
+      "timings": {
+        "cache_n": 1668,
+        "prompt_n": 77,
+        "prompt_ms": 3190.149,
+        "prompt_per_token_ms": 41.43050649350649,
+        "prompt_per_second": 24.136803641460006,
+        "predicted_n": 223,
+        "predicted_ms": 32235.418,
+        "predicted_per_token_ms": 145.2045855855856,
+        "predicted_per_second": 6.886834847309875
+      }
+    }
+  ]
+}

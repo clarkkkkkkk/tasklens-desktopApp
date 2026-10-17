@@ -56,6 +56,11 @@ export interface LocalModelManager {
     request: { jobId: string; prompt: string; schema: object; maxTokens: number },
     signal: AbortSignal,
   ): Promise<CompletionResult>;
+  /**
+   * Loads the model and puts the fixed prompt prefix in llama.cpp's cache (restored from
+   * disk when saved earlier), so the next completion evaluates only the source text.
+   */
+  prewarm(prefix: string, signal: AbortSignal): Promise<void>;
   diagnostics(): Promise<{ runtimeLog: string[] }>;
   onRuntimeStatus(listener: (status: RuntimeStatus) => void): Promise<() => void>;
 }
@@ -109,6 +114,17 @@ export class NativeLocalModelManager implements LocalModelManager {
       });
       signal.throwIfAborted();
       return result;
+    } finally {
+      signal.removeEventListener('abort', cancel);
+    }
+  }
+  async prewarm(prefix: string, signal: AbortSignal) {
+    signal.throwIfAborted();
+    const id = crypto.randomUUID();
+    const cancel = () => void cancelNativeJob(id);
+    signal.addEventListener('abort', cancel, { once: true });
+    try {
+      await nativeInvoke('local_ai_prewarm', { id, prefix, config: this.config });
     } finally {
       signal.removeEventListener('abort', cancel);
     }

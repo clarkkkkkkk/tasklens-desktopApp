@@ -215,6 +215,106 @@ pub async fn local_ai_complete(
     .await
 }
 
+/// Loads the model if needed and evaluates the fixed prompt prefix without generating, so
+/// llama.cpp's prompt cache already holds it when the first extraction arrives. Started
+/// while OCR runs; a later completion waits on the same gate and reuses the cached prefix.
+#[tauri::command]
+pub async fn local_ai_prewarm(
+    window: tauri::Window,
+    app: tauri::AppHandle,
+    id: String,
+    prefix: String,
+    config: Option<Config>,
+) -> Result<Value, String> {
+    check_window(&window)?;
+    if prefix.len() > MAX_PROMPT_BYTES {
+        return Err("The prompt prefix is too long.".into());
+    }
+    let config = config.unwrap_or_default().sanitized();
+    blocking(move || {
+        let jobs = app.state::<Jobs>();
+        let job = jobs.register(&id)?;
+        let runtime = server::runtime(&app);
+        let _gate = runtime.gate.lock().unwrap();
+        if job.cancel.load(Ordering::SeqCst) {
+            return Err(platform::CANCELLED.into());
+        }
+        let (port, key) = runtime.ensure(&app, config)?;
+        let started = Instant::now();
+        let post = |path: &str, body: Value| {
+            let body = body.to_string();
+            http::send(
+                http::Request {
+                    port,
+                    method: "POST",
+                    path,
+                    api_key: &key,
+                    body: Some(body.as_bytes()),
+                    timeout: Duration::from_secs(600),
+                    cancel: Some(&job.cancel),
+                },
+                |_| Ok(()),
+            )
+            .map_err(|e| {
+                if e.to_string() == http::CANCELLED_IO {
+                    platform::CANCELLED.to_string()
+                } else {
+                    "MODEL_FAILED: The local model did not respond.".to_string()
+                }
+            })
+        };
+        // The slot file is named after the model and the exact prefix, so a prompt or model
+        // change never restores stale state.
+        let cache_dir = server::prompt_cache_dir(&app);
+        let file = {
+            use sha2::{Digest, Sha256};
+            let mut hasher = Sha256::new();
+            hasher.update(model::spec()["sha256"].as_str().unwrap_or_default());
+            hasher.update(
+                model::path(&app)
+                    .map(|p| p.to_string_lossy().into_owned())
+                    .unwrap_or_default(),
+            );
+            hasher.update(&prefix);
+            let digest = hasher.finalize();
+            format!(
+                "prefix-{}.bin",
+                digest[..12]
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect::<String>()
+            )
+        };
+        if cache_dir.as_ref().is_some_and(|d| d.join(&file).is_file())
+            && post("/slots/0?action=restore", json!({ "filename": file }))? == 200
+        {
+            return Ok(
+                json!({ "elapsedMs": started.elapsed().as_millis() as u64, "restored": true }),
+            );
+        }
+        let status = post(
+            "/completion",
+            json!({ "prompt": prefix, "n_predict": 0, "cache_prompt": true }),
+        )?;
+        if status != 200 {
+            return Err("MODEL_FAILED: The local model rejected the request.".into());
+        }
+        if let Some(dir) = cache_dir {
+            if post("/slots/0?action=save", json!({ "filename": file }))? == 200 {
+                // Keep only the current prefix; older files belong to previous prompts.
+                for entry in std::fs::read_dir(&dir).into_iter().flatten().flatten() {
+                    let name = entry.file_name().to_string_lossy().into_owned();
+                    if name.starts_with("prefix-") && name != file {
+                        let _ = std::fs::remove_file(entry.path());
+                    }
+                }
+            }
+        }
+        Ok(json!({ "elapsedMs": started.elapsed().as_millis() as u64, "restored": false }))
+    })
+    .await
+}
+
 fn complete(
     port: u16,
     key: &str,
