@@ -191,7 +191,8 @@ export function findTimes(text: string): TimeMention[] {
     const explicit = !!m[3] || h >= 13 || h === 0;
     out.push({ minutes: meridiem(h, m[3]) * 60 + min, explicit });
   }
-  for (const m of t.matchAll(/\b(\d{1,2})\s*(a\.?\s?m\.?|p\.?\s?m\.?)(?![a-z])/g)) {
+  // Do not read the minutes in "8:05 AM" as a second, unrelated "5 AM".
+  for (const m of t.matchAll(/(?:^|[^\d:.])\b(\d{1,2})\s*(a\.?\s?m\.?|p\.?\s?m\.?)(?![a-z])/g)) {
     const h = Number(m[1]);
     if (h >= 1 && h <= 12) out.push({ minutes: meridiem(h, m[2]) * 60, explicit: true });
   }

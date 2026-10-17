@@ -11,7 +11,7 @@ import { execFileSync } from 'node:child_process';
  * regression signal, not a production accuracy claim.
  */
 import { spawn, type ChildProcess } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, openSync, closeSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { request as httpRequest } from 'node:http';
 import { StringDecoder } from 'node:string_decoder';
@@ -27,6 +27,7 @@ import { validateExtraction } from '../validation/validate-extraction';
 
 const enabled = !!process.env.TASKLENS_EVAL;
 const only = process.env.TASKLENS_EVAL_ONLY?.split(',');
+const speculative = process.env.TASKLENS_EVAL_SPECULATIVE === 'ngram-simple';
 const target = enabled
   ? execFileSync('rustc', ['--print', 'host-tuple'], { encoding: 'utf8' }).trim()
   : 'unused';
@@ -59,6 +60,7 @@ async function request(pathname: string, body?: object, progressId?: string): Pr
     const req = httpRequest(
       {
         hostname: '127.0.0.1',
+        agent: false,
         port,
         path: pathname,
         method: body ? 'POST' : 'GET',
@@ -75,6 +77,9 @@ async function request(pathname: string, body?: object, progressId?: string): Pr
         let updates = 0;
         const decoder = new StringDecoder('utf8');
         const completion = {
+          promptVersion: TASKLENS_EXTRACTION_PROMPT_VERSION,
+          modelSha256: assets.extraction.sha256,
+          promptLookup: speculative ? 'ngram-simple (N=4, M=8)' : 'disabled',
           content: '',
           stopped_limit: false,
           timings: undefined as Record<string, number> | undefined,
@@ -151,6 +156,8 @@ async function request(pathname: string, body?: object, progressId?: string): Pr
 beforeAll(async () => {
   if (!enabled) return;
   port = await freePort();
+  mkdirSync('.local-ai', { recursive: true });
+  const runtimeLog = openSync('.local-ai/eval-runtime.log', 'w');
   server = spawn(
     binary,
     [
@@ -169,11 +176,27 @@ beforeAll(async () => {
       '--n-gpu-layers',
       '0',
       '--no-webui',
+      ...(speculative
+        ? [
+            '--spec-type',
+            'ngram-simple',
+            '--spec-ngram-simple-size-n',
+            '4',
+            '--spec-ngram-simple-size-m',
+            '8',
+          ]
+        : []),
     ],
-    { stdio: 'ignore', cwd: path.dirname(binary) },
+    { stdio: ['ignore', runtimeLog, runtimeLog], cwd: path.dirname(binary) },
   );
+  closeSync(runtimeLog);
+  server.on('exit', (code, signal) => {
+    writeFileSync('.local-ai/eval-server-exit.json', JSON.stringify({ code, signal }));
+  });
   const started = Date.now();
   while (Date.now() - started < 300_000) {
+    if (server.exitCode !== null || server.signalCode !== null)
+      throw new Error('llama-server exited; see .local-ai/eval-runtime.log');
     const ok = await request('/health').then(
       (r) => r.ok,
       () => false,
@@ -185,7 +208,7 @@ beforeAll(async () => {
 }, 320_000);
 
 afterAll(async () => {
-  if (!server || server.exitCode !== null) return;
+  if (!server || server.exitCode !== null || server.signalCode !== null) return;
   const child = server;
   await new Promise<void>((resolve) => {
     const timeout = setTimeout(() => child.kill('SIGKILL'), 3000);
@@ -211,7 +234,8 @@ it.skipIf(!enabled)(
       error?: string;
       timings?: Record<string, number>;
     }[] = [];
-    for (const testCase of extractionCases.filter((c) => !only || only.includes(c.id))) {
+    const selectedCases = extractionCases.filter((c) => !only || only.includes(c.id));
+    for (const testCase of selectedCases) {
       const context = contextForCase(testCase);
       const started = performance.now();
       let repair: string | undefined;
@@ -303,6 +327,9 @@ it.skipIf(!enabled)(
         `${record!.id}: ${record!.checks.length - failed.length}/${record!.checks.length} checks, ${record!.seconds.toFixed(1)}s` +
           failed.map((c) => `\n   ✗ ${c.name} — ${c.detail ?? ''}`).join(''),
       );
+      // Development diagnosis may stop at the first scored failure; assertions and
+      // the default complete-suite run remain unchanged.
+      if (failed.length && process.env.TASKLENS_EVAL_FAIL_FAST) break;
     }
 
     const total = results.flatMap((r) => r.checks);
@@ -313,8 +340,10 @@ it.skipIf(!enabled)(
       `- Prompt version: ${TASKLENS_EXTRACTION_PROMPT_VERSION}`,
       `- Model: Qwen3-4B Q4_K_M (llama.cpp, CPU, temperature 0)`,
       `- Runtime: ${path.basename(binary)}`,
+      `- Prompt lookup: ${speculative ? 'ngram-simple (N=4, M=8)' : 'disabled'}`,
       `- Run: ${new Date().toISOString()} on ${os.cpus()[0]?.model ?? 'unknown CPU'}`,
       `- Checks passed: ${passed}/${total.length} across ${results.length} cases`,
+      `- Suite coverage: ${results.length}/${selectedCases.length} requested cases${process.env.TASKLENS_EVAL_FAIL_FAST ? ' (fail-fast diagnosis)' : ''}`,
       '',
       'A small fixture suite is a regression signal, not a measure of production accuracy.',
       '',

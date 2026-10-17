@@ -1,0 +1,48 @@
+{
+  "date": "2026-10-17",
+  "promptVersion": 6,
+  "case": "pictorial",
+  "baseline": {
+    "completedSeconds": 222.079098329,
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 1739,
+      "prompt_ms": 116061.514,
+      "prompt_per_token_ms": 66.74037607820587,
+      "prompt_per_second": 14.983433698788387,
+      "predicted_n": 230,
+      "predicted_ms": 105935.794,
+      "predicted_per_token_ms": 462.6017205240174,
+      "predicted_per_second": 2.1616867288501185
+    },
+    "checksPassed": 15,
+    "checksTotal": 15
+  },
+  "experimental": {
+    "mode": "ngram-simple",
+    "lookupN": 4,
+    "draftM": 8,
+    "completedSeconds": 314.567430592,
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 1739,
+      "prompt_ms": 186788.869,
+      "prompt_per_token_ms": 107.41165554916618,
+      "prompt_per_second": 9.309976602513718,
+      "predicted_n": 229,
+      "predicted_ms": 127691.144,
+      "predicted_per_token_ms": 560.0488771929824,
+      "predicted_per_second": 1.7855584409205385,
+      "draft_n": 232,
+      "draft_n_accepted": 103
+    },
+    "checksPassed": 15,
+    "checksTotal": 15
+  },
+  "outputsIdentical": false,
+  "decision": "Keep prompt lookup disabled in production; the observed experiment was slower.",
+  "limitations": [
+    "Single serial trial on a laptop; sustained CPU/thermal state was not controlled.",
+    "Both passed this case, but output equality and complete-suite quality were not established for lookup."
+  ]
+}

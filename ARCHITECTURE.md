@@ -106,3 +106,5 @@ Linux x86_64, Windows x86_64 and Apple Silicon macOS are the release targets; In
 ### CPU runtime selection and responsive first launch
 
 Runtime recipe 2 bundles separate static baseline and AVX2 x86_64 llama.cpp/Whisper sidecars. `platform::bundled_binary` checks CPU and OS support before selecting AVX2, retaining baseline fallback. Model lifecycle, inference serialization and persistence are unchanged. Onboarding completion updates navigation immediately and uses a disposable visual exit snapshot; paused background-window animations cannot hold the workspace in a saving state.
+
+AppImage validation receipts use the unchanged container identity and relative resource path across temporary remounts. The packaged readiness coordinator measured 49.866 s for full validation and 309 ms on a cached remount; this is not total window launch time. Explicit validation and upgrades invalidate/recheck as documented in LOCAL_AI.md.

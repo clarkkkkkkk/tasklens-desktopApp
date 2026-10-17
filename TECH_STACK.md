@@ -43,3 +43,5 @@ Linux x86_64, Windows x86_64 and Apple Silicon macOS are the release targets; In
 ### Offline runtime performance (2026-10-17)
 
 Linux/Windows x86_64 releases include portable and AVX2 static llama.cpp/Whisper variants, selected by native feature detection. Both use pinned sources and avoid host-specific `-march=native`. The short i5-10210U Qwen benchmark measured 52.4× prompt throughput and 12.7× generation throughput improvements; full application timings differ. See `docs/evaluation/cpu-performance.json` and `OFFLINE_AI_IMPLEMENTATION_REPORT.md`.
+
+AppImage validation receipts use the unchanged container identity and relative resource path across temporary remounts. The packaged readiness coordinator measured 49.866 s for full validation and 309 ms on a cached remount; this is not total window launch time. Explicit validation and upgrades invalidate/recheck as documented in LOCAL_AI.md.

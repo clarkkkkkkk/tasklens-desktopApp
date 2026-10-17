@@ -10,7 +10,7 @@ SOURCE
 - Units marked (low OCR confidence) may contain recognition errors.
 
 ITEMS
-- Create one item per actionable thing. Never split one activity into several items.
+- Create one item per actionable thing. Never split one activity into several items. Arrival, venue, clothing and schedule updates are fields of that activity, not additional items. A sender saying they will announce the schedule later is context, not a task for the reader.
 - event: something people attend: exams, quizzes, classes, meetings, consultations, seminars, pictorials, practices, orientations. A request to be reminded does not turn an exam into a task.
 - deadline: something to hand in or finish by a time: submit, pass, pasa, ipasa, due, "before 5".
 - task: anything else to do without a fixed attendance time.
@@ -22,10 +22,11 @@ ITEMS
 - Preserve course names, event names, locations and instructions as written.
 
 FIELDS
-- Never invent details. If information is missing, use null.
+- Never invent details. If information is missing, use null. Unknown time is null, never 00:00. Date words such as ugma or bukas are not clock times.
 - time is when an event starts or when a deadline is due. arrival_time is when people must already be present ("be there by", "naa na", "kinahanglan naa", "dapat nandoon"). Never assume an arrival time is the event start time: if only an arrival time is stated, time is null.
 - Never assume a deadline is an event time. Distinguish event start time, required arrival time, deadline, reminder and preparation task.
 - end_time only when an end or range is stated, such as "8:00 AM - 1:00 PM".
+- location is the named venue or required arrival place, including a place stated in the arrival instruction (at/in/sa a place). Keep that place even when the event start is unknown. Arrival times belong in arrival_time, not requirements.
 - Dates use YYYY-MM-DD. For every time field, text copies the time exactly as written in the source (for example "1:30PM", "before 5", "alas 3") and value is the same time in 24-hour HH:MM.
 - date.expression copies the original date words, for example "ugma", "karong Friday", "Huwebes", "October 11, 2026".
 - date.basis: "explicit" when a calendar date is written; "message_timestamp" when a relative date is resolved from a sending date visible in the source, such as a chat timestamp; "capture_time" when resolved from the recording or capture date that SOURCE_METADATA says relative dates refer to; "unknown" otherwise.
@@ -40,4 +41,14 @@ EVIDENCE AND CONFIDENCE
 
 AMBIGUITIES
 - Preserve ambiguity. Whenever something important is unclear, add an ambiguity with a short question for the user, optional answer options, the field it concerns, the index of the item it belongs to (or null) and evidence unit IDs.
-- Prioritize correctness over filling every field.`;
+- Prioritize correctness over filling every field.
+
+EXAMPLE (illustration only; never copy its content)
+SOURCE_UNITS
+[r1] Org Officers
+[r2] Pres. Lim
+[r3] Sunod Monday na ang tree planting. Mga 6:30AM dapat
+[r4] naa na mo sa Guadalupe. Magdala ug gloves ug tubig.
+[r5] Wala pa sure kung pila ka oras.
+OUTPUT
+{"items":[{"type":"event","title":{"evidence":["r3"],"value":"Tree planting","confidence":"confirmed"},"date":{"evidence":["r3"],"expression":"Sunod Monday","basis":"unknown","value":null,"confidence":"needs_review"},"time":{"evidence":[],"text":null,"value":null,"confidence":"needs_review"},"end_time":{"evidence":[],"text":null,"value":null,"confidence":"needs_review"},"arrival_time":{"evidence":["r3"],"text":"6:30AM","value":"06:30","confidence":"confirmed"},"location":{"evidence":["r4"],"value":"Guadalupe","confidence":"confirmed"},"requirements":[{"evidence":["r4"],"text":"Bring gloves"},{"evidence":["r4"],"text":"Bring water"}],"notes":["How long it will take is not yet known."],"reminders":[]}],"ambiguities":[{"item":0,"field":"date","question":"Which Monday is “Sunod Monday”? The sending date is not visible.","options":[],"evidence":["r3"]}]}`;

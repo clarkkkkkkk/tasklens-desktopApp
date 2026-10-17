@@ -55,3 +55,5 @@ For optional native codec verification, install ffmpeg, run `node scripts/genera
 ### CPU acceleration
 
 On supported x86_64 CPUs, both speech recognition and subsequent extraction automatically use the bundled AVX2 executables. Older CPUs retain the portable variant. Whisper decoding parameters and multilingual model weights are unchanged; extraction remains serialized after transcription, and the text server is stopped before speech loads. Rebuild runtimes and restart a rebuilt application to apply the optimization. Real synthetic-speech acceptance and microphone/noise quality must be reported separately.
+
+2026-10-17 Fedora measurement: the unchanged multilingual Small model with four threads, automatic language detection, beam size 5 and best-of 5 transcribed the 11-second public JFK sample in 17.39 seconds using AVX2 (768,364 KiB peak RSS). TaskLens native import/transcription completed in 16.051 seconds with expected transcript words, networking disabled, resources read-only and the checkout hidden. This component run skipped action extraction and does not establish microphone/noisy/multilingual accuracy. Details: `docs/evaluation/voice-performance.json`.

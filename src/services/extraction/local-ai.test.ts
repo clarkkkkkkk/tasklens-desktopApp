@@ -82,6 +82,9 @@ describe('temporal helpers', () => {
     expect(findTimes('Time: 8:00 AM - 1:00 PM').map((t) => t.minutes)).toEqual([480, 780]);
     expect(findTimes('before 5').map((t) => t.minutes)).toEqual([300, 1020]);
     expect(findTimes('inig udto')).toContainEqual({ minutes: 720, explicit: true });
+    expect(findTimes('8:05 AM')).toEqual([{ minutes: 485, explicit: true }]);
+    expect(findTimes('10:10 PM')).toEqual([{ minutes: 1330, explicit: true }]);
+    expect(findTimes('8 AM, 9 PM').map((t) => t.minutes)).toEqual([480, 1260]);
   });
   it('recognises relative expressions across languages and resolves them from a base', () => {
     for (const phrase of ['ugma', 'karong Friday', 'Bukas', 'Huwebes', 'next week'])
@@ -98,6 +101,89 @@ describe('validation', () => {
   const pictorial = contextForCase(caseById('pictorial'));
   const arrivalUnit = unit(pictorial, /1:30PM/);
   const pantsUnit = unit(pictorial, /black pants/);
+
+  it('keeps the distinct start and end when both fields quote the same time range', () => {
+    const context = contextForCase(caseById('midterm'));
+    const timeUnit = unit(context, /8:00 AM/);
+    const result = ok(
+      validateExtraction(
+        rawBundle([
+          rawItem({
+            title: {
+              value: 'Midterm Examination',
+              evidence: [unit(context, /MIDTERM/i)],
+              confidence: 'confirmed',
+            },
+            time: {
+              text: '8:00 AM - 1:00 PM',
+              value: '08:00',
+              evidence: [timeUnit],
+              confidence: 'confirmed',
+            },
+            end_time: {
+              text: '8:00 AM - 1:00 PM',
+              value: '13:00',
+              evidence: [timeUnit],
+              confidence: 'confirmed',
+            },
+          }),
+        ]),
+        context,
+      ),
+    );
+    expect(result.actions[0]).toMatchObject({ time: '08:00', endTime: '13:00' });
+    expect(result.actions[0].confidence.endTime).toBe('confirmed');
+  });
+
+  it('clears unsupported dates and times rather than preserving invented midnight', () => {
+    const context: ValidationContext = {
+      ...pictorial,
+      units: [{ id: 't1', text: 'Pictorial schedule will be announced later.' }],
+    };
+    const result = ok(
+      validateExtraction(
+        rawBundle([
+          rawItem({
+            title: { value: 'Pictorial', evidence: ['t1'], confidence: 'confirmed' },
+            date: {
+              expression: null,
+              basis: 'unknown',
+              value: '2026-10-13',
+              evidence: ['t1'],
+              confidence: 'confirmed',
+            },
+            time: { text: 'schedule', value: '00:00', evidence: ['t1'], confidence: 'confirmed' },
+            end_time: { text: null, value: '00:00', evidence: ['t1'], confidence: 'confirmed' },
+          }),
+        ]),
+        context,
+      ),
+    );
+    expect(result.actions[0].date).toBeUndefined();
+    expect(result.actions[0].time).toBeUndefined();
+    expect(result.actions[0].endTime).toBeUndefined();
+    expect(result.ambiguities.some((a) => a.field === 'date')).toBe(true);
+  });
+
+  it('retains an explicitly stated midnight', () => {
+    const context: ValidationContext = {
+      ...pictorial,
+      units: [{ id: 't1', text: 'Pictorial starts at 12AM.' }],
+    };
+    const result = ok(
+      validateExtraction(
+        rawBundle([
+          rawItem({
+            title: { value: 'Pictorial', evidence: ['t1'], confidence: 'confirmed' },
+            time: { text: '12AM', value: '00:00', evidence: ['t1'], confidence: 'confirmed' },
+          }),
+        ]),
+        context,
+      ),
+    );
+    expect(result.actions[0].time).toBe('00:00');
+    expect(result.actions[0].confidence.time).toBe('confirmed');
+  });
 
   it('rejects malformed output without producing actions', () => {
     expect(validateExtraction('Sure! Here are your tasks.', pictorial)).toMatchObject({

@@ -139,129 +139,161 @@ try {
       assert.match(value.value.fullText, /pictorial/i);
       return { regions: value.value.regions.length, text: value.value.fullText };
     });
-    await check('real typed text extraction and review', async () => {
-      await sync(
-        `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Capture text').click(); return true;`,
-      );
-      await sync(
-        `const t=document.querySelector('.voice-text textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(t,'Math exam on October 20, 2026 at 10:00 AM in Room 204. Bring a calculator.');t.dispatchEvent(new Event('input',{bubbles:true}));return true;`,
-      );
-      await wait(300);
-      await sync(
-        `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Extract actions').click(); return true;`,
-      );
-      let text = '';
-      for (let i = 0; i < 1800; i++) {
-        text = await sync('return document.body.innerText');
-        if (
-          text.includes('Review extracted actions') ||
-          text.includes('Confirm & save') ||
-          text.includes('Save draft')
-        )
-          break;
-        await wait(500);
-      }
-      assert.match(text, /Math|exam/i);
-      assert.match(text, /Confirm|Save draft/);
-      // Native compositors may suspend screenshots of occluded windows. DOM/IPC acceptance
-      // must not block on an optional visual artifact while the app is backgrounded.
-      if (process.env.TASKLENS_ACCEPTANCE_SCREENSHOT) {
-        const shot = await call(`/session/${session}/screenshot`);
-        writeFileSync(path.join(out, 'review.png'), Buffer.from(shot, 'base64'));
-      }
-      await sync(
-        `Array.from(document.querySelectorAll('button')).find(b=>!b.disabled && /Confirm & save|Save draft/.test(b.textContent))?.click(); return true;`,
-      );
-      await wait(1000);
-      const saved = await sync(
-        `return JSON.parse(localStorage.getItem('tasklens:data:v1')).actions`,
-      );
-      assert.ok(saved.length > 0);
-      await sync(
-        `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Close review')?.click(); return true;`,
-      );
-      return {
-        review: text,
-        saved: saved.length,
-        runtime: (await invoke('local_ai_status')).runtime,
-        diagnostics: await invoke('local_ai_diagnostics'),
-      };
-    });
-    await check('warm text extraction reuses prompt cache', async () => {
-      await sync(
-        `if(!document.querySelector('.voice-text textarea')) Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Capture text').click(); return true;`,
-      );
-      await sync(
-        `const t=document.querySelector('.voice-text textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(t,'Math exam on October 20, 2026 at 10:00 AM in Room 204. Bring a calculator.');t.dispatchEvent(new Event('input',{bubbles:true}));return true;`,
-      );
-      await wait(300);
-      await sync(
-        `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Extract actions').click(); return true;`,
-      );
-      for (let i = 0; i < 1800; i++) {
-        if (await sync("return !!document.querySelector('dialog.bundle-review[open]')")) break;
-        await wait(500);
-      }
-      assert.equal(
-        await sync("return !!document.querySelector('dialog.bundle-review[open]')"),
-        true,
-      );
-      const diagnostics = await invoke('local_ai_diagnostics');
-      await sync(
-        `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Close review')?.click(); return true;`,
-      );
-      return diagnostics;
-    });
-    await check('real screenshot OCR-to-action review', async () => {
-      const base64 = readFileSync('tests/fixtures/screenshots/pictorial.png').toString('base64');
-      await sync(
-        `const f=new File([Uint8Array.from(atob(arguments[0]),c=>c.charCodeAt(0))],'pictorial.png',{type:'image/png'}); const transfer=new DataTransfer(); transfer.items.add(f); document.querySelector('.dropzone').dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:transfer}));return true;`,
-        [base64],
-      );
-      for (let i = 0; i < 1800; i++) {
-        if (await sync("return !!document.querySelector('dialog.inbox-result-dialog[open]')"))
-          break;
-        await wait(500);
-      }
-      const text = await sync('return document.body.innerText');
-      assert.equal(
-        await sync("return !!document.querySelector('dialog.inbox-result-dialog[open]')"),
-        true,
-        text,
-      );
-      assert.match(text, /pictorial/i);
-      await sync(`document.querySelector('button.trace-button')?.click();return true;`);
-      assert.equal(
-        await sync("return !!document.querySelector('details.source-trace[open]')"),
-        true,
-      );
-      assert.ok((await sync("return document.querySelectorAll('.trace-box').length")) > 0);
-      const diagnostics = await invoke('local_ai_diagnostics');
-      await sync(
-        `document.querySelector('[aria-label="Close details"]')?.click(); Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Close review')?.click(); return true;`,
-      );
-      return { review: text, diagnostics };
-    });
-    await check('real imported audio transcription unloads extraction', async () => {
-      const bytes = readFileSync(
-        process.env.TASKLENS_ACCEPTANCE_AUDIO || '.local-ai/whisper/samples/jfk.wav',
-      );
-      const id = await invoke('voice_import_begin', {
-        name: 'offline-speech.wav',
-        size: bytes.length,
+    // Component-only runs diagnose OCR/speech latency without claiming extraction acceptance.
+    if (!process.env.TASKLENS_ACCEPTANCE_SKIP_EXTRACTION) {
+      await check('real typed text extraction and review', async () => {
+        await sync(
+          `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Capture text').click(); return true;`,
+        );
+        await sync(
+          `const t=document.querySelector('.voice-text textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(t,'Math exam on October 20, 2026 at 10:00 AM in Room 204. Bring a calculator.');t.dispatchEvent(new Event('input',{bubbles:true}));return true;`,
+        );
+        await wait(300);
+        await sync(
+          `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Extract actions').click(); return true;`,
+        );
+        let text = '';
+        for (let i = 0; i < 1800; i++) {
+          text = await sync('return document.body.innerText');
+          if (
+            text.includes('Review extracted actions') ||
+            text.includes('Confirm & save') ||
+            text.includes('Save draft')
+          )
+            break;
+          await wait(500);
+        }
+        assert.match(text, /Math|exam/i);
+        assert.match(text, /Confirm|Save draft/);
+        // Native compositors may suspend screenshots of occluded windows. DOM/IPC acceptance
+        // must not block on an optional visual artifact while the app is backgrounded.
+        if (process.env.TASKLENS_ACCEPTANCE_SCREENSHOT) {
+          const shot = await call(`/session/${session}/screenshot`);
+          writeFileSync(path.join(out, 'review.png'), Buffer.from(shot, 'base64'));
+        }
+        await sync(
+          `Array.from(document.querySelectorAll('button')).find(b=>!b.disabled && /Confirm & save|Save draft/.test(b.textContent))?.click(); return true;`,
+        );
+        await wait(1000);
+        const saved = await sync(
+          `return JSON.parse(localStorage.getItem('tasklens:data:v1')).actions`,
+        );
+        assert.ok(saved.length > 0);
+        await sync(
+          `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Close review')?.click(); return true;`,
+        );
+        return {
+          review: text,
+          saved: saved.length,
+          runtime: (await invoke('local_ai_status')).runtime,
+          diagnostics: await invoke('local_ai_diagnostics'),
+        };
       });
-      for (let offset = 0; offset < bytes.length; offset += 262144)
-        await invoke('voice_import_chunk', {
-          id,
-          bytes: Array.from(bytes.subarray(offset, offset + 262144)),
+      await check('warm text extraction reuses prompt cache', async () => {
+        await sync(
+          `if(!document.querySelector('.voice-text textarea')) Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Capture text').click(); return true;`,
+        );
+        await sync(
+          `const t=document.querySelector('.voice-text textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(t,'Math exam on October 20, 2026 at 10:00 AM in Room 204. Bring a calculator.');t.dispatchEvent(new Event('input',{bubbles:true}));return true;`,
+        );
+        await wait(300);
+        await sync(
+          `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Extract actions').click(); return true;`,
+        );
+        for (let i = 0; i < 1800; i++) {
+          if (await sync("return !!document.querySelector('dialog.bundle-review[open]')")) break;
+          await wait(500);
+        }
+        assert.equal(
+          await sync("return !!document.querySelector('dialog.bundle-review[open]')"),
+          true,
+        );
+        const diagnostics = await invoke('local_ai_diagnostics');
+        await sync(
+          `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Close review')?.click(); return true;`,
+        );
+        return diagnostics;
+      });
+      await check('real screenshot OCR-to-action review', async () => {
+        const base64 = readFileSync('tests/fixtures/screenshots/pictorial.png').toString('base64');
+        await sync(
+          `const f=new File([Uint8Array.from(atob(arguments[0]),c=>c.charCodeAt(0))],'pictorial.png',{type:'image/png'}); const transfer=new DataTransfer(); transfer.items.add(f); document.querySelector('.dropzone').dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:transfer}));return true;`,
+          [base64],
+        );
+        for (let i = 0; i < 1800; i++) {
+          if (await sync("return !!document.querySelector('dialog.inbox-result-dialog[open]')"))
+            break;
+          await wait(500);
+        }
+        const text = await sync('return document.body.innerText');
+        assert.equal(
+          await sync("return !!document.querySelector('dialog.inbox-result-dialog[open]')"),
+          true,
+          text,
+        );
+        assert.match(text, /pictorial/i);
+        await sync(`document.querySelector('button.trace-button')?.click();return true;`);
+        assert.equal(
+          await sync("return !!document.querySelector('details.source-trace[open]')"),
+          true,
+        );
+        assert.ok((await sync("return document.querySelectorAll('.trace-box').length")) > 0);
+        const diagnostics = await invoke('local_ai_diagnostics');
+        await sync(
+          `document.querySelector('[aria-label="Close details"]')?.click(); Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Close review')?.click(); return true;`,
+        );
+        return { review: text, diagnostics };
+      });
+    }
+    if (!process.env.TASKLENS_ACCEPTANCE_SKIP_TRANSCRIPTION)
+      await check('real imported audio transcription with extraction stopped', async () => {
+        const bytes = readFileSync(
+          process.env.TASKLENS_ACCEPTANCE_AUDIO || '.local-ai/whisper/samples/jfk.wav',
+        );
+        const id = await invoke('voice_import_begin', {
+          name: 'offline-speech.wav',
+          size: bytes.length,
         });
-      const transcript = await invoke('voice_transcribe', { id });
-      assert.ok(transcript.fullText.length > 10);
-      assert.ok(transcript.segments.length > 0);
-      assert.equal((await invoke('local_ai_status')).runtime.state, 'stopped');
-      return transcript;
-    });
-    if (process.env.TASKLENS_ACCEPTANCE_AUDIO)
+        for (let offset = 0; offset < bytes.length; offset += 262144)
+          await invoke('voice_import_chunk', {
+            id,
+            bytes: Array.from(bytes.subarray(offset, offset + 262144)),
+          });
+        const transcript = await invoke('voice_transcribe', { id });
+        assert.ok(transcript.fullText.length > 10);
+        if (process.env.TASKLENS_ACCEPTANCE_TRANSCRIPT_PATTERN)
+          assert.match(
+            transcript.fullText,
+            new RegExp(process.env.TASKLENS_ACCEPTANCE_TRANSCRIPT_PATTERN, 'i'),
+          );
+        assert.ok(transcript.segments.length > 0);
+        assert.equal((await invoke('local_ai_status')).runtime.state, 'stopped');
+        return transcript;
+      });
+    if (process.env.TASKLENS_ACCEPTANCE_SKIP_EXTRACTION)
+      await check('manual task save remains usable without inference', async () => {
+        await sync(
+          `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='New item').click(); return true;`,
+        );
+        await sync(
+          `const t=document.querySelector('.action-editor input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(t,'Offline manual persistence check');t.dispatchEvent(new Event('input',{bubbles:true}));return true;`,
+        );
+        await wait(200);
+        await sync(
+          `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Save item' && !b.disabled).click(); return true;`,
+        );
+        let saved = false;
+        for (let i = 0; i < 100 && !saved; i++) {
+          saved = await sync(
+            `return JSON.parse(localStorage.getItem('tasklens:data:v1')).actions.some(a=>a.title==='Offline manual persistence check')`,
+          );
+          if (!saved) await wait(100);
+        }
+        assert.equal(saved, true);
+        await sync(`document.querySelector('[aria-label="Close details"]')?.click();return true;`);
+        return { saved: true };
+      });
+    if (process.env.TASKLENS_ACCEPTANCE_AUDIO && !process.env.TASKLENS_ACCEPTANCE_SKIP_EXTRACTION)
       await check('voice-to-action through the production import and review UI', async () => {
         const base64 = readFileSync(process.env.TASKLENS_ACCEPTANCE_AUDIO).toString('base64');
         await sync(

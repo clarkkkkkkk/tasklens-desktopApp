@@ -50,14 +50,48 @@ fn receipt(app: &tauri::AppHandle, id: &str) -> Result<PathBuf, String> {
         .join("asset-validation")
         .join(format!("{id}.json")))
 }
-fn fingerprint(path: &Path, s: &Value) -> Result<Value, String> {
+// AppImage uses a new temporary mount on each launch. Identify a resource by the
+// unchanged container and its relative path instead of that disposable mount.
+#[cfg(any(target_os = "linux", test))]
+fn container_identity(path: &Path, executable: &Path, image: &Path, root: &Path) -> Option<Value> {
+    let root = root.canonicalize().ok()?;
+    executable.canonicalize().ok()?.strip_prefix(&root).ok()?;
+    let path = path.canonicalize().ok()?;
+    let relative = path.strip_prefix(&root).ok()?;
+    let image = image.canonicalize().ok()?;
+    let metadata = fs::metadata(&image).ok()?;
+    if !metadata.is_file() {
+        return None;
+    }
+    Some(
+        json!({"container": image, "resource": relative, "bytes": metadata.len(),
+        "modified": metadata.modified().ok()?.duration_since(UNIX_EPOCH).ok()?.as_nanos().to_string()}),
+    )
+}
+fn fingerprint(app: &tauri::AppHandle, path: &Path, s: &Value) -> Result<Value, String> {
     let meta = fs::metadata(path).map_err(|_| "MODEL_NOT_INSTALLED: A bundled local intelligence resource is missing. Reinstall TaskLens to repair it.")?;
+    let mut identity = json!(path.canonicalize().unwrap_or_else(|_| path.to_owned()));
+    #[cfg(target_os = "linux")]
+    {
+        let env = app.env();
+        if let (Some(image), Some(root), Ok(executable)) =
+            (env.appimage, env.appdir, std::env::current_exe())
+        {
+            if let Some(container) =
+                container_identity(path, &executable, Path::new(&image), Path::new(&root))
+            {
+                identity = container;
+            }
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    let _ = app;
     Ok(
-        json!({"manifestVersion": manifest()["manifestVersion"], "path": path.canonicalize().unwrap_or_else(|_| path.to_owned()), "bytes": meta.len(), "modified": meta.modified().ok().and_then(|v| v.duration_since(UNIX_EPOCH).ok()).map(|v| v.as_nanos().to_string()), "sha256": s["sha256"]}),
+        json!({"manifestVersion": manifest()["manifestVersion"], "path": identity, "bytes": meta.len(), "modified": meta.modified().ok().and_then(|v| v.duration_since(UNIX_EPOCH).ok()).map(|v| v.as_nanos().to_string()), "sha256": s["sha256"]}),
     )
 }
 pub fn cached(app: &tauri::AppHandle, id: &str, path: &Path, s: &Value) -> bool {
-    let Ok(fp) = fingerprint(path, s) else {
+    let Ok(fp) = fingerprint(app, path, s) else {
         return false;
     };
     if fp["bytes"] != s["bytes"] {
@@ -122,9 +156,9 @@ pub fn verify(
     if !force && cached(app, id, path, s) {
         return Ok(());
     }
-    let before = fingerprint(path, s)?;
+    let before = fingerprint(app, path, s)?;
     validate_file(path, s, cancel)?;
-    if before != fingerprint(path, s)? {
+    if before != fingerprint(app, path, s)? {
         return Err("MODEL_CORRUPTED: Resource changed during validation. Please retry.".into());
     }
     let p = receipt(app, id)?;
@@ -305,6 +339,33 @@ pub async fn local_intelligence_retry(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn appimage_identity_survives_remount_but_rejects_unrelated_paths_and_upgrades() {
+        let dir = std::env::temp_dir().join(format!("tasklens-mount-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        let image = dir.join("TaskLens.AppImage");
+        fs::write(&image, b"container").unwrap();
+        let identity = |mount: &str| {
+            let root = dir.join(mount);
+            fs::create_dir_all(root.join("resources")).unwrap();
+            fs::write(root.join("tasklens"), b"app").unwrap();
+            fs::write(root.join("resources/model"), b"model").unwrap();
+            container_identity(
+                &root.join("resources/model"),
+                &root.join("tasklens"),
+                &image,
+                &root,
+            )
+        };
+        let first = identity("mount-one").unwrap();
+        assert_eq!(Some(first.clone()), identity("mount-two"));
+        let root = dir.join("mount-one");
+        assert!(container_identity(&image, &root.join("tasklens"), &image, &root).is_none());
+        assert!(container_identity(&root.join("resources/model"), &image, &image, &root).is_none());
+        fs::write(&image, b"updated container").unwrap();
+        assert_ne!(Some(first), identity("mount-three"));
+        fs::remove_dir_all(dir).unwrap();
+    }
     #[test]
     fn missing_corrupt_and_wrong_formats_fail_closed() {
         let p = std::env::temp_dir().join(format!("tasklens-asset-{}", uuid::Uuid::new_v4()));

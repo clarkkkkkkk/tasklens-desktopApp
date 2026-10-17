@@ -518,7 +518,7 @@ fn parse_transcript(raw: &Value, duration: u64) -> Result<Value, String> {
         return Err("Transcript exceeds the review limit".into());
     }
     Ok(
-        json!({"fullText":full,"segments":segments,"language":raw["result"]["language"],"durationMs":duration,"model":"whisper-small"}),
+        json!({"fullText":full,"segments":segments,"language":raw["result"]["language"],"durationMs":duration,"model":crate::assets::spec("whisper")["id"]}),
     )
 }
 #[cfg(test)]

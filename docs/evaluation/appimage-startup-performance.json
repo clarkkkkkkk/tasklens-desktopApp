@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-17",
+  "host": "Fedora 44 x86_64, Intel Core i5-10210U, 16 GiB RAM",
+  "artifactBytes": 3020552696,
+  "candidatePromptVersion": 4,
+  "tests": [
+    {
+      "run": "appimage-fresh",
+      "coordinatorMs": 49866,
+      "harnessReadinessCheckSeconds": 48.902937267,
+      "resourcePath": "/tmp/.mount_tasklekFhoGl/usr/lib/TaskLens/resources/models/Qwen3-4B-Q4_K_M.gguf",
+      "status": "ready"
+    },
+    {
+      "run": "appimage-cached",
+      "coordinatorMs": 309,
+      "harnessReadinessCheckSeconds": 0.07938133000000017,
+      "resourcePath": "/tmp/.mount_taskleGNbJoM/usr/lib/TaskLens/resources/models/Qwen3-4B-Q4_K_M.gguf",
+      "status": "ready"
+    }
+  ],
+  "conditions": {
+    "externalNetworkDisabled": true,
+    "loopbackEnabled": true,
+    "checkoutHidden": true,
+    "resourcesReadOnly": true,
+    "sameImageAndProfileAcrossRemounts": true
+  },
+  "limitations": [
+    "Coordinator duration is not total native window launch time.",
+    "First validation overlapped a baseline speech warmup; it is not a clean CPU benchmark.",
+    "Current source prompt is v5; this artifact contains v4 and is not final inference acceptance."
+  ]
+}

@@ -229,6 +229,7 @@ function buildResult(
       `${label} end time`,
       issues,
       context.units,
+      'end',
     );
     const arrival = checkTime(
       item.arrival_time,
@@ -500,11 +501,15 @@ function checkTime(
   label: string,
   issues: string[],
   units: SourceUnit[],
+  rangeEdge: 'start' | 'end' = 'start',
 ): { value: string | null; ids: string[]; confidence: ConfidenceLevel } {
   let value = field.value && VALID_TIME.test(field.value) ? field.value : null;
   // Convert the time as written ourselves: small models misconvert 12-hour times.
   const written = field.text ? findTimes(field.text) : [];
-  const explicit = written.find((t) => t.explicit);
+  const explicitTimes = written.filter((t) => t.explicit);
+  // Models may quote the entire range in both fields. Keep its two boundaries distinct.
+  const isRange = field.text && /[-–—]|\bto\b/i.test(field.text);
+  const explicit = rangeEdge === 'end' && isRange ? explicitTimes.at(-1) : explicitTimes[0];
   if (explicit) {
     const converted = hhmm(explicit.minutes);
     if (value !== converted) issues.push(`${label}: “${field.text}” converted to ${converted}`);
@@ -525,6 +530,10 @@ function checkTime(
       ids = [stating[0].id];
       support = 'exact';
     }
+  }
+  if (support === 'none') {
+    issues.push(`${label}: unsupported time ${value} removed`);
+    return { value: null, ids: [], confidence: 'needs_review' };
   }
   const allowed: ConfidenceLevel =
     support === 'exact' ? 'confirmed' : support === 'partial' ? 'inferred' : 'needs_review';
@@ -592,6 +601,11 @@ function checkDate({
       };
     const cited = textOf([...new Set([...ids, ...statementIds])]);
     const support = cited ? dateSupport(value, cited) : 'none';
+    if (support === 'none') {
+      issues.push(`${label}: unsupported date ${value} removed`);
+      ask(index, 'date', 'Which date does this activity refer to?', [], statementIds);
+      return { value: null, ids: [], confidence: 'needs_review' };
+    }
     let allowed: ConfidenceLevel =
       support === 'exact' ? 'confirmed' : support === 'partial' ? 'inferred' : 'needs_review';
     const year = Number(value.slice(0, 4));

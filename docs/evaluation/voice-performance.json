@@ -1,0 +1,90 @@
+{
+  "date": "2026-10-17",
+  "host": "Fedora 44 x86_64, Intel Core i5-10210U, 16 GiB RAM",
+  "model": "Whisper Small multilingual (manifest pinned GGML f16)",
+  "audio": "whisper.cpp samples/jfk.wav, 11.0 seconds",
+  "threads": 4,
+  "language": "auto",
+  "beamSize": 5,
+  "bestOf": 5,
+  "externalNetworkingDisabled": true,
+  "avx2": {
+    "elapsedSeconds": 17.39,
+    "maxRssKiB": 768364,
+    "transcript": [
+      {
+        "timestamps": {
+          "from": "00:00:00,000",
+          "to": "00:00:11,000"
+        },
+        "offsets": {
+          "from": 0,
+          "to": 11000
+        },
+        "text": " And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country."
+      }
+    ],
+    "completed": true
+  },
+  "baseline": {
+    "completed": false,
+    "cancelledAfterSeconds": 190.68,
+    "maxRssKiB": 647700,
+    "reason": "No completed transcript; intentionally stopped conservative runtime."
+  },
+  "limitations": [
+    "Baseline warmup overlapped first-launch asset validation; no exact speedup ratio is claimed.",
+    "AVX2 run used the relocated bundled runtime and model, not the frontend transcription workflow.",
+    "Single English public sample does not establish multilingual or microphone accuracy."
+  ],
+  "nativeComponentChecks": [
+    {
+      "name": "native first-launch readiness without imports",
+      "seconds": 0.030679990000000087
+    },
+    {
+      "name": "onboarding skip and screenshot OCR",
+      "seconds": 2.4086792960000003
+    },
+    {
+      "name": "real imported audio transcription with extraction stopped",
+      "seconds": 16.05116278
+    },
+    {
+      "name": "returning native window preserves onboarding state",
+      "seconds": 2.6735506860000022
+    }
+  ],
+  "nativeComponentConditions": {
+    "checkoutHidden": true,
+    "resourcesReadOnly": true,
+    "externalNetworkingDisabled": true,
+    "extractionIntentionallySkipped": true,
+    "expectedTranscriptChecked": true
+  },
+  "nativeManualPersistenceChecks": [
+    {
+      "name": "native first-launch readiness without imports",
+      "seconds": 0.08363335499999994
+    },
+    {
+      "name": "onboarding skip and screenshot OCR",
+      "seconds": 2.5202764710000003
+    },
+    {
+      "name": "manual task save remains usable without inference",
+      "seconds": 0.4855847670000003
+    },
+    {
+      "name": "returning native window preserves onboarding state",
+      "seconds": 3.3941669190000003
+    }
+  ],
+  "nativeManualPersistenceConditions": {
+    "externalNetworkingDisabled": true,
+    "checkoutHidden": true,
+    "resourcesReadOnly": true,
+    "bothInferenceStepsIntentionallySkipped": true,
+    "actualManualTaskSavedBeforeRestart": true
+  }
+}

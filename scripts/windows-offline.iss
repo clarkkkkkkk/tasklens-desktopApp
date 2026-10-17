@@ -1,4 +1,7 @@
 ; Build with Inno Setup 6.5.2+ on Windows x64. No online bootstrapper.
+#if Ver < EncodeVer(6, 5, 2, 0)
+  #error TaskLens requires Inno Setup 6.5.2 or newer for its single offline installer payload.
+#endif
 #ifndef Stage
   #error Stage is required
 #endif

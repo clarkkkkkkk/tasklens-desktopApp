@@ -95,3 +95,5 @@ The sole original asset found was **`TaskLens.png`**. It is preserved byte-for-b
 ## Local voice and text capture
 
 Inbox includes Voice, Import audio and Capture text. Desktop processing uses bundled Whisper Small and Qwen3-4B; review each result before saving. See [VOICE_CAPTURE.md](VOICE_CAPTURE.md) for supported codecs, retention, permissions and acceptance limitations. All-in-one downloads contain roughly 3 GB of model/data assets before other resources; see [LOCAL_AI.md](LOCAL_AI.md) for installer and hosting requirements.
+
+Offline packaging/performance evidence and remaining release gates are recorded in [the implementation report](OFFLINE_AI_IMPLEMENTATION_REPORT.md). Current Fedora measurements include cached AppImage preparation and real native audio import/transcription; complete model accuracy, voice-to-actions and screenshot-to-actions acceptance remain in progress.
