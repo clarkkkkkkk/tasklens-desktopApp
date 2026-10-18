@@ -26,7 +26,8 @@ if (!localStorage.getItem('tasklens:data:v1'))
 const services = createServices();
 let cancelled = 0,
   attempts = 0,
-  closed = 0;
+  closed = 0,
+  extractionAborted = 0;
 let closeRequest: ((close: () => Promise<void>) => void) | undefined;
 Object.assign(window, {
   voiceTest: {
@@ -43,6 +44,9 @@ Object.assign(window, {
     },
     get attempts() {
       return attempts;
+    },
+    get extractionAborted() {
+      return extractionAborted;
     },
   },
 });
@@ -81,6 +85,18 @@ services.extraction = {
   async extract(input, { signal }) {
     attempts++;
     signal.throwIfAborted();
+    // Slow on-device run: never finishes on its own, only on cancellation.
+    if (query.has('hang'))
+      await new Promise((_, reject) =>
+        signal.addEventListener(
+          'abort',
+          () => {
+            extractionAborted++;
+            reject(signal.reason);
+          },
+          { once: true },
+        ),
+      );
     if (query.has('retry') && attempts === 1) throw new Error('Local extraction failed.');
     const source = { ...input };
     delete source.image;

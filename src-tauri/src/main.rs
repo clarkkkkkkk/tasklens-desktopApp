@@ -49,6 +49,7 @@ fn main() {
             local_ai::local_ai_load,
             local_ai::local_ai_unload,
             local_ai::local_ai_complete,
+            local_ai::local_ai_prewarm,
             local_ai::local_jobs_cancel,
         ])
         .build(tauri::generate_context!())

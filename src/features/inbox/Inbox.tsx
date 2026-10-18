@@ -30,6 +30,8 @@ import { presets } from '../../services/reminders/ReminderScheduler';
 import { ExtractionDebug } from '../extraction/ExtractionDebug';
 
 type Origin = 'file' | 'paste' | 'sample';
+/** After this long, on-device processing offers Keep waiting / Cancel. Nothing is saved. */
+export const EXTRACTION_SAFETY_SECONDS = 60;
 interface Job {
   source: ExtractedAction['source'];
   image: Blob;
@@ -75,6 +77,20 @@ export function Inbox({
     [results, setResults] = useState<ExtractedAction[]>([]),
     [diagnostics, setDiagnostics] = useState<Partial<ExtractionDiagnostics> | null>(null);
   const source = job?.source ?? null;
+  // Real elapsed seconds of the current run; drives the safety notice, never a fake percentage.
+  const [elapsed, setElapsed] = useState(0),
+    [notifyAfter, setNotifyAfter] = useState(EXTRACTION_SAFETY_SECONDS);
+  useEffect(() => {
+    setElapsed(0);
+    setNotifyAfter(EXTRACTION_SAFETY_SECONDS);
+    if (!busy) return;
+    const started = Date.now();
+    const timer = window.setInterval(
+      () => setElapsed(Math.floor((Date.now() - started) / 1000)),
+      1000,
+    );
+    return () => window.clearInterval(timer);
+  }, [busy]);
   const controller = useRef<AbortController | null>(null),
     generation = useRef(0),
     busyRef = useRef(false);
@@ -342,6 +358,11 @@ export function Inbox({
             {busy ? (
               demo ? (
                 <p>Running a sample workflow. No AI is analyzing this image.</p>
+              ) : elapsed >= notifyAfter ? (
+                <p>
+                  Still working on this device ({elapsed}s). This is taking longer than usual. Keep
+                  waiting or cancel; nothing is saved until you review it.
+                </p>
               ) : (
                 <p>Processing locally. Your screenshot stays on this device.</p>
               )
@@ -353,10 +374,17 @@ export function Inbox({
               </p>
             ) : null}
             {busy && (
-              <Button onClick={cancel}>
-                <X size={15} />
-                Cancel processing
-              </Button>
+              <div className="action-pair">
+                {!demo && elapsed >= notifyAfter && (
+                  <Button onClick={() => setNotifyAfter(elapsed + EXTRACTION_SAFETY_SECONDS)}>
+                    Keep waiting
+                  </Button>
+                )}
+                <Button onClick={cancel}>
+                  <X size={15} />
+                  Cancel processing
+                </Button>
+              </div>
             )}
             {results.length > 0 && !busy && (
               <Button

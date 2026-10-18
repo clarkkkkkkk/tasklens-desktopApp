@@ -367,6 +367,10 @@ Full browser run: 30 passed, three failed during concurrent native builds and de
 - [x] Native disconnected component checks: onboarding skip, screenshot OCR, imported speech with expected transcript words, isolated-profile restart persistence. Audio: 16.051 s for 11 s public English sample. This run intentionally skips extraction; voice-to-actions and screenshot-to-actions are still pending.
 
 - [x] Native offline manual task save and restart persistence with inference skipped.
-- [ ] Final extraction accuracy: v5 first case 14/15 in 205.677 s; arrival location omitted. V6 completed 64/77 checks; v7 focused results were 15/18, including a cancelled-event error; v8 greedy pictorial failed 2/15 checks and was stopped after that case. The upstream sampling diagnostic also failed 2/15 and was not promoted. Production retains v6/greedy decoding. No fixture assertions were weakened.
+- [ ] Final extraction accuracy: v5 first case 14/15 in 205.677 s; arrival location omitted. V6 completed 64/77 checks; v7 focused results were 15/18, including a cancelled-event error; v8 greedy pictorial failed 2/15 checks and was stopped after that case. The upstream sampling diagnostic also failed 2/15 and was not promoted. Before main integration, production retained v6/greedy decoding. No fixture assertions were weakened.
 
 - [x] Native disconnected microphone device capture/cleanup: 1,450 ms captured, temporary recording removed. This does not certify recognition quality; see docs/evaluation/microphone-device.json.
+
+### Main integration — 2026-10-18
+
+- [ ] Complete the integrated compact-output v7 Qwen3-4B suite and installed offline acceptance. Main cf09166’s prefix caching, waiting/cancel notice and packaging fixes are combined with the preserved WIP checkpoint. Historical local v7/v8 demonstration experiments are different candidates; v6’s 64/77 result remains a pre-integration failed gate. No model swap or persistence migration was made.

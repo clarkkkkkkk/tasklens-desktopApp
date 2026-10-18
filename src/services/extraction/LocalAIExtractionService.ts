@@ -10,6 +10,7 @@ import type {
   ExtractionService,
 } from './ExtractionService';
 import {
+  EXTRACTION_CACHE_PREFIX,
   buildExtractionPrompt,
   unitsFromOcr,
   unitsFromText,
@@ -44,11 +45,12 @@ export class LocalAIExtractionService implements ExtractionService {
     const timezone = source.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     let ocr: OcrDocument | undefined;
     let context: PromptContext;
+    // Load the model and its cached prompt prefix while OCR runs. The completion waits on the
+    // same native gate; failures here surface (if at all) when the completion runs.
+    void this.model.prewarm(EXTRACTION_CACHE_PREFIX(), signal).catch(() => {});
     if (source.type === 'image') {
       if (!image) throw new LocalAIError('UNKNOWN', 'The screenshot is no longer available.');
       onProgress(0);
-      // Start loading the model while OCR runs; failures surface when it is needed.
-      void this.model.loadModel().catch(() => {});
       ocr = await this.ocr.recognize(image, {
         jobId: crypto.randomUUID(),
         signal,

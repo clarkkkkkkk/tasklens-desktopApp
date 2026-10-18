@@ -11,7 +11,7 @@ import { execFileSync } from 'node:child_process';
  * regression signal, not a production accuracy claim.
  */
 import { spawn, type ChildProcess } from 'node:child_process';
-import { mkdirSync, openSync, closeSync, writeFileSync } from 'node:fs';
+import { mkdirSync, openSync, closeSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { request as httpRequest } from 'node:http';
 import { StringDecoder } from 'node:string_decoder';
@@ -47,6 +47,18 @@ const model =
 const key = crypto.randomUUID();
 let server: ChildProcess | undefined;
 let port = 0;
+/** Benchmark-only extra llama-server arguments, e.g. "--threads 4 --batch-size 512". */
+const extraArgs = process.env.TASKLENS_EVAL_SERVER_ARGS?.split(/\s+/).filter(Boolean) ?? [];
+const runtime = { loadSeconds: 0, prewarmSeconds: null as number | null, peakRssKiB: 0 };
+/** Peak resident memory of the llama-server process, from /proc (Linux only). */
+function peakRss(): number {
+  try {
+    const status = readFileSync(`/proc/${server?.pid}/status`, 'utf8');
+    return Number(/VmHWM:\s+(\d+)/.exec(status)?.[1] ?? 0);
+  } catch {
+    return 0;
+  }
+}
 
 async function freePort() {
   return new Promise<number>((resolve) => {
@@ -176,12 +188,13 @@ beforeAll(async () => {
       '--api-key',
       key,
       '--ctx-size',
-      '8192',
+      process.env.TASKLENS_EVAL_CTX ?? '8192',
       '--parallel',
       '1',
       '--n-gpu-layers',
       '0',
       '--no-webui',
+      ...extraArgs,
       ...(speculative
         ? [
             '--spec-type',
@@ -207,13 +220,18 @@ beforeAll(async () => {
       (r) => r.ok,
       () => false,
     );
-    if (ok) return;
-    await new Promise((r) => setTimeout(r, 500));
+    if (ok) {
+      runtime.loadSeconds = (Date.now() - started) / 1000;
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 250));
   }
   throw new Error('llama-server did not become healthy');
 }, 320_000);
 
 afterAll(async () => {
+  runtime.peakRssKiB = peakRss();
+  if (enabled) console.info(`runtime: ${JSON.stringify(runtime)}`);
   if (!server || server.exitCode !== null || server.signalCode !== null) return;
   const child = server;
   await new Promise<void>((resolve) => {
@@ -241,6 +259,18 @@ it.skipIf(!enabled)(
       timings?: Record<string, number>;
     }[] = [];
     const selectedCases = extractionCases.filter((c) => !only || only.includes(c.id));
+    if (process.env.TASKLENS_EVAL_PREWARM && selectedCases.length) {
+      // Mirrors production pre-warming: evaluate the fixed system prefix before the first case.
+      const prewarmStarted = performance.now();
+      const prefix = buildExtractionPrompt(contextForCase(selectedCases[0])).cachePrefix;
+      const warm = await request('/completion', {
+        prompt: prefix,
+        n_predict: 0,
+        cache_prompt: true,
+      });
+      if (!warm.ok) throw new Error(`Prewarm failed: HTTP ${warm.status}`);
+      runtime.prewarmSeconds = (performance.now() - prewarmStarted) / 1000;
+    }
     for (const testCase of selectedCases) {
       const context = contextForCase(testCase);
       const started = performance.now();
@@ -335,15 +365,17 @@ it.skipIf(!enabled)(
       if (failed.length && process.env.TASKLENS_EVAL_FAIL_FAST) break;
     }
 
+    runtime.peakRssKiB = peakRss();
     const total = results.flatMap((r) => r.checks);
     const passed = total.filter((c) => c.ok).length;
     const lines = [
       '# Local AI evaluation report',
       '',
       `- Prompt version: ${TASKLENS_EXTRACTION_PROMPT_VERSION}`,
-      `- Model: Qwen3-4B Q4_K_M (llama.cpp, CPU)`,
+      `- Model: ${path.basename(model)} (llama.cpp, CPU)`,
       `- Sampling: ${JSON.stringify(sampling)}`,
-      `- Runtime: ${path.basename(binary)}`,
+      `- Runtime: ${path.basename(binary)} ${extraArgs.join(' ')}`.trimEnd(),
+      `- Server load: ${runtime.loadSeconds.toFixed(1)}s; prewarm: ${runtime.prewarmSeconds?.toFixed(1) ?? 'not used'}; peak RSS: ${(runtime.peakRssKiB / 1024).toFixed(0)} MiB`,
       `- Prompt lookup: ${speculative ? 'ngram-simple (N=4, M=8)' : 'disabled'}`,
       `- Run: ${new Date().toISOString()} on ${os.cpus()[0]?.model ?? 'unknown CPU'}`,
       `- Checks passed: ${passed}/${total.length} across ${results.length} cases`,
@@ -372,8 +404,16 @@ it.skipIf(!enabled)(
     ];
     const folder = path.resolve('docs/evaluation');
     mkdirSync(folder, { recursive: true });
-    writeFileSync(path.join(folder, 'local-ai-eval.md'), lines.join('\n'));
-    writeFileSync(path.join(folder, 'local-ai-eval.json'), JSON.stringify(results, null, 2));
+    const reportName = process.env.TASKLENS_EVAL_REPORT ?? 'local-ai-eval';
+    writeFileSync(path.join(folder, `${reportName}.md`), lines.join('\n'));
+    writeFileSync(
+      path.join(folder, `${reportName}.json`),
+      JSON.stringify(
+        { model: path.basename(model), sampling, args: extraArgs, runtime, results },
+        null,
+        2,
+      ),
+    );
     expect(results.length).toBeGreaterThan(0);
     expect(
       total.filter((c) => !c.ok),

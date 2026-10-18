@@ -1,8 +1,9 @@
 // Build-time only. Pin Tauri's otherwise mutable AppImage tool downloads before bundling.
 import { readFileSync, chmodSync } from 'node:fs';
+import { open } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { root, prepare } from './ai-assets.mjs';
+import { root, prepare, verify } from './ai-assets.mjs';
 if (process.platform === 'linux') {
   const pins = JSON.parse(readFileSync(path.join(root, 'scripts/linux-packaging-tools.json')));
   const cli = JSON.parse(
@@ -17,7 +18,25 @@ if (process.platform === 'linux') {
   );
   for (const asset of pins.assets) {
     const file = path.join(cache, asset.file);
-    await prepare(asset, file);
+    if (asset.zeroedMagicSha256) {
+      // Tauri zeroes bytes 8-10 (the AppImage magic) of its cached linuxdeploy on every bundle,
+      // so accept that state; otherwise fetch the pinned upstream bytes and apply the same patch.
+      const zeroed = { ...asset, sha256: asset.zeroedMagicSha256 };
+      try {
+        await verify(file, zeroed);
+      } catch {
+        await prepare(asset, file);
+        const handle = await open(file, 'r+');
+        try {
+          await handle.write(Buffer.alloc(3), 0, 3, 8);
+        } finally {
+          await handle.close();
+        }
+        await verify(file, zeroed);
+      }
+    } else {
+      await prepare(asset, file);
+    }
     chmodSync(file, 0o755);
   }
   console.info(

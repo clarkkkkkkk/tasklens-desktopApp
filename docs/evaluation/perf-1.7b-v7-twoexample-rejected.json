@@ -1,0 +1,364 @@
+{
+  "model": "Qwen3-1.7B-Q4_K_M.gguf",
+  "args": [],
+  "runtime": {
+    "loadSeconds": 4.103,
+    "prewarmSeconds": null,
+    "peakRssKiB": 2554212
+  },
+  "results": [
+    {
+      "id": "pictorial",
+      "languages": "Cebuano + English",
+      "seconds": 100.189766008,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": false,
+          "detail": "2 (expected 1)"
+        },
+        {
+          "name": "pictorial: found",
+          "ok": true,
+          "detail": "Pictorial"
+        },
+        {
+          "name": "pictorial: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "pictorial: date",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "pictorial: time",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "pictorial: arrival time",
+          "ok": true,
+          "detail": "\"13:30\" (expected \"13:30\")"
+        },
+        {
+          "name": "pictorial: location",
+          "ok": true,
+          "detail": "\"campus\""
+        },
+        {
+          "name": "pictorial: requirement black pants",
+          "ok": true,
+          "detail": "[\"Mag black pants\",\"No jeans\"]"
+        },
+        {
+          "name": "pictorial: requirement jeans",
+          "ok": true,
+          "detail": "[\"Mag black pants\",\"No jeans\"]"
+        },
+        {
+          "name": "pictorial: confidence.arrivalTime",
+          "ok": true,
+          "detail": "\"confirmed\" (expected \"confirmed\")"
+        },
+        {
+          "name": "pictorial: confidence.time",
+          "ok": true,
+          "detail": "\"needs_review\" (expected \"needs_review\")"
+        },
+        {
+          "name": "pictorial: confidence.date",
+          "ok": true,
+          "detail": "\"needs_review\" (expected \"needs_review\")"
+        },
+        {
+          "name": "ambiguity on date",
+          "ok": true,
+          "detail": "[\"date: The source says “ugma”, but when it was originally sent is unclear. Which date did it refer to?\",\"time: What is the exact time for the pictorial?\"]"
+        },
+        {
+          "name": "no 1:30 PM interpreted as the event start time",
+          "ok": true
+        },
+        {
+          "name": "no “tomorrow/ugma” resolved without a known sending date",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "Pictorial",
+          "arrivalTime": "13:30",
+          "location": "campus",
+          "requirements": [
+            "Mag black pants",
+            "No jeans"
+          ],
+          "notes": [
+            "Wala pa final ang exact time sa pictorial, i-announce pa later."
+          ],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "time": "needs_review",
+            "arrivalTime": "confirmed",
+            "location": "needs_review",
+            "requirements": "confirmed"
+          }
+        },
+        {
+          "type": "task",
+          "title": "Final time sa pictorial",
+          "requirements": [],
+          "notes": [],
+          "confidence": {
+            "overall": "inferred",
+            "title": "inferred"
+          }
+        },
+        {
+          "ambiguities": [
+            "date: The source says “ugma”, but when it was originally sent is unclear. Which date did it refer to? [\"2026-10-13\"]",
+            "time: What is the exact time for the pictorial? []"
+          ]
+        }
+      ],
+      "issues": [
+        "item 1 arrival time: cited r8, the only unit stating 13:30",
+        "item 1: relative date “ugma” left for review"
+      ],
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 1948,
+        "prompt_ms": 51361.137,
+        "prompt_per_token_ms": 26.36608675564682,
+        "prompt_per_second": 37.92750927612837,
+        "predicted_n": 309,
+        "predicted_ms": 48601.982,
+        "predicted_per_token_ms": 157.79864285714288,
+        "predicted_per_second": 6.33719011706148
+      }
+    },
+    {
+      "id": "midterm",
+      "languages": "English",
+      "seconds": 60.88857443599999,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "2 (expected 1–2)"
+        },
+        {
+          "name": "midterm|exam|cecc483: found",
+          "ok": true,
+          "detail": "MIDTERM EXAMINATION - CECC483"
+        },
+        {
+          "name": "midterm|exam|cecc483: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: date",
+          "ok": true,
+          "detail": "\"2026-10-11\" (expected \"2026-10-11\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: time",
+          "ok": true,
+          "detail": "\"08:00\" (expected \"08:00\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: end time",
+          "ok": true,
+          "detail": "\"13:00\" (expected \"13:00\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: location",
+          "ok": false,
+          "detail": "empty"
+        },
+        {
+          "name": "midterm|exam|cecc483: confidence.date",
+          "ok": true,
+          "detail": "\"confirmed\" (expected \"confirmed\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: confidence.time",
+          "ok": true,
+          "detail": "\"confirmed\" (expected \"confirmed\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: confidence.location",
+          "ok": false,
+          "detail": "empty (expected \"confirmed\")"
+        },
+        {
+          "name": "no unrelated coverage section merged into the CECC483 exam without an open question",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "MIDTERM EXAMINATION - CECC483",
+          "date": "2026-10-11",
+          "time": "08:00",
+          "endTime": "13:00",
+          "requirements": [],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "confirmed",
+            "time": "confirmed",
+            "endTime": "confirmed"
+          }
+        },
+        {
+          "type": "deadline",
+          "title": "Multiple Choices (75pts) w/ terminologies",
+          "requirements": [],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "inferred",
+            "date": "needs_review",
+            "time": "needs_review"
+          }
+        },
+        {
+          "ambiguities": [
+            "date: Which date is October 11, 2026? [\"2026-10-11\"]",
+            "time: What is the time range? [\"8:00 AM - 1:00 PM\"]",
+            "date: Which date does this activity refer to? []"
+          ]
+        }
+      ],
+      "issues": [
+        "item 1 end time: “8:00 AM - 1:00 PM” converted to 13:00",
+        "item 1: end time 13:00 taken from the stated range",
+        "item 2 time: unsupported time 07:50 removed",
+        "item 2: unsupported date 2026-10-11 removed"
+      ],
+      "timings": {
+        "cache_n": 1819,
+        "prompt_n": 154,
+        "prompt_ms": 5425.793,
+        "prompt_per_token_ms": 35.232422077922074,
+        "prompt_per_second": 28.38294789351529,
+        "predicted_n": 351,
+        "predicted_ms": 55420.961,
+        "predicted_per_token_ms": 158.34560285714286,
+        "predicted_per_second": 6.315300090159028
+      }
+    },
+    {
+      "id": "bundle-english",
+      "languages": "English",
+      "seconds": 63.093938345000005,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "2 (expected 2)"
+        },
+        {
+          "name": "chapter 3: found",
+          "ok": true,
+          "detail": "Submit Chapter 3"
+        },
+        {
+          "name": "chapter 3: type",
+          "ok": true,
+          "detail": "\"deadline\" (expected \"deadline\")"
+        },
+        {
+          "name": "chapter 3: date",
+          "ok": false,
+          "detail": "empty (expected \"2026-10-09\")"
+        },
+        {
+          "name": "chapter 3: time",
+          "ok": true,
+          "detail": "\"17:00\" (expected \"17:00\")"
+        },
+        {
+          "name": "consultation: found",
+          "ok": false,
+          "detail": "missing"
+        },
+        {
+          "name": "no deadline and consultation merged into one item",
+          "ok": true
+        },
+        {
+          "name": "no deadline time used as consultation time",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "Thesis Advising",
+          "time": "09:14",
+          "requirements": [
+            "Submit Chapter 3 Friday before 5 PM",
+            "Consultation is Monday at 2 PM",
+            "Bring the revised questionnaire"
+          ],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "time": "confirmed",
+            "requirements": "inferred"
+          }
+        },
+        {
+          "type": "deadline",
+          "title": "Submit Chapter 3",
+          "time": "17:00",
+          "requirements": [],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "inferred",
+            "date": "needs_review",
+            "time": "confirmed"
+          }
+        },
+        {
+          "ambiguities": [
+            "date: Which date does this activity refer to? []",
+            "date: Which date does this activity refer to? []"
+          ]
+        }
+      ],
+      "issues": [
+        "item 1: unsupported date 2026-10-12 removed",
+        "item 2 time: cited r4, the only unit stating 17:00",
+        "item 2: unsupported date 2026-10-12 removed"
+      ],
+      "timings": {
+        "cache_n": 1819,
+        "prompt_n": 77,
+        "prompt_ms": 3001.083,
+        "prompt_per_token_ms": 38.975103896103896,
+        "prompt_per_second": 25.65740434369859,
+        "predicted_n": 380,
+        "predicted_ms": 60062.958,
+        "predicted_per_token_ms": 158.4774617414248,
+        "predicted_per_second": 6.3100455358858625
+      }
+    }
+  ]
+}

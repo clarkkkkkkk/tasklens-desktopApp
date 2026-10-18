@@ -132,6 +132,9 @@ for (const [key, binary] of [
 const lep = await source('leptonica');
 const prefix = path.join(root, '.local-ai/ocr-prefix', targetTriple());
 configure(lep, [
+  // Leptonica requires CMake 3.5, leaving CMP0091 unset, so MSVC would ignore the static CRT
+  // choice and build /MD objects that the /MT Tesseract cannot link.
+  '-DCMAKE_POLICY_DEFAULT_CMP0091=NEW',
   '-DBUILD_PROG=OFF',
   '-DSW_BUILD=OFF',
   '-DENABLE_ZLIB=OFF',
@@ -147,6 +150,8 @@ build(lep, 'leptonica');
 run('cmake', ['--install', `${lep}/build`, '--config', 'Release']);
 const tess = await source('tesseract');
 configure(tess, [
+  // Tesseract defaults SW_BUILD on for Windows; use the Leptonica installed into the prefix.
+  '-DSW_BUILD=OFF',
   '-DBUILD_TRAINING_TOOLS=OFF',
   '-DBUILD_TESTS=OFF',
   '-DOPENMP_BUILD=OFF',
