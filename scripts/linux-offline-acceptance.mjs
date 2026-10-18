@@ -47,6 +47,33 @@ async function invoke(command, args = {}) {
   if (!result.ok) throw new Error(result.error);
   return result.value;
 }
+async function checkSilentAudio() {
+  await check('silent audio does not evict the warm extraction model', async () => {
+    assert.equal((await invoke('local_ai_status')).runtime.state, 'ready');
+    const bytes = Buffer.alloc(44 + 32000);
+    bytes.write('RIFF', 0);
+    bytes.writeUInt32LE(bytes.length - 8, 4);
+    bytes.write('WAVEfmt ', 8);
+    bytes.writeUInt32LE(16, 16);
+    bytes.writeUInt16LE(1, 20);
+    bytes.writeUInt16LE(1, 22);
+    bytes.writeUInt32LE(16000, 24);
+    bytes.writeUInt32LE(32000, 28);
+    bytes.writeUInt16LE(2, 32);
+    bytes.writeUInt16LE(16, 34);
+    bytes.write('data', 36);
+    bytes.writeUInt32LE(32000, 40);
+    const id = await invoke('voice_import_begin', { name: 'silence.wav', size: bytes.length });
+    try {
+      await invoke('voice_import_chunk', { id, bytes: Array.from(bytes) });
+      await assert.rejects(() => invoke('voice_transcribe', { id }), /No clear speech/);
+      assert.equal((await invoke('local_ai_status')).runtime.state, 'ready');
+      return { rejectedSilence: true, extractionStillReady: true };
+    } finally {
+      await invoke('voice_cancel', { id });
+    }
+  });
+}
 async function launch() {
   const value = await call('/session', {
     capabilities: { alwaysMatch: { 'tauri:options': { application: executable } } },
@@ -142,6 +169,11 @@ try {
     // Component-only runs diagnose OCR/speech latency without claiming extraction acceptance.
     if (!process.env.TASKLENS_ACCEPTANCE_SKIP_EXTRACTION) {
       await check('real typed text extraction and review', async () => {
+        const previousIds = new Set(
+          await sync(
+            `return JSON.parse(localStorage.getItem('tasklens:data:v1')).actions.map(action=>action.id)`,
+          ),
+        );
         await sync(
           `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Capture text').click(); return true;`,
         );
@@ -178,7 +210,17 @@ try {
         const saved = await sync(
           `return JSON.parse(localStorage.getItem('tasklens:data:v1')).actions`,
         );
-        assert.ok(saved.length > 0);
+        const created = saved.filter((action) => !previousIds.has(action.id));
+        assert.equal(created.length, 1, 'Expected one newly saved action');
+        const exam = created.find((action) => /math.*exam|exam.*math/i.test(action.title));
+        assert.ok(exam, 'The extracted exam was not saved');
+        assert.equal(exam.type, 'event');
+        assert.equal(exam.date, '2026-10-20');
+        assert.equal(exam.time, '10:00');
+        assert.match(exam.location || '', /204/);
+        assert.ok(exam.requirements.some((requirement) => /calculator/i.test(requirement)));
+        assert.equal(exam.source.extractionMode, 'local');
+        assert.equal(exam.source.type, 'text');
         await sync(
           `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='Close review')?.click(); return true;`,
         );
@@ -214,6 +256,7 @@ try {
         );
         return diagnostics;
       });
+      await checkSilentAudio();
       await check('real screenshot OCR-to-action review', async () => {
         const base64 = readFileSync('tests/fixtures/screenshots/pictorial.png').toString('base64');
         await sync(
@@ -245,6 +288,29 @@ try {
         return { review: text, diagnostics };
       });
     }
+    if (
+      process.env.TASKLENS_ACCEPTANCE_WARM_MODEL &&
+      process.env.TASKLENS_ACCEPTANCE_SKIP_EXTRACTION
+    ) {
+      await check('extraction model loads locally before lifecycle checks', async () => {
+        const status = await invoke('local_ai_load');
+        assert.equal(status.runtime.state, 'ready');
+        return status.runtime;
+      });
+      await checkSilentAudio();
+    }
+    if (process.env.TASKLENS_ACCEPTANCE_MICROPHONE)
+      await check('native microphone capture and temporary recording cleanup', async () => {
+        const id = await invoke('voice_start');
+        try {
+          await wait(1500);
+          const durationMs = await invoke('voice_stop', { id });
+          assert.ok(durationMs >= 500, `Recorded only ${durationMs} ms`);
+          return { durationMs, transcribed: false };
+        } finally {
+          await invoke('voice_cancel', { id });
+        }
+      });
     if (!process.env.TASKLENS_ACCEPTANCE_SKIP_TRANSCRIPTION)
       await check('real imported audio transcription with extraction stopped', async () => {
         const bytes = readFileSync(
@@ -272,11 +338,13 @@ try {
       });
     if (process.env.TASKLENS_ACCEPTANCE_SKIP_EXTRACTION)
       await check('manual task save remains usable without inference', async () => {
+        const title = `Offline manual persistence check ${crypto.randomUUID().slice(0, 8)}`;
         await sync(
           `Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='New item').click(); return true;`,
         );
         await sync(
-          `const t=document.querySelector('.action-editor input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(t,'Offline manual persistence check');t.dispatchEvent(new Event('input',{bubbles:true}));return true;`,
+          `const t=document.querySelector('.action-editor input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(t,arguments[0]);t.dispatchEvent(new Event('input',{bubbles:true}));return true;`,
+          [title],
         );
         await wait(200);
         await sync(
@@ -285,7 +353,8 @@ try {
         let saved = false;
         for (let i = 0; i < 100 && !saved; i++) {
           saved = await sync(
-            `return JSON.parse(localStorage.getItem('tasklens:data:v1')).actions.some(a=>a.title==='Offline manual persistence check')`,
+            `return JSON.parse(localStorage.getItem('tasklens:data:v1')).actions.some(a=>a.title===arguments[0])`,
+            [title],
           );
           if (!saved) await wait(100);
         }
@@ -293,7 +362,11 @@ try {
         await sync(`document.querySelector('[aria-label="Close details"]')?.click();return true;`);
         return { saved: true };
       });
-    if (process.env.TASKLENS_ACCEPTANCE_AUDIO && !process.env.TASKLENS_ACCEPTANCE_SKIP_EXTRACTION)
+    if (
+      process.env.TASKLENS_ACCEPTANCE_AUDIO &&
+      !process.env.TASKLENS_ACCEPTANCE_SKIP_EXTRACTION &&
+      !process.env.TASKLENS_ACCEPTANCE_SKIP_TRANSCRIPTION
+    )
       await check('voice-to-action through the production import and review UI', async () => {
         const base64 = readFileSync(process.env.TASKLENS_ACCEPTANCE_AUDIO).toString('base64');
         await sync(
@@ -312,7 +385,15 @@ try {
           text,
         );
         assert.match(text, /exam|Math/i);
-        return text;
+        const fields = await sync(
+          `return Object.fromEntries(Array.from(document.querySelectorAll('dialog.bundle-review[open] .detail-fields > div')).map(row=>[row.querySelector('dt')?.innerText.trim(),row.querySelector('dd')?.innerText.trim()]));`,
+        );
+        // An explicit supplied audio fixture can enforce field values without relying on
+        // the review merely opening. Values are regexes over rendered field text.
+        const expected = JSON.parse(process.env.TASKLENS_ACCEPTANCE_VOICE_FIELDS || '{}');
+        for (const [field, pattern] of Object.entries(expected))
+          assert.match(fields[field] || '', new RegExp(pattern, 'i'), field);
+        return { review: text, fields };
       });
     await check('returning native window preserves onboarding state', async () => {
       const before = await sync(`return localStorage.getItem('tasklens:data:v1')`);

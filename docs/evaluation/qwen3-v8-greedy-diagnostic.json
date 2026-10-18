@@ -1,0 +1,160 @@
+{
+  "promptVersion": 8,
+  "sampling": "greedy production baseline",
+  "status": "Stopped after the first completed case failed; not a full-suite result",
+  "requestedCases": 10,
+  "completedCases": [
+    {
+      "id": "pictorial",
+      "languages": "Cebuano + English",
+      "seconds": 447.691503118,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": false,
+          "detail": "2 (expected 1)"
+        },
+        {
+          "name": "pictorial: found",
+          "ok": true,
+          "detail": "Pictorial"
+        },
+        {
+          "name": "pictorial: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "pictorial: date",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "pictorial: time",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "pictorial: arrival time",
+          "ok": true,
+          "detail": "\"13:30\" (expected \"13:30\")"
+        },
+        {
+          "name": "pictorial: location",
+          "ok": false,
+          "detail": "empty"
+        },
+        {
+          "name": "pictorial: requirement black pants",
+          "ok": true,
+          "detail": "[\"Wear black pants\",\"No jeans\"]"
+        },
+        {
+          "name": "pictorial: requirement jeans",
+          "ok": true,
+          "detail": "[\"Wear black pants\",\"No jeans\"]"
+        },
+        {
+          "name": "pictorial: confidence.arrivalTime",
+          "ok": true,
+          "detail": "\"confirmed\" (expected \"confirmed\")"
+        },
+        {
+          "name": "pictorial: confidence.time",
+          "ok": true,
+          "detail": "\"needs_review\" (expected \"needs_review\")"
+        },
+        {
+          "name": "pictorial: confidence.date",
+          "ok": true,
+          "detail": "\"needs_review\" (expected \"needs_review\")"
+        },
+        {
+          "name": "ambiguity on date",
+          "ok": true,
+          "detail": "[\"date: The source says \u201ctomorrow\u201d, but when it was originally sent is unclear. Which date did it refer to?\",\"date: The source says \u201clater\u201d, but when it was originally sent is unclear. Which date did it refer to?\"]"
+        },
+        {
+          "name": "no 1:30 PM interpreted as the event start time",
+          "ok": true
+        },
+        {
+          "name": "no \u201ctomorrow/ugma\u201d resolved without a known sending date",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "Pictorial",
+          "arrivalTime": "13:30",
+          "requirements": [
+            "Wear black pants",
+            "No jeans"
+          ],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "time": "needs_review",
+            "arrivalTime": "confirmed",
+            "requirements": "confirmed"
+          }
+        },
+        {
+          "type": "event",
+          "title": "Announcement",
+          "requirements": [],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "inferred",
+            "date": "needs_review",
+            "time": "needs_review"
+          }
+        },
+        {
+          "ambiguities": [
+            "date: The source says \u201ctomorrow\u201d, but when it was originally sent is unclear. Which date did it refer to? [\"2026-10-13\"]",
+            "date: The source says \u201clater\u201d, but when it was originally sent is unclear. Which date did it refer to? []"
+          ]
+        }
+      ],
+      "issues": [
+        "item 1: relative date \u201ctomorrow\u201d left for review",
+        "item 2: relative date \u201clater\u201d left for review"
+      ],
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 2228,
+        "prompt_ms": 187344.239,
+        "prompt_per_token_ms": 84.08628321364452,
+        "prompt_per_second": 11.892546105994752,
+        "predicted_n": 326,
+        "predicted_ms": 260103.52,
+        "predicted_per_token_ms": 800.318523076923,
+        "predicted_per_second": 1.2495025057715483
+      }
+    }
+  ],
+  "raw": {
+    "promptVersion": 8,
+    "modelSha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+    "promptLookup": "disabled",
+    "content": "{\"items\":[{\"type\":\"event\",\"title\":{\"evidence\":[\"r3\"],\"value\":\"Pictorial\",\"confidence\":\"confirmed\"},\"date\":{\"evidence\":[\"r3\",\"r2\"],\"expression\":\"tomorrow\",\"basis\":\"message_timestamp\",\"value\":\"2026-10-13\",\"confidence\":\"inferred\"},\"time\":{\"evidence\":[],\"text\":null,\"value\":null,\"confidence\":\"needs_review\"},\"end_time\":{\"evidence\":[],\"text\":null,\"value\":null,\"confidence\":\"needs_review\"},\"arrival_time\":{\"evidence\":[\"r8\"],\"text\":\"1:30PM\",\"value\":\"13:30\",\"confidence\":\"confirmed\"},\"location\":{\"evidence\":[],\"value\":null,\"confidence\":\"needs_review\"},\"requirements\":[{\"evidence\":[\"r3\"],\"text\":\"Wear black pants\"},{\"evidence\":[\"r6\"],\"text\":\"No jeans\"}],\"notes\":[],\"reminders\":[]},{\"type\":\"event\",\"title\":{\"evidence\":[\"r11\"],\"value\":\"Announcement\",\"confidence\":\"confirmed\"},\"date\":{\"evidence\":[\"r11\",\"r2\"],\"expression\":\"later\",\"basis\":\"message_timestamp\",\"value\":null,\"confidence\":\"inferred\"},\"time\":{\"evidence\":[],\"text\":null,\"value\":null,\"confidence\":\"needs_review\"},\"end_time\":{\"evidence\":[],\"text\":null,\"value\":null,\"confidence\":\"needs_review\"},\"arrival_time\":{\"evidence\":[],\"text\":null,\"value\":null,\"confidence\":\"needs_review\"},\"location\":{\"evidence\":[],\"value\":null,\"confidence\":\"needs_review\"},\"requirements\":[],\"notes\":[],\"reminders\":[]}],\"ambiguities\":[]}",
+    "stopped_limit": false,
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 2228,
+      "prompt_ms": 187344.239,
+      "prompt_per_token_ms": 84.08628321364452,
+      "prompt_per_second": 11.892546105994752,
+      "predicted_n": 326,
+      "predicted_ms": 260103.52,
+      "predicted_per_token_ms": 800.318523076923,
+      "predicted_per_second": 1.2495025057715483
+    }
+  }
+}

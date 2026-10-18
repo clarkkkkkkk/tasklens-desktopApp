@@ -362,9 +362,11 @@ Full browser run: 30 passed, three failed during concurrent native builds and de
 - [x] Clear unsupported model-generated dates/times; preserve explicit midnight. Frontend unit suite: 56 passed, one opt-in evaluation skipped.
 - [x] Implement stable AppImage container/resource receipt identity across remounts; add upgrade and unrelated-path regression coverage.
 - [x] Re-measure packaged AppImage repeat preparation: first hash 49.866 s, cached readiness 309 ms across different mounts (coordinator timings, not total window launch).
-- [ ] Pass complete real-model v6 evaluation and installed voice/screenshot acceptance. The v3 pictorial case failed four checks; no accuracy acceptance is claimed.
+- [ ] Pass complete final real-model evaluation and installed voice/screenshot acceptance. V6 completed all ten cases with 64/77 checks passing; this remains a failed gate. The v3 pictorial case failed four checks; no accuracy acceptance is claimed.
 
 - [x] Native disconnected component checks: onboarding skip, screenshot OCR, imported speech with expected transcript words, isolated-profile restart persistence. Audio: 16.051 s for 11 s public English sample. This run intentionally skips extraction; voice-to-actions and screenshot-to-actions are still pending.
 
 - [x] Native offline manual task save and restart persistence with inference skipped.
-- [ ] Final extraction accuracy: v5 first case 14/15 in 205.677 s; arrival location omitted. V6 is being evaluated; no fixture assertions were weakened.
+- [ ] Final extraction accuracy: v5 first case 14/15 in 205.677 s; arrival location omitted. V6 completed 64/77 checks; v7 focused results were 15/18, including a cancelled-event error; v8 greedy pictorial failed 2/15 checks and was stopped after that case. The upstream sampling diagnostic also failed 2/15 and was not promoted. Production retains v6/greedy decoding. No fixture assertions were weakened.
+
+- [x] Native disconnected microphone device capture/cleanup: 1,450 ms captured, temporary recording removed. This does not certify recognition quality; see docs/evaluation/microphone-device.json.

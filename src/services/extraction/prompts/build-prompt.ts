@@ -169,7 +169,7 @@ export function buildUserMessage(context: PromptContext): string {
 
 /** Qwen3 non-thinking template. The empty thought block prevents reasoning in JSON output. */
 export function qwenChatPrompt(system: string, user: string, repair?: string): string {
-  const reminder = repair ? `\n\nPREVIOUS_ATTEMPT_PROBLEM\n${repair}` : '';
+  const reminder = repair ? `\n\nPREVIOUS_ATTEMPT_PROBLEM\n${sanitizeUnitText(repair)}` : '';
   if (assets.extraction.promptTemplate !== 'qwen3-non-thinking')
     throw new Error('Unsupported extraction template');
   return `<|im_start|>system\n${system}<|im_end|>\n<|im_start|>user\n${user}${reminder}\n/no_think<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n`;

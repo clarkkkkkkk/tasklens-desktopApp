@@ -421,9 +421,6 @@ pub async fn voice_transcribe(
             .try_lock()
             .map_err(|_| "Local processing is busy")?;
         let (path, cancel) = job(&app, &id)?;
-        let runtime = crate::local_ai::server::runtime(&app);
-        let _model_gate = runtime.gate.lock().unwrap();
-        runtime.stop(&app);
         let result = (|| {
             let model_path = model(&app, "whisper")?;
             crate::assets::verify_model(&app, "whisper", false, &cancel)?;
@@ -459,6 +456,14 @@ pub async fn voice_transcribe(
                 reader.duration() as u64 * 1000 / 16000
             };
             audio::check_signal(&path.join("audio.wav"), || cancel.load(Ordering::SeqCst))?;
+            // Reject invalid/silent audio before evicting the reusable text model. Only
+            // inference needs the shared model gate; preprocessing loads no speech model.
+            let runtime = crate::local_ai::server::runtime(&app);
+            let _model_gate = runtime.gate.lock().unwrap();
+            if cancel.load(Ordering::SeqCst) {
+                return Err(crate::platform::CANCELLED.into());
+            }
+            runtime.stop(&app);
             let _ = app.emit("voice-progress", json!({"jobId":id,"stage":"transcribing"}));
             let prefix = path.join("transcript");
             run(

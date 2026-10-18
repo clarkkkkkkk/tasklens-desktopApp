@@ -28,6 +28,11 @@ import { validateExtraction } from '../validation/validate-extraction';
 const enabled = !!process.env.TASKLENS_EVAL;
 const only = process.env.TASKLENS_EVAL_ONLY?.split(',');
 const speculative = process.env.TASKLENS_EVAL_SPECULATIVE === 'ngram-simple';
+// Experimental only until the complete suite verifies the upstream recommended profile.
+const sampling =
+  process.env.TASKLENS_EVAL_SAMPLING === 'qwen-non-thinking'
+    ? { temperature: 0.7, top_k: 20, top_p: 0.8, min_p: 0, presence_penalty: 1.5, seed: 7 }
+    : { temperature: 0, top_k: 1, top_p: 1, seed: 7 };
 const target = enabled
   ? execFileSync('rustc', ['--print', 'host-tuple'], { encoding: 'utf8' }).trim()
   : 'unused';
@@ -78,6 +83,7 @@ async function request(pathname: string, body?: object, progressId?: string): Pr
         const decoder = new StringDecoder('utf8');
         const completion = {
           promptVersion: TASKLENS_EXTRACTION_PROMPT_VERSION,
+          sampling,
           modelSha256: assets.extraction.sha256,
           promptLookup: speculative ? 'ngram-simple (N=4, M=8)' : 'disabled',
           content: '',
@@ -249,10 +255,7 @@ it.skipIf(!enabled)(
             prompt: built.prompt,
             json_schema: built.schema,
             n_predict: 2048,
-            temperature: 0,
-            top_k: 1,
-            top_p: 1,
-            seed: 7,
+            ...sampling,
             cache_prompt: true,
             stream: true,
             stop: assets.extraction.stopTokens,
@@ -338,7 +341,8 @@ it.skipIf(!enabled)(
       '# Local AI evaluation report',
       '',
       `- Prompt version: ${TASKLENS_EXTRACTION_PROMPT_VERSION}`,
-      `- Model: Qwen3-4B Q4_K_M (llama.cpp, CPU, temperature 0)`,
+      `- Model: Qwen3-4B Q4_K_M (llama.cpp, CPU)`,
+      `- Sampling: ${JSON.stringify(sampling)}`,
       `- Runtime: ${path.basename(binary)}`,
       `- Prompt lookup: ${speculative ? 'ngram-simple (N=4, M=8)' : 'disabled'}`,
       `- Run: ${new Date().toISOString()} on ${os.cpus()[0]?.model ?? 'unknown CPU'}`,

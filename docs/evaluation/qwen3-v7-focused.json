@@ -1,0 +1,207 @@
+[
+  {
+    "id": "bundle-english",
+    "languages": "English",
+    "seconds": 466.949583708,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "2 (expected 2)"
+      },
+      {
+        "name": "chapter 3: found",
+        "ok": true,
+        "detail": "Submit Chapter 3"
+      },
+      {
+        "name": "chapter 3: type",
+        "ok": true,
+        "detail": "\"deadline\" (expected \"deadline\")"
+      },
+      {
+        "name": "chapter 3: date",
+        "ok": true,
+        "detail": "\"2026-10-09\" (expected \"2026-10-09\")"
+      },
+      {
+        "name": "chapter 3: time",
+        "ok": true,
+        "detail": "\"17:00\" (expected \"17:00\")"
+      },
+      {
+        "name": "consultation: found",
+        "ok": true,
+        "detail": "Consultation"
+      },
+      {
+        "name": "consultation: type",
+        "ok": true,
+        "detail": "\"event\" (expected \"event\")"
+      },
+      {
+        "name": "consultation: date",
+        "ok": false,
+        "detail": "empty (expected \"2026-10-12\")"
+      },
+      {
+        "name": "consultation: time",
+        "ok": true,
+        "detail": "\"14:00\" (expected \"14:00\")"
+      },
+      {
+        "name": "consultation: requirement questionnaire",
+        "ok": true,
+        "detail": "[\"Bring the revised questionnaire\"]"
+      },
+      {
+        "name": "no deadline and consultation merged into one item",
+        "ok": true
+      },
+      {
+        "name": "no deadline time used as consultation time",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "deadline",
+        "title": "Submit Chapter 3",
+        "date": "2026-10-09",
+        "time": "17:00",
+        "requirements": [],
+        "notes": [],
+        "confidence": {
+          "overall": "inferred",
+          "title": "confirmed",
+          "date": "inferred",
+          "time": "confirmed"
+        }
+      },
+      {
+        "type": "event",
+        "title": "Consultation",
+        "time": "14:00",
+        "requirements": [
+          "Bring the revised questionnaire"
+        ],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "needs_review",
+          "time": "confirmed",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: “Monday” could mean more than one date. Which date is it? [\"2026-10-11\"]"
+        ]
+      }
+    ],
+    "issues": [
+      "item 2: relative date “Monday” left for review"
+    ],
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 2150,
+      "prompt_ms": 206354.28,
+      "prompt_per_token_ms": 95.97873488372093,
+      "prompt_per_second": 10.418974590689372,
+      "predicted_n": 327,
+      "predicted_ms": 260078.173,
+      "predicted_per_token_ms": 797.7858067484663,
+      "predicted_per_second": 1.2534692790232727
+    }
+  },
+  {
+    "id": "cebuano-mixed",
+    "languages": "Cebuano + English",
+    "seconds": 255.100541463,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": false,
+        "detail": "2 (expected 1)"
+      },
+      {
+        "name": "reflection: found",
+        "ok": true,
+        "detail": "Submit reflection paper"
+      },
+      {
+        "name": "reflection: type",
+        "ok": true,
+        "detail": "\"deadline\" (expected \"deadline\")"
+      },
+      {
+        "name": "reflection: date",
+        "ok": true,
+        "detail": "\"2026-10-09\" (expected \"2026-10-09\")"
+      },
+      {
+        "name": "reflection: time",
+        "ok": true,
+        "detail": "\"17:00\" (expected \"17:00\")"
+      },
+      {
+        "name": "no cancelled seminar created as an event to attend",
+        "ok": false
+      }
+    ],
+    "output": [
+      {
+        "type": "deadline",
+        "title": "Submit reflection paper",
+        "date": "2026-10-09",
+        "time": "17:00",
+        "requirements": [],
+        "notes": [],
+        "confidence": {
+          "overall": "inferred",
+          "title": "confirmed",
+          "date": "inferred",
+          "time": "inferred"
+        }
+      },
+      {
+        "type": "event",
+        "title": "Seminar",
+        "requirements": [],
+        "notes": [
+          "The seminar has been cancelled."
+        ],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "needs_review",
+          "time": "needs_review"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: Which date does this activity refer to? []"
+        ]
+      }
+    ],
+    "issues": [
+      "item 1: model date 2026-10-16 corrected to 2026-10-09 for “karong Friday”",
+      "item 2: date expression “sa Friday” is not in the source; ignored",
+      "item 2: unsupported date 2026-10-16 removed"
+    ],
+    "timings": {
+      "cache_n": 2077,
+      "prompt_n": 90,
+      "prompt_ms": 8655.813,
+      "prompt_per_token_ms": 96.1757,
+      "prompt_per_second": 10.39763682510239,
+      "predicted_n": 315,
+      "predicted_ms": 246396.61,
+      "predicted_per_token_ms": 784.7025796178343,
+      "predicted_per_second": 1.274368182257053
+    }
+  }
+]

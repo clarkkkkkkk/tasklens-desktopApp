@@ -36,7 +36,7 @@ The versioned model manifest pins Qwen3-4B Q4_K_M, Whisper Small multilingual, l
 
 `assets.rs` centralizes model resolution, format/hash checks, fingerprinted receipts and background initialization. Query/event revisions prevent startup status races. Readiness means verified files and runnable executables, while inference stays on demand. Models are never copied on normal first launch, downloaded at runtime or substituted with mock extraction after failure. Explicit developer imports leave bundled resources and legacy user files untouched.
 
-Screenshot inputs still decode in Rust; their temporary grayscale copy is BMP so the pinned static Leptonica build needs no separate PNG/JPEG/TIFF runtime. Text/speech/screenshots retain the existing validator, review and persistence contracts. Prompt version 2 uses Qwen3 non-thinking markers and manifest stop tokens. LocalStorage and onboarding versions are unchanged.
+Screenshot inputs still decode in Rust; their temporary grayscale copy is BMP so the pinned static Leptonica build needs no separate PNG/JPEG/TIFF runtime. Text/speech/screenshots retain the existing validator, review and persistence contracts. Prompt version 6 uses Qwen3 non-thinking markers and manifest stop tokens. LocalStorage and onboarding versions are unchanged.
 
 Linux x86_64, Windows x86_64 and Apple Silicon macOS are the release targets; Intel macOS is deferred. Windows uses a single Inno offline installer with an offline WebView2 payload; oversized files require hosting outside GitHub Releases. See LOCAL_AI.md and OFFLINE_AI_IMPLEMENTATION_REPORT.md for commands, measurements and actual acceptance status.
 
@@ -45,3 +45,5 @@ Linux x86_64, Windows x86_64 and Apple Silicon macOS are the release targets; In
 Linux/Windows x86_64 releases include portable and AVX2 static llama.cpp/Whisper variants, selected by native feature detection. Both use pinned sources and avoid host-specific `-march=native`. The short i5-10210U Qwen benchmark measured 52.4× prompt throughput and 12.7× generation throughput improvements; full application timings differ. See `docs/evaluation/cpu-performance.json` and `OFFLINE_AI_IMPLEMENTATION_REPORT.md`.
 
 AppImage validation receipts use the unchanged container identity and relative resource path across temporary remounts. The packaged readiness coordinator measured 49.866 s for full validation and 309 ms on a cached remount; this is not total window launch time. Explicit validation and upgrades invalidate/recheck as documented in LOCAL_AI.md.
+
+Speech import validation, audio conversion and signal checks now precede the shared inference gate. Invalid or silent audio therefore leaves an existing extraction server ready; valid speech still stops it before Whisper starts. This preserves serialized model inference and avoids an unnecessary model reload after rejected input. Native lifecycle acceptance is recorded in OFFLINE_AI_IMPLEMENTATION_REPORT.md.

@@ -1,0 +1,844 @@
+[
+  {
+    "id": "pictorial",
+    "languages": "Cebuano + English",
+    "seconds": 195.12165335100002,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "1 (expected 1)"
+      },
+      {
+        "name": "pictorial: found",
+        "ok": true,
+        "detail": "Pictorial"
+      },
+      {
+        "name": "pictorial: type",
+        "ok": true,
+        "detail": "\"event\" (expected \"event\")"
+      },
+      {
+        "name": "pictorial: date",
+        "ok": true,
+        "detail": "empty (expected empty)"
+      },
+      {
+        "name": "pictorial: time",
+        "ok": true,
+        "detail": "empty (expected empty)"
+      },
+      {
+        "name": "pictorial: arrival time",
+        "ok": true,
+        "detail": "\"13:30\" (expected \"13:30\")"
+      },
+      {
+        "name": "pictorial: location",
+        "ok": true,
+        "detail": "\"Campus\""
+      },
+      {
+        "name": "pictorial: requirement black pants",
+        "ok": true,
+        "detail": "[\"Wear black pants\",\"No jeans\"]"
+      },
+      {
+        "name": "pictorial: requirement jeans",
+        "ok": true,
+        "detail": "[\"Wear black pants\",\"No jeans\"]"
+      },
+      {
+        "name": "pictorial: confidence.arrivalTime",
+        "ok": true,
+        "detail": "\"confirmed\" (expected \"confirmed\")"
+      },
+      {
+        "name": "pictorial: confidence.time",
+        "ok": true,
+        "detail": "\"needs_review\" (expected \"needs_review\")"
+      },
+      {
+        "name": "pictorial: confidence.date",
+        "ok": true,
+        "detail": "\"needs_review\" (expected \"needs_review\")"
+      },
+      {
+        "name": "ambiguity on date",
+        "ok": true,
+        "detail": "[\"date: The source says “Tomorrow”, but when it was originally sent is unclear. Which date did it refer to?\"]"
+      },
+      {
+        "name": "no 1:30 PM interpreted as the event start time",
+        "ok": true
+      },
+      {
+        "name": "no “tomorrow/ugma” resolved without a known sending date",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "event",
+        "title": "Pictorial",
+        "arrivalTime": "13:30",
+        "location": "Campus",
+        "requirements": [
+          "Wear black pants",
+          "No jeans"
+        ],
+        "notes": [
+          "The exact time of the pictorial is not yet finalized and will be announced later."
+        ],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "needs_review",
+          "time": "needs_review",
+          "arrivalTime": "confirmed",
+          "location": "confirmed",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: The source says “Tomorrow”, but when it was originally sent is unclear. Which date did it refer to? [\"2026-10-13\"]"
+        ]
+      }
+    ],
+    "issues": [
+      "item 1: relative date “Tomorrow” left for review"
+    ],
+    "timings": {
+      "cache_n": 0,
+      "prompt_n": 1739,
+      "prompt_ms": 121817.594,
+      "prompt_per_token_ms": 70.05037032777459,
+      "prompt_per_second": 14.275442018662757,
+      "predicted_n": 230,
+      "predicted_ms": 73142.597,
+      "predicted_per_token_ms": 319.3999868995633,
+      "predicted_per_second": 3.130870510381249
+    }
+  },
+  {
+    "id": "midterm",
+    "languages": "English",
+    "seconds": 75.30449826200001,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "1 (expected 1–2)"
+      },
+      {
+        "name": "midterm|exam|cecc483: found",
+        "ok": true,
+        "detail": "MIDTERM EXAMINATION - CECC483"
+      },
+      {
+        "name": "midterm|exam|cecc483: type",
+        "ok": true,
+        "detail": "\"event\" (expected \"event\")"
+      },
+      {
+        "name": "midterm|exam|cecc483: date",
+        "ok": true,
+        "detail": "\"2026-10-11\" (expected \"2026-10-11\")"
+      },
+      {
+        "name": "midterm|exam|cecc483: time",
+        "ok": true,
+        "detail": "\"08:00\" (expected \"08:00\")"
+      },
+      {
+        "name": "midterm|exam|cecc483: end time",
+        "ok": true,
+        "detail": "\"13:00\" (expected \"13:00\")"
+      },
+      {
+        "name": "midterm|exam|cecc483: location",
+        "ok": true,
+        "detail": "\"CIT-U Gymnasium\""
+      },
+      {
+        "name": "midterm|exam|cecc483: confidence.date",
+        "ok": true,
+        "detail": "\"confirmed\" (expected \"confirmed\")"
+      },
+      {
+        "name": "midterm|exam|cecc483: confidence.time",
+        "ok": true,
+        "detail": "\"confirmed\" (expected \"confirmed\")"
+      },
+      {
+        "name": "midterm|exam|cecc483: confidence.location",
+        "ok": true,
+        "detail": "\"confirmed\" (expected \"confirmed\")"
+      },
+      {
+        "name": "no unrelated coverage section merged into the CECC483 exam without an open question",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "event",
+        "title": "MIDTERM EXAMINATION - CECC483",
+        "date": "2026-10-11",
+        "time": "08:00",
+        "endTime": "13:00",
+        "location": "CIT-U Gymnasium",
+        "requirements": [],
+        "notes": [
+          "Coverage includes Statics of Rigid Bodies, Mechanics of Deformable Bodies, Algebra, Trigonometry, Geometry, and Calculus."
+        ],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "confirmed",
+          "time": "confirmed",
+          "endTime": "confirmed",
+          "location": "confirmed"
+        }
+      },
+      {
+        "ambiguities": [
+          "notes: This screenshot has more than one “Coverage” section. Do they all belong to “MIDTERM EXAMINATION - CECC483”? []"
+        ]
+      }
+    ],
+    "issues": [
+      "item 1: combines 2 separate “Coverage” sections"
+    ],
+    "timings": {
+      "cache_n": 1610,
+      "prompt_n": 154,
+      "prompt_ms": 7633.195,
+      "prompt_per_token_ms": 49.566201298701294,
+      "prompt_per_second": 20.175038106585777,
+      "predicted_n": 235,
+      "predicted_ms": 67644.115,
+      "predicted_per_token_ms": 289.07741452991456,
+      "predicted_per_second": 3.459280973666371
+    }
+  },
+  {
+    "id": "bundle-english",
+    "languages": "English",
+    "seconds": 63.645528572999986,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": false,
+        "detail": "1 (expected 2)"
+      },
+      {
+        "name": "chapter 3: found",
+        "ok": false,
+        "detail": "missing"
+      },
+      {
+        "name": "consultation: found",
+        "ok": false,
+        "detail": "missing"
+      },
+      {
+        "name": "no deadline and consultation merged into one item",
+        "ok": true
+      },
+      {
+        "name": "no deadline time used as consultation time",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "event",
+        "title": "Thesis Advising",
+        "date": "2026-10-05",
+        "requirements": [
+          "Bring the revised questionnaire"
+        ],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "confirmed",
+          "time": "needs_review",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "ambiguities": [
+          "time: What is the start time of the thesis advising session? []"
+        ]
+      }
+    ],
+    "issues": [],
+    "timings": {
+      "cache_n": 1610,
+      "prompt_n": 73,
+      "prompt_ms": 4064.865,
+      "prompt_per_token_ms": 55.68308219178082,
+      "prompt_per_second": 17.958775998710905,
+      "predicted_n": 205,
+      "predicted_ms": 59561.301,
+      "predicted_per_token_ms": 291.9671617647059,
+      "predicted_per_second": 3.425042713556576
+    }
+  },
+  {
+    "id": "cebuano-mixed",
+    "languages": "Cebuano + English",
+    "seconds": 63.63369344599999,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "1 (expected 1)"
+      },
+      {
+        "name": "reflection: found",
+        "ok": false,
+        "detail": "missing"
+      },
+      {
+        "name": "no cancelled seminar created as an event to attend",
+        "ok": false
+      }
+    ],
+    "output": [
+      {
+        "type": "event",
+        "title": "Seminar",
+        "requirements": [],
+        "notes": [
+          "The seminar has been cancelled.",
+          "The deadline for the reflection paper is Friday before 5."
+        ],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "needs_review",
+          "time": "needs_review"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: What is the date of the cancelled seminar? The sending date is not visible. []"
+        ]
+      }
+    ],
+    "issues": [],
+    "timings": {
+      "cache_n": 1610,
+      "prompt_n": 90,
+      "prompt_ms": 4801.053,
+      "prompt_per_token_ms": 53.34503333333333,
+      "prompt_per_second": 18.745887620903165,
+      "predicted_n": 195,
+      "predicted_ms": 58793.076,
+      "predicted_per_token_ms": 303.05709278350514,
+      "predicted_per_second": 3.299708285377006
+    }
+  },
+  {
+    "id": "tagalog-mixed",
+    "languages": "Tagalog + English",
+    "seconds": 125.98203621199995,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "1 (expected 1)"
+      },
+      {
+        "name": "quiz|biology: found",
+        "ok": true,
+        "detail": "Quiz sa Biology"
+      },
+      {
+        "name": "quiz|biology: type",
+        "ok": true,
+        "detail": "\"event\" (expected \"event\")"
+      },
+      {
+        "name": "quiz|biology: date",
+        "ok": true,
+        "detail": "\"2026-10-08\" (expected \"2026-10-08\")"
+      },
+      {
+        "name": "quiz|biology: time",
+        "ok": false,
+        "detail": "empty (expected \"10:00\")"
+      },
+      {
+        "name": "quiz|biology: requirement lab manual",
+        "ok": true,
+        "detail": "[\"Bring lab manual\",\"Bring calculator\"]"
+      },
+      {
+        "name": "quiz|biology: requirement calculator",
+        "ok": true,
+        "detail": "[\"Bring lab manual\",\"Bring calculator\"]"
+      },
+      {
+        "name": "no invented location",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "event",
+        "title": "Quiz sa Biology",
+        "date": "2026-10-08",
+        "requirements": [
+          "Bring lab manual",
+          "Bring calculator"
+        ],
+        "notes": [
+          "The quiz has been moved to Thursday at 10:00 AM.",
+          "The date of the quiz is not explicitly stated in the source."
+        ],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "needs_review",
+          "time": "needs_review",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: What is the date of the quiz? The sending date is not visible. []"
+        ]
+      }
+    ],
+    "issues": [
+      "item 1: resolved “Huwebes” to 2026-10-08"
+    ],
+    "timings": {
+      "cache_n": 1610,
+      "prompt_n": 80,
+      "prompt_ms": 4340.342,
+      "prompt_per_token_ms": 54.25427499999999,
+      "prompt_per_second": 18.43172726941794,
+      "predicted_n": 230,
+      "predicted_ms": 121607.675,
+      "predicted_per_token_ms": 531.0378820960699,
+      "predicted_per_second": 1.8831048287042738
+    }
+  },
+  {
+    "id": "tagalog",
+    "languages": "Tagalog",
+    "seconds": 95.69499916900007,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "1 (expected 1)"
+      },
+      {
+        "name": "orientation: found",
+        "ok": true,
+        "detail": "orientation"
+      },
+      {
+        "name": "orientation: type",
+        "ok": true,
+        "detail": "\"event\" (expected \"event\")"
+      },
+      {
+        "name": "orientation: date",
+        "ok": true,
+        "detail": "empty (expected empty)"
+      },
+      {
+        "name": "orientation: time",
+        "ok": false,
+        "detail": "empty (expected \"15:00\")"
+      },
+      {
+        "name": "orientation: location",
+        "ok": true,
+        "detail": "\"Room 204\""
+      },
+      {
+        "name": "orientation: requirement ballpen",
+        "ok": true,
+        "detail": "[\"Bring ballpen\"]"
+      },
+      {
+        "name": "ambiguity on date",
+        "ok": true,
+        "detail": "[\"date: The source says “Bukas”, but when it was originally sent is unclear. Which date did it refer to?\"]"
+      },
+      {
+        "name": "no “bukas” resolved without a known sending date",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "event",
+        "title": "orientation",
+        "location": "Room 204",
+        "requirements": [
+          "Bring ballpen"
+        ],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "needs_review",
+          "time": "needs_review",
+          "location": "confirmed",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: The source says “Bukas”, but when it was originally sent is unclear. Which date did it refer to? [\"2026-10-13\"]"
+        ]
+      }
+    ],
+    "issues": [
+      "item 1: relative date “Bukas” left for review"
+    ],
+    "timings": {
+      "cache_n": 1610,
+      "prompt_n": 50,
+      "prompt_ms": 10633.572,
+      "prompt_per_token_ms": 212.67144,
+      "prompt_per_second": 4.70208881831994,
+      "predicted_n": 169,
+      "predicted_ms": 85037.799,
+      "predicted_per_token_ms": 506.177375,
+      "predicted_per_second": 1.975592054069979
+    }
+  },
+  {
+    "id": "voice-exam-reminder",
+    "languages": "English",
+    "seconds": 110.65458338500001,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "1 (expected 1–2)"
+      },
+      {
+        "name": "exam: found",
+        "ok": true,
+        "detail": "Remind me tomorrow at eight to bring my calculator and ID because our exam starts at nine"
+      },
+      {
+        "name": "exam: type",
+        "ok": false,
+        "detail": "\"task\" (expected \"event\")"
+      },
+      {
+        "name": "exam: date",
+        "ok": true,
+        "detail": "\"2026-10-12\" (expected \"2026-10-12\")"
+      },
+      {
+        "name": "exam: time",
+        "ok": false,
+        "detail": "empty (expected \"09:00\")"
+      },
+      {
+        "name": "exam: requirement calculator",
+        "ok": true,
+        "detail": "[\"Bring calculator\",\"Bring ID\"]"
+      },
+      {
+        "name": "exam: requirement \\bID\\b",
+        "ok": true,
+        "detail": "[\"Bring calculator\",\"Bring ID\"]"
+      },
+      {
+        "name": "no reminder time used as the exam start",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "task",
+        "title": "Remind me tomorrow at eight to bring my calculator and ID because our exam starts at nine",
+        "date": "2026-10-12",
+        "requirements": [
+          "Bring calculator",
+          "Bring ID"
+        ],
+        "notes": [
+          "Exam starts at nine"
+        ],
+        "confidence": {
+          "overall": "inferred",
+          "title": "confirmed",
+          "date": "inferred",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "ambiguities": []
+      }
+    ],
+    "issues": [
+      "item 1: model date 2026-10-13 corrected to 2026-10-12 for “tomorrow”"
+    ],
+    "timings": {
+      "cache_n": 1546,
+      "prompt_n": 97,
+      "prompt_ms": 6803.271,
+      "prompt_per_token_ms": 70.1368144329897,
+      "prompt_per_second": 14.257847438386625,
+      "predicted_n": 207,
+      "predicted_ms": 103823.932,
+      "predicted_per_token_ms": 503.9996699029126,
+      "predicted_per_second": 1.9841282836408083
+    }
+  },
+  {
+    "id": "cebuano-inig-udto",
+    "languages": "Cebuano",
+    "seconds": 65.16076029200002,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "1 (expected 1)"
+      },
+      {
+        "name": "meeting: found",
+        "ok": true,
+        "detail": "meeting sa library"
+      },
+      {
+        "name": "meeting: type",
+        "ok": true,
+        "detail": "\"event\" (expected \"event\")"
+      },
+      {
+        "name": "meeting: date",
+        "ok": true,
+        "detail": "\"2026-10-13\" (expected \"2026-10-13\")"
+      },
+      {
+        "name": "meeting: time",
+        "ok": false,
+        "detail": "empty (expected \"12:00\")"
+      },
+      {
+        "name": "meeting: location",
+        "ok": true,
+        "detail": "\"library\""
+      },
+      {
+        "name": "meeting: requirement \\bID\\b",
+        "ok": true,
+        "detail": "[\"Bring ID\"]"
+      }
+    ],
+    "output": [
+      {
+        "type": "event",
+        "title": "meeting sa library",
+        "date": "2026-10-13",
+        "location": "library",
+        "requirements": [
+          "Bring ID"
+        ],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "inferred",
+          "time": "needs_review",
+          "location": "confirmed",
+          "requirements": "inferred"
+        }
+      },
+      {
+        "ambiguities": []
+      }
+    ],
+    "issues": [
+      "item 1: resolved “Ugma” to 2026-10-13"
+    ],
+    "timings": {
+      "cache_n": 1546,
+      "prompt_n": 113,
+      "prompt_ms": 7610.573,
+      "prompt_per_token_ms": 67.35020353982301,
+      "prompt_per_second": 14.847765076295833,
+      "predicted_n": 156,
+      "predicted_ms": 57526.483,
+      "predicted_per_token_ms": 371.1386,
+      "predicted_per_second": 2.6944111984040466
+    }
+  },
+  {
+    "id": "mixed-moved-to",
+    "languages": "Cebuano + English",
+    "seconds": 130.46808527199994,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "2 (expected 2)"
+      },
+      {
+        "name": "consultation: found",
+        "ok": true,
+        "detail": "Consultation moved to Thursday 3 PM"
+      },
+      {
+        "name": "consultation: type",
+        "ok": false,
+        "detail": "\"task\" (expected \"event\")"
+      },
+      {
+        "name": "consultation: date",
+        "ok": true,
+        "detail": "\"2026-10-15\" (expected \"2026-10-15\")"
+      },
+      {
+        "name": "consultation: time",
+        "ok": false,
+        "detail": "empty (expected \"15:00\")"
+      },
+      {
+        "name": "draft: found",
+        "ok": true,
+        "detail": "Submit draft before 5"
+      },
+      {
+        "name": "draft: type",
+        "ok": true,
+        "detail": "\"deadline\" (expected \"deadline\")"
+      },
+      {
+        "name": "draft: date",
+        "ok": true,
+        "detail": "\"2026-10-14\" (expected \"2026-10-14\")"
+      },
+      {
+        "name": "draft: time",
+        "ok": false,
+        "detail": "empty (expected \"17:00\")"
+      }
+    ],
+    "output": [
+      {
+        "type": "task",
+        "title": "Consultation moved to Thursday 3 PM",
+        "date": "2026-10-15",
+        "requirements": [],
+        "notes": [
+          "Consultation has been moved to Thursday 3 PM."
+        ],
+        "confidence": {
+          "overall": "inferred",
+          "title": "confirmed",
+          "date": "inferred"
+        }
+      },
+      {
+        "type": "deadline",
+        "title": "Submit draft before 5",
+        "date": "2026-10-14",
+        "requirements": [],
+        "notes": [
+          "Submit draft before 5 on Wednesday."
+        ],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "inferred",
+          "time": "needs_review"
+        }
+      },
+      {
+        "ambiguities": []
+      }
+    ],
+    "issues": [
+      "item 1: resolved “Thursday” to 2026-10-15",
+      "item 2: resolved “karong Wednesday” to 2026-10-14"
+    ],
+    "timings": {
+      "cache_n": 1619,
+      "prompt_n": 43,
+      "prompt_ms": 6979.728,
+      "prompt_per_token_ms": 162.3192558139535,
+      "prompt_per_second": 6.160698525787824,
+      "predicted_n": 302,
+      "predicted_ms": 123409.62,
+      "predicted_per_token_ms": 409.9987375415282,
+      "predicted_per_second": 2.439031900430453
+    }
+  },
+  {
+    "id": "contextless-correction",
+    "languages": "English",
+    "seconds": 61.35723646699998,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "1 (expected 0–1)"
+      },
+      {
+        "name": "no invented a date for an unidentified meeting",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "task",
+        "title": "Move meeting from two to three PM",
+        "requirements": [],
+        "notes": [
+          "The meeting time has been changed to three PM.",
+          "The original time was two PM."
+        ],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: What is the date of the meeting? The sending date is not visible. []"
+        ]
+      }
+    ],
+    "issues": [],
+    "timings": {
+      "cache_n": 1619,
+      "prompt_n": 22,
+      "prompt_ms": 3382.154,
+      "prompt_per_token_ms": 153.73427272727272,
+      "prompt_per_second": 6.504730417361244,
+      "predicted_n": 199,
+      "predicted_ms": 57911.1,
+      "predicted_per_token_ms": 292.48030303030305,
+      "predicted_per_second": 3.4190336567601034
+    }
+  }
+]
