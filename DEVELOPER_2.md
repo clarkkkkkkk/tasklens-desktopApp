@@ -110,3 +110,7 @@ The complete v6 disconnected evaluation finished all ten cases in 994 seconds: 6
 ### Main integration — 2026-10-18
 
 Remote main cf09166 adds compact-output prompt v7, persisted static-prefix prewarming, the 60-second Inbox waiting/cancel notice, evaluation instrumentation and packaging fixes. The protected integration branch retains the local silent-audio lifecycle change, repair-text sanitization, all evaluation archives and both developers’ regression tests. Local archived chat-demonstration v7/v8 are distinct from main’s compact-output v7. Full integrated real-model/native acceptance remains pending; model pins, the offline boundary and persistence schema are unchanged.
+
+### Integrated verification record — 2026-10-18
+
+Main integration merge `8f32047` preserves checkpoint `8713545` and upstream `cf09166`. Integrated checks passed: TypeScript/lint, formatting, frontend build, Cargo check/format, 62 frontend unit tests, 17 Rust tests, two asset tests and six targeted browser tests. One real-model test and two native opt-in tests remained skipped/ignored. Full integrated real-model and installed platform acceptance remain open. See [the integration record](docs/MAIN_INTEGRATION_2026-10-18.md) for conflict decisions, commands and limitations.

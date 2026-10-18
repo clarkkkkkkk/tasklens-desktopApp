@@ -374,3 +374,7 @@ Full browser run: 30 passed, three failed during concurrent native builds and de
 ### Main integration — 2026-10-18
 
 - [ ] Complete the integrated compact-output v7 Qwen3-4B suite and installed offline acceptance. Main cf09166’s prefix caching, waiting/cancel notice and packaging fixes are combined with the preserved WIP checkpoint. Historical local v7/v8 demonstration experiments are different candidates; v6’s 64/77 result remains a pre-integration failed gate. No model swap or persistence migration was made.
+
+### Integrated verification record — 2026-10-18
+
+Main integration merge `8f32047` preserves checkpoint `8713545` and upstream `cf09166`. Integrated checks passed: TypeScript/lint, formatting, frontend build, Cargo check/format, 62 frontend unit tests, 17 Rust tests, two asset tests and six targeted browser tests. One real-model test and two native opt-in tests remained skipped/ignored. Full integrated real-model and installed platform acceptance remain open. See [the integration record](docs/MAIN_INTEGRATION_2026-10-18.md) for conflict decisions, commands and limitations.
