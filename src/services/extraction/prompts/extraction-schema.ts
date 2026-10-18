@@ -33,6 +33,11 @@ export const ambiguityFields = [
  * JSON Schema handed to llama.cpp, which compiles it into a decoding grammar. Evidence is an
  * enum of the unit IDs actually present, so generation cannot cite an invented unit.
  * Property order is generation order: evidence is written before each value.
+ *
+ * Compact representation (prompt v7): a date, time, end_time, arrival_time or location the
+ * source does not mention is generated as `null` instead of an object of empty values.
+ * `expandCompactBundle` restores the full shape before validation, so the validator, review
+ * and storage contracts are unchanged. Absent fields were ~20 output tokens each.
  */
 export function buildOutputJsonSchema(unitIds: string[]) {
   const evidence = {
@@ -44,7 +49,7 @@ export function buildOutputJsonSchema(unitIds: string[]) {
   const nullable = (schema: object) => ({ anyOf: [schema, { type: 'null' }] });
   const text = (max: number) => ({ type: 'string', minLength: 1, maxLength: max });
   // `text` is the time exactly as written; the validator converts it deterministically.
-  const timeField = {
+  const timeField = nullable({
     type: 'object',
     additionalProperties: false,
     required: ['evidence', 'text', 'value', 'confidence'],
@@ -54,7 +59,7 @@ export function buildOutputJsonSchema(unitIds: string[]) {
       value: nullable({ type: 'string', pattern: TIME }),
       confidence,
     },
-  };
+  });
   return {
     type: 'object',
     additionalProperties: false,
@@ -86,7 +91,7 @@ export function buildOutputJsonSchema(unitIds: string[]) {
               required: ['evidence', 'value', 'confidence'],
               properties: { evidence, value: text(LIMITS.title), confidence },
             },
-            date: {
+            date: nullable({
               type: 'object',
               additionalProperties: false,
               required: ['evidence', 'expression', 'basis', 'value', 'confidence'],
@@ -97,16 +102,16 @@ export function buildOutputJsonSchema(unitIds: string[]) {
                 value: nullable({ type: 'string', pattern: DATE }),
                 confidence,
               },
-            },
+            }),
             time: timeField,
             end_time: timeField,
             arrival_time: timeField,
-            location: {
+            location: nullable({
               type: 'object',
               additionalProperties: false,
               required: ['evidence', 'value', 'confidence'],
               properties: { evidence, value: nullable(text(LIMITS.text)), confidence },
-            },
+            }),
             requirements: {
               type: 'array',
               maxItems: LIMITS.requirements,
@@ -148,6 +153,46 @@ export function buildOutputJsonSchema(unitIds: string[]) {
         },
       },
     },
+  };
+}
+
+const ABSENT = {
+  date: {
+    evidence: [],
+    expression: null,
+    basis: 'unknown',
+    value: null,
+    confidence: 'needs_review',
+  },
+  time: { evidence: [], text: null, value: null, confidence: 'needs_review' },
+  location: { evidence: [], value: null, confidence: 'needs_review' },
+} as const;
+const COMPACT_FIELDS = {
+  date: ABSENT.date,
+  time: ABSENT.time,
+  end_time: ABSENT.time,
+  arrival_time: ABSENT.time,
+  location: ABSENT.location,
+} as const;
+
+/**
+ * Maps the compact generated representation to the full raw bundle: each `null` date/time/
+ * location becomes the empty field the model previously had to spell out. Full objects pass
+ * through unchanged, so older raw outputs still validate.
+ */
+export function expandCompactBundle(json: unknown): unknown {
+  if (!json || typeof json !== 'object' || !Array.isArray((json as { items?: unknown }).items))
+    return json;
+  const bundle = json as { items: unknown[] };
+  return {
+    ...bundle,
+    items: bundle.items.map((item) => {
+      if (!item || typeof item !== 'object') return item;
+      const expanded: Record<string, unknown> = { ...item };
+      for (const [field, empty] of Object.entries(COMPACT_FIELDS))
+        if (expanded[field] === null) expanded[field] = { ...empty, evidence: [] };
+      return expanded;
+    }),
   };
 }
 

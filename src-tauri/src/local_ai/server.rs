@@ -187,6 +187,9 @@ impl Runtime {
             "0".into(),
             "--no-webui".into(),
         ];
+        if let Some(dir) = prompt_cache_dir(app) {
+            args.extend(["--slot-save-path".into(), dir.to_string_lossy().into()]);
+        }
         if let Some(threads) = config.threads {
             args.extend(["--threads".into(), threads.to_string()]);
         }
@@ -251,6 +254,14 @@ impl Runtime {
             std::thread::sleep(Duration::from_millis(300));
         }
     }
+}
+
+/// Directory for llama.cpp slot files: the evaluated fixed prompt prefix, restored after a
+/// restart instead of re-evaluating it. Contains model state only, never source text.
+pub fn prompt_cache_dir(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
+    let dir = platform::app_data(app).ok()?.join("prompt-cache");
+    std::fs::create_dir_all(&dir).ok()?;
+    Some(dir)
 }
 
 pub fn runtime(app: &tauri::AppHandle) -> tauri::State<'_, Runtime> {

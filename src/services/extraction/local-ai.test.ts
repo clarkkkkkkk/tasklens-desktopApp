@@ -21,6 +21,44 @@ const ok = (result: ReturnType<typeof validateExtraction>) => {
 };
 
 describe('prompt', () => {
+  it('shares one cacheable prefix across sources and expands compact null fields', () => {
+    const a = buildExtractionPrompt(contextForCase(caseById('pictorial')));
+    const b = buildExtractionPrompt(contextForCase(caseById('midterm')));
+    expect(a.cachePrefix).toBe(b.cachePrefix);
+    expect(a.prompt.startsWith(a.cachePrefix)).toBe(true);
+    const context = contextForCase(caseById('pictorial'));
+    const compact = JSON.stringify({
+      items: [
+        {
+          type: 'event',
+          title: { evidence: ['r3'], value: 'Pictorial', confidence: 'confirmed' },
+          date: null,
+          time: null,
+          end_time: null,
+          arrival_time: null,
+          location: null,
+          requirements: [],
+          notes: [],
+          reminders: [],
+        },
+      ],
+      ambiguities: [],
+    });
+    const full = rawBundle([
+      rawItem({ title: { evidence: ['r3'], value: 'Pictorial', confidence: 'confirmed' } }),
+    ]);
+    const fromCompact = ok(validateExtraction(compact, context));
+    const fromFull = ok(validateExtraction(full, context));
+    // IDs and timestamps differ per run; every extracted field must match.
+    const strip = (r: typeof fromCompact) =>
+      r.actions.map((action) => {
+        const copy: Record<string, unknown> = { ...action };
+        for (const key of ['id', 'createdAt', 'updatedAt']) delete copy[key];
+        return copy;
+      });
+    expect(strip(fromCompact)).toEqual(strip(fromFull));
+  });
+
   it('is versioned, carries region IDs and explicit temporal context', () => {
     const context = contextForCase(caseById('pictorial'));
     const built = buildExtractionPrompt(context);
@@ -133,6 +171,57 @@ describe('validation', () => {
     );
     expect(result.actions[0]).toMatchObject({ time: '08:00', endTime: '13:00' });
     expect(result.actions[0].confidence.endTime).toBe('confirmed');
+  });
+
+  it('derives the end time from a stated range written only in the start time', () => {
+    const context = contextForCase(caseById('midterm'));
+    const timeUnit = unit(context, /8:00 AM/);
+    const result = ok(
+      validateExtraction(
+        rawBundle([
+          rawItem({
+            title: {
+              value: 'Midterm Examination',
+              evidence: [unit(context, /MIDTERM/i)],
+              confidence: 'confirmed',
+            },
+            time: {
+              text: '8:00 AM - 1:00 PM',
+              value: '08:00',
+              evidence: [timeUnit],
+              confidence: 'confirmed',
+            },
+          }),
+        ]),
+        context,
+      ),
+    );
+    expect(result.actions[0]).toMatchObject({ time: '08:00', endTime: '13:00' });
+    expect(result.actions[0].confidence.endTime).toBe('confirmed');
+    const cited = (field: string) =>
+      result.actions[0].evidence?.find((e) => e.field === field)?.segmentIds;
+    expect(cited('endTime')).toEqual(cited('time'));
+  });
+
+  it('does not derive an end time from a single stated time', () => {
+    const context = contextForCase(caseById('midterm'));
+    const result = ok(
+      validateExtraction(
+        rawBundle([
+          rawItem({
+            title: { value: 'Midterm Examination', evidence: [], confidence: 'inferred' },
+            time: {
+              text: '8:00 AM',
+              value: '08:00',
+              evidence: [unit(context, /8:00 AM/)],
+              confidence: 'confirmed',
+            },
+          }),
+        ]),
+        context,
+      ),
+    );
+    expect(result.actions[0].endTime).toBeUndefined();
   });
 
   it('clears unsupported dates and times rather than preserving invented midnight', () => {
@@ -517,6 +606,7 @@ describe('LocalAIExtractionService', () => {
     ({
       available: true,
       loadModel: vi.fn(async () => ({})),
+      prewarm: vi.fn(async () => {}),
       complete: vi.fn(async (_request, signal: AbortSignal) => {
         signal.throwIfAborted();
         return { content: outputs.shift() ?? '{}', truncated: false, elapsedMs: 1, timings: null };
@@ -564,6 +654,17 @@ describe('LocalAIExtractionService', () => {
         { signal: new AbortController().signal, onProgress: () => {} },
       ),
     ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+  });
+
+  it('starts prewarming the cached prompt prefix before the completion', async () => {
+    const model = fakeModel([valid]);
+    await new LocalAIExtractionService(fakeOcr(), model, settings).extract(input, {
+      signal: new AbortController().signal,
+      onProgress: () => {},
+    });
+    const prefix = (model.prewarm as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const prompt = (model.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].prompt as string;
+    expect(prompt.startsWith(prefix)).toBe(true);
   });
 
   it('stops before the model when OCR finds too little text', async () => {

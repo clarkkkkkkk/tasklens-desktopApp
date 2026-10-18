@@ -167,17 +167,27 @@ export function buildUserMessage(context: PromptContext): string {
   return lines.join('\n');
 }
 
+/** The fixed start of every Qwen3 prompt: identical across requests, so its KV cache is reusable. */
+export function qwenPromptPrefix(system: string): string {
+  if (assets.extraction.promptTemplate !== 'qwen3-non-thinking')
+    throw new Error('Unsupported extraction template');
+  return `<|im_start|>system\n${system}<|im_end|>\n<|im_start|>user\n`;
+}
+
 /** Qwen3 non-thinking template. The empty thought block prevents reasoning in JSON output. */
 export function qwenChatPrompt(system: string, user: string, repair?: string): string {
   const reminder = repair ? `\n\nPREVIOUS_ATTEMPT_PROBLEM\n${repair}` : '';
-  if (assets.extraction.promptTemplate !== 'qwen3-non-thinking')
-    throw new Error('Unsupported extraction template');
-  return `<|im_start|>system\n${system}<|im_end|>\n<|im_start|>user\n${user}${reminder}\n/no_think<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n`;
+  return `${qwenPromptPrefix(system)}${user}${reminder}\n/no_think<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n`;
 }
+
+/** Prefix to evaluate ahead of time (during OCR) so the first extraction skips its prefill. */
+export const EXTRACTION_CACHE_PREFIX = () => qwenPromptPrefix(TASKLENS_SYSTEM_PROMPT);
 
 export interface BuiltPrompt {
   version: number;
   prompt: string;
+  /** Leading part of `prompt` shared by every extraction request. */
+  cachePrefix: string;
   schema: ReturnType<typeof buildOutputJsonSchema>;
   /** Conservative token estimate for context budgeting. */
   estimatedTokens: number;
@@ -189,6 +199,7 @@ export function buildExtractionPrompt(context: PromptContext, repair?: string): 
   return {
     version: TASKLENS_EXTRACTION_PROMPT_VERSION,
     prompt,
+    cachePrefix: EXTRACTION_CACHE_PREFIX(),
     schema: buildOutputJsonSchema(context.units.map((u) => u.id)),
     estimatedTokens: Math.ceil(prompt.length / 3),
   };
