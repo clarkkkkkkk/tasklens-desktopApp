@@ -147,6 +147,8 @@ build(lep, 'leptonica');
 run('cmake', ['--install', `${lep}/build`, '--config', 'Release']);
 const tess = await source('tesseract');
 configure(tess, [
+  // Tesseract defaults SW_BUILD on for Windows; use the Leptonica installed into the prefix.
+  '-DSW_BUILD=OFF',
   '-DBUILD_TRAINING_TOOLS=OFF',
   '-DBUILD_TESTS=OFF',
   '-DOPENMP_BUILD=OFF',
