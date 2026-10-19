@@ -41,7 +41,8 @@
       "resources/tessdata/": "resources/tessdata/",
       "resources/notices/": "resources/notices/",
       "resources/models.json": "resources/models.json",
-      "../THIRD_PARTY_NOTICES.md": "resources/notices/THIRD_PARTY_NOTICES.md"
+      "../THIRD_PARTY_NOTICES.md": "resources/notices/THIRD_PARTY_NOTICES.md",
+      "../docs/third-party/native-reliability/": "resources/notices/native-reliability/"
     },
     "macOS": {
       "infoPlist": "Info.plist",

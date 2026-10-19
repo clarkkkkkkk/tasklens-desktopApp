@@ -55,7 +55,7 @@ Click **Search your workspace** or press **Ctrl/Cmd K** to open the floating sea
 - Screenshot thumbnails are reduced to at most 1000px and bounded in size; originals on disk are unchanged. This is a planning app, not an original-image archive.
 - A failed write preserves editor values. Corrupt or unsupported data is left intact with recovery export/retry controls.
 - Settings → Your data exports a JSON backup. Import is not implemented yet. Avoid clearing app/browser data without a backup.
-- Reminder presets and dates are saved and shown in Settings. **Native OS notifications and launch-at-startup are not implemented.** The startup setting is visibly disabled.
+- Reminder presets and dates are saved and shown in Settings. **Native notification delivery is separately opt-in in the unfinished Milestone A implementation.** It does not activate automatically after upgrading. Launch-at-startup remains unimplemented and visibly disabled; see the native reliability gate below.
 - Storage is not encrypted. Browser and packaged Tauri profiles do not share storage. One native window is configured; concurrent separate browser tabs do not provide transactional cross-tab writes.
 
 ## Quality checks
@@ -97,3 +97,7 @@ The sole original asset found was **`TaskLens.png`**. It is preserved byte-for-b
 Inbox includes Voice, Import audio and Capture text. Desktop processing uses bundled Whisper Small and Qwen3-4B; review each result before saving. See [VOICE_CAPTURE.md](VOICE_CAPTURE.md) for supported codecs, retention, permissions and acceptance limitations. All-in-one downloads contain roughly 3 GB of model/data assets before other resources; see [LOCAL_AI.md](LOCAL_AI.md) for installer and hosting requirements.
 
 Offline packaging/performance evidence and remaining release gates are recorded in [the implementation report](OFFLINE_AI_IMPLEMENTATION_REPORT.md). Current Fedora measurements include cached AppImage preparation and real native audio import/transcription; complete model accuracy, voice-to-actions and screenshot-to-actions acceptance remain in progress.
+
+## Native reliability branch — 2026-10-20
+
+`codex/native-reliability` implements an unfinished Milestone A: opt-in native reminders, a SQLite delivery journal (tasks stay in localStorage), Settings activation/privacy/background controls, durable scheduling fences and shared close guards. Notifications require explicit activation after upgrade. No automatic autostart, task migration or backup import is included yet. Fedora OS submission checks have run; visibility, broader lifecycle/recovery and Windows/macOS native acceptance are tracked separately. See [implementation and gate status](docs/NATIVE_RELIABILITY.md) for commands, ownership boundaries, storage paths, unencrypted-data disclosure and remaining A–E work. No push/main merge is included.

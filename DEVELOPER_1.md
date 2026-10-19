@@ -53,3 +53,7 @@ Onboarding layout, four steps, restrained transitions, interactive demo presenta
 
 ## Voice capture responsibilities
 Own compact recorder/import/text controls, explicit processing/error states, transcript/evidence presentation, multi-action centered review with retained drafts, model Settings UI, permission recovery copy, keyboard/focus behavior and reduced motion. Browser integration uses a separate injected-service test entrypoint. Coordinate native/manual language-quality acceptance with Developer 2; do not present mocked browser checks as real speech recognition.
+
+## Native reliability branch — 2026-10-20
+
+`codex/native-reliability` implements an unfinished Milestone A: opt-in native reminders, a SQLite delivery journal (tasks stay in localStorage), Settings activation/privacy/background controls, durable scheduling fences and shared close guards. Notifications require explicit activation after upgrade. No automatic autostart, task migration or backup import is included yet. Fedora OS submission checks have run; visibility, broader lifecycle/recovery and Windows/macOS native acceptance are tracked separately. See [implementation and gate status](docs/NATIVE_RELIABILITY.md) for commands, ownership boundaries, storage paths, unencrypted-data disclosure and remaining A–E work. No push/main merge is included.

@@ -132,3 +132,12 @@ describe('reminder configurations', () => {
     expect(scheduler.upcoming([a], defaultSettings, new Date('2026-10-10'))).toHaveLength(0);
   });
 });
+
+describe('native reminder time safety', () => {
+  it('never invents a 9 AM anchor for date-only items', () => {
+    const reminders = buildReminders('2026-10-08', undefined, ['night', 'hour', 'quarter']);
+    expect(reminders).toHaveLength(1);
+    expect(reminders[0].id).toBe('night');
+    expect(new Date(reminders[0].datetime).getHours()).toBe(20);
+  });
+});

@@ -50,7 +50,7 @@ Small controls radius 10px, regular controls 12px, cards 16px, large dropzone 24
 - Loading: restrained spinner or progress steps with aria-live polite and text. Explicitly say Demo/Mock. Respect reduced motion.
 - Errors: inline error surface with readable text, error icon, retry or recovery guidance; role alert. Never silently discard data on storage failure.
 - Confirmation: concise polite live status; saved data appears immediately. Deletes use a two-step inline confirmation. Confirmation of extraction means the user accepts the reviewed values, not that AI verified them.
-- Reminders: editable checkbox rows, date/time label; saved configuration only in Phase 1, always disclose no OS notifications. Upcoming reminder summary belongs in Settings.
+- Reminders: editable checkbox rows with date/time labels. Browser development is configuration-only. Desktop delivery requires a separate, explicit activation preview in Settings; distinguish OS submission from visibility and display paused/error status. Upcoming and missed schedules belong in Settings. New date-only items offer night-before 20:00; relative presets require a confirmed anchor. Repeated DST times use explicit occurrence radio controls. Background operation is opt-in with in-app Quit and a tray limitation explanation.
 
 ## Accessibility and responsive behavior
 Semantic buttons, inputs, landmarks and headings. All keyboard actions have visible 2px primary-text focus rings with 3px offset. Minimum 36px targets, explicit labels, skip link, meaningful image alt text. No nested buttons. Respect prefers-reduced-motion; transitions 140ms only for color, background, border and opacity. No entrance animations or layout motion.
@@ -107,3 +107,7 @@ Show the existing neutral status treatment with â€œPreparing local intelligenceâ
 ### First-launch transition resilience
 
 Onboarding completion must not await visual animation completion. Fade a disposable inert, aria-hidden snapshot while updating the workspace state and focus immediately. Remove snapshots after their bounded visual duration even when a background compositor pauses animations. Preserve the existing motion appearance and reduced-motion behavior.
+
+## Native reminder recovery
+
+Reuse existing Settings rows, inline confirmation, error surfaces and native checkboxes. Show activation preview counts and schedules needing confirmation, generic notification privacy preference, device background preference and a real test action. A persistent recovery warning may use a compact fixed surface below the topbar, aligned to the existing 352px notice width; do not shift the shell. No new motion or colors. Status events must not replay page entrances. Backup/startup controls stay honestly unavailable until their milestones are implemented.

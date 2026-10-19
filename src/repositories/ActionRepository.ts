@@ -4,5 +4,7 @@ export interface ActionRepository {
   saveAction(action: ExtractedAction): Promise<Snapshot>;
   deleteAction(id: string): Promise<Snapshot>;
   saveSettings(settings: Settings): Promise<Snapshot>;
-  exportRaw(): string;
+  exportRaw(): Promise<string>;
+  subscribe(listener: () => void): () => void;
+  readonly reminderWarning?: string | null;
 }

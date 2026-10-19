@@ -373,7 +373,7 @@ function ReminderPreferencesStep({
         </label>
       ))}
       <p className="field-help">
-        Saved on this device. OS notifications are not available yet.
+        Saved on this device. Desktop notifications require separate activation in Settings.
         {!settings.remindersEnabled && ' Reminders are currently disabled in Settings.'}
       </p>
     </div>

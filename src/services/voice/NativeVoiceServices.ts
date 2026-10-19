@@ -1,6 +1,6 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { registerCloseGuard } from '../reliability/lifecycle';
 import {
   audioPreprocessor,
   transcriptSchema,
@@ -92,16 +92,7 @@ export class NativeVoiceCapture implements VoiceCaptureService {
   }
   async guardClose(onRequest: (close: () => Promise<void>) => void) {
     if (!this.available) return () => {};
-    const window = getCurrentWindow();
-    let dispose = () => {};
-    dispose = await window.onCloseRequested((event) => {
-      event.preventDefault();
-      onRequest(async () => {
-        dispose();
-        await window.close();
-      });
-    });
-    return dispose;
+    return registerCloseGuard(onRequest);
   }
 }
 export class NativeSpeechToText implements SpeechToTextService {

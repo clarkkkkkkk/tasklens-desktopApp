@@ -18,7 +18,7 @@
 | Voice | whisper.cpp (MIT) with Whisper Small, unchanged from the voice feature. |
 
 ## Future, not installed
-SQLite will implement the same repository contract after native database access and migrations are tested. GPU acceleration remains future work; CPU Tesseract bundling is implemented with native release acceptance tracked separately. A native reminder scheduler will implement ReminderScheduler. Phase 1 stores schedules but never claims to send OS notifications. Startup registration is also deferred.
+SQLite will implement the same repository contract after native database access and migrations are tested. GPU acceleration remains future work; CPU Tesseract bundling is implemented with native release acceptance tracked separately. Milestone A now adds a separately activated native reminder service and SQLite delivery journal; browser development remains configuration-only. Native acceptance is tracked in docs/NATIVE_RELIABILITY.md. Startup registration is also deferred.
 
 ## Setup references
 - [Tauri configuration](https://v2.tauri.app/reference/config/)
@@ -28,7 +28,7 @@ SQLite will implement the same repository contract after native database access 
 Node 22.12+ and a current Rust toolchain are recommended. Native Linux builds also require GTK 3 and WebKitGTK 4.1 development libraries. Linux native automation and debug Debian packaging are now available on this host; real microphone and all-platform voice acceptance are tracked separately in TASK_TRACKER.md.
 
 ## Local voice/text additions
-Voice capture uses CPAL (Rust); decoding uses Symphonia with only WAV/PCM, MP3, M4A AAC-LC/ALAC and OGG/Vorbis enabled; Rubato resamples to 16 kHz mono PCM. Speech inference uses pinned whisper.cpp and multilingual Whisper Small. Structured extraction for voice, text and screenshots uses the same Qwen3-4B model on the managed llama-server (127.0.0.1 only), schema-constrained JSON and the shared validator. Models are bundled and verified automatically; native sidecars are built per target with `npm run build:runtimes`. See VOICE_CAPTURE.md for setup and acceptance boundaries. SQLite and notification delivery remain future work.
+Voice capture uses CPAL (Rust); decoding uses Symphonia with only WAV/PCM, MP3, M4A AAC-LC/ALAC and OGG/Vorbis enabled; Rubato resamples to 16 kHz mono PCM. Speech inference uses pinned whisper.cpp and multilingual Whisper Small. Structured extraction for voice, text and screenshots uses the same Qwen3-4B model on the managed llama-server (127.0.0.1 only), schema-constrained JSON and the shared validator. Models are bundled and verified automatically; native sidecars are built per target with `npm run build:runtimes`. See VOICE_CAPTURE.md for setup and acceptance boundaries. Canonical SQLite task storage remains future work. Native notification delivery is an unfinished Milestone A implementation with separate explicit activation and acceptance gates.
 
 ## All-in-one release assets — 2026-10-16
 
@@ -47,3 +47,9 @@ Linux/Windows x86_64 releases include portable and AVX2 static llama.cpp/Whisper
 AppImage validation receipts use the unchanged container identity and relative resource path across temporary remounts. The packaged readiness coordinator measured 49.866 s for full validation and 309 ms on a cached remount; this is not total window launch time. Explicit validation and upgrades invalidate/recheck as documented in LOCAL_AI.md.
 
 Speech import validation, audio conversion and signal checks now precede the shared inference gate. Invalid or silent audio therefore leaves an existing extraction server ready; valid speech still stops it before Whisper starts. This preserves serialized model inference and avoids an unnecessary model reload after rejected input. Native lifecycle acceptance is recorded in OFFLINE_AI_IMPLEMENTATION_REPORT.md.
+
+## Native reliability — partial Milestone A
+
+Pinned rusqlite 0.40.2 includes bundled SQLite and backup support, used only for the delivery journal at this checkpoint. Notification submission: notify-rust 4.18.1 on Linux/Windows; UserNotifications through objc2-user-notifications 0.3.2 on macOS. chrono 0.4.45, chrono-tz 0.10.4 and iana-time-zone 0.1.65 validate timezone/DST choices. Tokio bounds Linux notification interaction listeners. Native Windows/macOS builds and interaction acceptance remain pending. No SQL/notification/autostart plugin capabilities are granted to the renderer.
+
+Task persistence remains localStorage. Backup restore, autostart and canonical SQLite migration are gated future milestones in this branch, not implemented features. See [native reliability](docs/NATIVE_RELIABILITY.md).

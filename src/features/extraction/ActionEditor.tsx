@@ -1,8 +1,13 @@
-import { useState } from 'react';
+import { invoke, isTauri } from '@tauri-apps/api/core';
+import { useEffect, useState } from 'react';
 import { Save, Check, Bell } from '../../components/icons';
 import { actionSchema, type ExtractedAction, type Settings } from '../../types/action';
 import { confirmAction } from '../../lib/actions';
-import { buildReminders, rebaseReminders } from '../../services/reminders/ReminderScheduler';
+import {
+  buildReminders,
+  rebaseReminders,
+  approveDisplayedReminders,
+} from '../../services/reminders/ReminderScheduler';
 import { Button, ErrorState } from '../../components/ui';
 export function ActionEditor({
   action,
@@ -24,10 +29,58 @@ export function ActionEditor({
     [notes, setNotes] = useState(action.notes.join('\n')),
     [error, setError] = useState(''),
     [pending, setPending] = useState(false);
+  const [timeOptions, setTimeOptions] = useState<{
+    kind: string;
+    timezone: string;
+    instants: string[];
+  }>();
+  useEffect(() => {
+    let disposed = false;
+    setTimeOptions(undefined);
+    const time = draft.arrivalTime || draft.time;
+    if (isTauri() && draft.date && time)
+      void invoke<{ kind: string; timezone: string; instants: string[] }>('reminder_time_options', {
+        date: draft.date,
+        time,
+      })
+        .then((value) => {
+          if (!disposed) setTimeOptions(value);
+        })
+        .catch(() => {
+          if (!disposed)
+            setError('Could not verify this local time. Retry before approving reminders.');
+        });
+    return () => {
+      disposed = true;
+    };
+  }, [draft.date, draft.time, draft.arrivalTime]);
+  function chooseOccurrence(instant: string, index: number) {
+    onDirty();
+    setDraft((d) => ({
+      ...d,
+      reminders: d.reminders.map((r) =>
+        r.id === 'hour' || r.id === 'quarter'
+          ? {
+              ...r,
+              datetime: new Date(
+                new Date(instant).getTime() - (r.id === 'hour' ? 60 : 15) * 60000,
+              ).toISOString(),
+              approval: {
+                timezone: timeOptions!.timezone,
+                anchorInstant: instant,
+                occurrence: index === 0 ? 'first' : 'second',
+              },
+            }
+          : r,
+      ),
+    }));
+  }
   function update<K extends keyof ExtractedAction>(key: K, value: ExtractedAction[K]) {
     onDirty();
     setDraft((d) => {
       let next = { ...d, [key]: value };
+      if (key === 'date' || key === 'time' || key === 'arrivalTime')
+        next = { ...next, confidence: { ...next.confidence, [key]: 'confirmed' } };
       if (key === 'date' || key === 'time' || key === 'arrivalTime') {
         if (key === 'date' && !d.date && value)
           next = {
@@ -41,12 +94,38 @@ export function ActionEditor({
   }
   async function submit(confirm: boolean) {
     setError('');
+    if (
+      timeOptions?.kind === 'gap' &&
+      draft.reminders.some((r) => r.enabled && (r.id === 'hour' || r.id === 'quarter'))
+    ) {
+      setError('This local time does not exist because of daylight saving. Correct the time.');
+      return;
+    }
+    if (
+      timeOptions?.kind === 'fold' &&
+      draft.reminders.some(
+        (r) =>
+          r.enabled &&
+          (r.id === 'hour' || r.id === 'quarter') &&
+          !timeOptions.instants.includes(r.approval?.anchorInstant || ''),
+      )
+    ) {
+      setError(
+        'Choose the first or second occurrence of this repeated local time before saving reminders.',
+      );
+      return;
+    }
     const lines = (text: string) =>
       text
         .split('\n')
         .map((s) => s.trim())
         .filter(Boolean);
-    const value = { ...draft, requirements: lines(requirements), notes: lines(notes) };
+    const value = {
+      ...draft,
+      reminders: approveDisplayedReminders(draft.reminders),
+      requirements: lines(requirements),
+      notes: lines(notes),
+    };
     const validated = actionSchema.safeParse(confirm ? confirmAction(value) : value);
     if (!validated.success) {
       setError(validated.error.issues.map((i) => `${i.path[0]}: ${i.message}`).join('. '));
@@ -161,11 +240,53 @@ export function ActionEditor({
             Reminders
           </h3>
           <p className="field-help">
-            Saved preferences only; notifications arrive in a future phase.{' '}
+            Notifications require explicit activation in desktop Settings. Saving approves the
+            displayed schedules.{' '}
             {draft.date && !draft.time && !draft.arrivalTime
-              ? 'Date-only reminders use 9:00 AM.'
+              ? 'Date-only items can use Night before at 8 PM. Hourly reminders need a confirmed time.'
               : ''}
           </p>
+          {(draft.confidence.date === 'needs_review' ||
+            ((draft.arrivalTime || draft.time) &&
+              (draft.arrivalTime ? draft.confidence.arrivalTime : draft.confidence.time) !==
+                'confirmed')) && (
+            <Button
+              onClick={() => {
+                onDirty();
+                setDraft((d) => ({
+                  ...d,
+                  confidence: {
+                    ...d.confidence,
+                    date: 'confirmed',
+                    ...(d.arrivalTime
+                      ? { arrivalTime: 'confirmed' as const }
+                      : { time: 'confirmed' as const }),
+                  },
+                }));
+              }}
+            >
+              Confirm displayed reminder date and time
+            </Button>
+          )}
+          {timeOptions?.kind === 'gap' && (
+            <ErrorState message="This local time does not exist because of daylight saving. Correct the time before enabling relative reminders." />
+          )}
+          {timeOptions?.kind === 'fold' && (
+            <fieldset>
+              <legend>This time occurs twice. Choose its occurrence.</legend>
+              {timeOptions.instants.map((instant, index) => (
+                <label key={instant}>
+                  <input
+                    type="radio"
+                    name="dst-occurrence"
+                    checked={draft.reminders.some((r) => r.approval?.anchorInstant === instant)}
+                    onChange={() => chooseOccurrence(instant, index)}
+                  />
+                  {index === 0 ? 'First' : 'Second'} occurrence · {instant} · {timeOptions.timezone}
+                </label>
+              ))}
+            </fieldset>
+          )}
           {draft.reminders.length ? (
             draft.reminders.map((r) => (
               <label className="reminder-row" key={r.id}>

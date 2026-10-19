@@ -30,10 +30,17 @@ export function AppProvider({ services, children }: { services: Services; childr
   }, [services]);
   useEffect(() => {
     void reload();
+    const unsubscribe = services.repository.subscribe(() => {
+      // Repository notifications follow committed writes; reading again must not re-enter the native write fence.
+      if (services.repository.reminderWarning) setNotice(services.repository.reminderWarning);
+    });
     const listener = () => void reload();
     window.addEventListener('storage', listener);
-    return () => window.removeEventListener('storage', listener);
-  }, [reload]);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('storage', listener);
+    };
+  }, [reload, services.repository]);
   useEffect(() => {
     services.settings.current = snapshot.settings;
     services.localAI.setConfig({
@@ -51,12 +58,13 @@ export function AppProvider({ services, children }: { services: Services; childr
       await services.repository.saveAction({ ...a, updatedAt: new Date().toISOString() }),
     );
     setNotice(
-      a.status === 'needs_review' ? 'Draft saved to Needs Review.' : 'Saved on this device.',
+      services.repository.reminderWarning ||
+        (a.status === 'needs_review' ? 'Draft saved to Needs Review.' : 'Saved on this device.'),
     );
   }
   async function remove(id: string) {
     setSnapshot(await services.repository.deleteAction(id));
-    setNotice('Item deleted.');
+    setNotice(services.repository.reminderWarning || 'Item deleted.');
   }
   async function complete(a: ExtractedAction) {
     await save({ ...a, status: a.status === 'completed' ? 'confirmed' : 'completed' });
@@ -64,7 +72,7 @@ export function AppProvider({ services, children }: { services: Services; childr
   }
   async function saveSettings(settings: Settings) {
     setSnapshot(await services.repository.saveSettings(settings));
-    setNotice('Preferences saved.');
+    setNotice(services.repository.reminderWarning || 'Preferences saved.');
   }
   return (
     <AppContext.Provider

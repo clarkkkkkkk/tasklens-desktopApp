@@ -1,3 +1,7 @@
+import { ReminderHealth } from './components/ReminderHealth';
+import { invoke, isTauri } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
+import { installLifecycle, registerCloseGuard } from './services/reliability/lifecycle';
 import { LocalIntelligenceStatus } from './components/LocalIntelligenceStatus';
 import { BundleReview } from './features/voice/BundleReview';
 import { MotionToast } from './components/motion/MotionToast';
@@ -40,6 +44,35 @@ export default function App() {
     voiceCancel.current = cancel;
     setVoiceBusy(!!cancel);
   }, []);
+  useEffect(() => {
+    let disposed = false;
+    let cleanup = () => {};
+    void installLifecycle().then((unlisten) => {
+      if (disposed) unlisten();
+      else cleanup = unlisten;
+    });
+    return () => {
+      disposed = true;
+      cleanup();
+    };
+  }, []);
+  useEffect(() => {
+    const failed = () =>
+      announce('TaskLens could not close safely. Your data is preserved. Retry from Settings.');
+    window.addEventListener('lifecycle-error', failed);
+    return () => window.removeEventListener('lifecycle-error', failed);
+  }, [announce]);
+  useEffect(
+    () =>
+      registerCloseGuard((finish) => {
+        if (dirty) {
+          announce('Save or close your current edits before closing TaskLens.');
+          return;
+        }
+        void finish();
+      }),
+    [dirty, announce],
+  );
   const pendingBrandFocus = useRef(false);
   const requestedView = useRef(view);
   useLayoutEffect(() => {
@@ -95,6 +128,35 @@ export default function App() {
     },
     [dirty, announce],
   );
+  useEffect(() => {
+    if (!isTauri() || loading || dirty || voiceBusy || bundle || touring) return;
+    let disposed = false;
+    let cleanup = () => {};
+    const consume = async () => {
+      const id = await invoke<string | null>('reminder_take_activation');
+      if (!id || disposed) return;
+      const action = snapshot.actions.find((item) => item.id === id);
+      if (action) onOpen(action);
+      else announce('This notification refers to an item that is no longer available.');
+    };
+    void listen('reminder-open', () => void consume())
+      .then((unlisten) => {
+        if (disposed) {
+          unlisten();
+          return;
+        }
+        cleanup = unlisten;
+        return consume();
+      })
+      .catch(() => {
+        if (!disposed)
+          announce('Notification activation is unavailable. Open the item from your workspace.');
+      });
+    return () => {
+      disposed = true;
+      cleanup();
+    };
+  }, [loading, dirty, voiceBusy, bundle, touring, snapshot.actions, onOpen, announce]);
   const onClose = useCallback(() => {
     const version = ++focusVersion.current;
     prepareExit(
@@ -128,9 +190,9 @@ export default function App() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [touring, brandHandoff, voiceBusy, bundle, loading, loadError]);
-  function backup() {
+  async function backup() {
     try {
-      downloadText(services.repository.exportRaw(), 'tasklens-recovery.json');
+      downloadText(await services.repository.exportRaw(), 'tasklens-recovery.json');
     } catch {
       announce('Could not access local storage to export a backup.');
     }
@@ -139,6 +201,7 @@ export default function App() {
   return (
     <>
       <LocalIntelligenceStatus />
+      <ReminderHealth />
       {touring && (
         <OnboardingFlow
           replay={replay}

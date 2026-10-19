@@ -15,6 +15,13 @@ export const STORAGE_KEY = 'tasklens:data:v1';
 export const backupKey = (version: number) => `tasklens:backup:pre-migration:v${version}`;
 export type SnapshotStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 export class LocalStorageRepository implements ActionRepository {
+  private listeners = new Set<() => void>();
+  subscribe(listener: () => void) {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
   private queue: Promise<unknown> = Promise.resolve();
   /** Original data awaiting a backup before the first write in the current version. */
   private preMigration: { version: number; raw: string } | null = null;
@@ -79,6 +86,7 @@ export class LocalStorageRepository implements ActionRepository {
       );
     }
     this.preMigration = null;
+    this.listeners.forEach((listener) => listener());
     return valid;
   }
   async saveAction(action: ExtractedAction): Promise<Snapshot> {
@@ -106,7 +114,7 @@ export class LocalStorageRepository implements ActionRepository {
       return this.write({ ...s, settings: settingsSchema.parse(settings) });
     });
   }
-  exportRaw(): string {
+  async exportRaw(): Promise<string> {
     return (
       this.storage.getItem(STORAGE_KEY) ||
       JSON.stringify({ version: SNAPSHOT_VERSION, actions: [], settings: defaultSettings })
