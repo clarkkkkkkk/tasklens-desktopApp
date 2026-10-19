@@ -42,21 +42,18 @@ export function RouteWhy({ route }: { route: RouteNotice }) {
   const reasons =
     decision.selected?.key === candidate.key
       ? decision.reasons
-      : [{ tone: 'info' as const, text: 'You chose this alternative' }];
+      : [{ tone: 'info' as const, text: 'Next best model on this device' }];
   return (
     <details className="route-why">
       <summary>Why this AI?</summary>
       {fallbackFrom && (
         <p className="field-help">
-          {fallbackFrom.model.name} was unavailable, so you chose {candidate.model.name} instead.
+          {fallbackFrom.model.name} was unavailable, so TaskLens used {candidate.model.name}{' '}
+          instead.
         </p>
       )}
       <ReasonList reasons={reasons} limit={6} />
-      <p className="field-help">
-        {candidate.dataFlow.leavesDevice
-          ? `Sent to ${candidate.provider.name}: ${candidate.dataFlow.sends.join('; ').toLowerCase()}.`
-          : 'Processed on this device. No source material leaves it.'}
-      </p>
+      <p className="field-help">Processed on this device. No source material leaves it.</p>
     </details>
   );
 }
@@ -82,10 +79,6 @@ function Facts({ candidate, decision }: { candidate: ScoredCandidate; decision: 
       <dd>{capitalize(candidate.qualityClass)}</dd>
       <dt>Expected speed</dt>
       <dd>{capitalize(candidate.speedClass)}</dd>
-      <dt>Privacy</dt>
-      <dd>{candidate.model.privacy === 'cloud' ? 'Cloud' : 'On this device'}</dd>
-      <dt>Internet required</dt>
-      <dd>{candidate.model.supportsOffline ? 'No' : 'Yes'}</dd>
       {memory && (
         <>
           <dt>Memory</dt>
@@ -168,7 +161,7 @@ export function RouteDecisionCard({
           {!mock && <Facts candidate={selected} decision={decision} />}
           <h4>{mock ? 'What this means' : 'Why this model?'}</h4>
           <ReasonList reasons={decision.reasons} limit={compact ? 5 : undefined} />
-          <p className={`route-privacy ${selected.dataFlow.leavesDevice ? 'leaves' : ''}`}>
+          <p className="route-privacy">
             <ShieldCheck size={16} />
             <span>{decision.privacy}</span>
           </p>

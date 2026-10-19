@@ -16,7 +16,6 @@ import { TaskViews } from './features/tasks/TaskViews';
 import { CalendarView } from './features/calendar/CalendarView';
 import { SettingsView } from './features/settings/SettingsView';
 import { DetailsPanel } from './features/extraction/DetailsPanel';
-import { CloudConsentPrompt } from './features/ai/CloudConsentPrompt';
 import { Button, ErrorState, LoadingState } from './components/ui';
 import { newAction } from './lib/actions';
 import { downloadText } from './lib/images';
@@ -303,7 +302,6 @@ export default function App() {
           />
         )}
         {bundle && <BundleReview actions={bundle} onClose={() => setBundle(null)} />}
-        <CloudConsentPrompt />
         {pendingView && (
           <div className="voice-navigation-confirm" role="alert">
             <p>Stop and discard the current capture before changing pages?</p>

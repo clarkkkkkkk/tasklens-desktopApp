@@ -10,15 +10,14 @@ export function policyFrom(ai: AIRoutingSettings, allowMock: boolean): RoutingPo
     mode: ai.mode,
     priority: ai.priority,
     manualModel: ai.manualModel,
-    shareImages: ai.shareImages,
     allowMock,
   };
 }
 
-/** Live device/network/provider snapshot and the router's decision for a sample task. */
+/** Live device/provider snapshot and the router's decision for a sample task. */
 export function useAIRouting(signals: TaskSignals) {
   const { services, snapshot: data } = useApp();
-  const { router, network } = services.ai;
+  const { router } = services.ai;
   const [snapshot, setSnapshot] = useState<RoutingSnapshot | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState('');
@@ -43,11 +42,6 @@ export function useAIRouting(signals: TaskSignals) {
   useEffect(() => {
     void refresh();
   }, [refresh, ai.ollama.enabled]);
-
-  useEffect(
-    () => network.subscribe((state) => setSnapshot((s) => (s ? { ...s, network: state } : s))),
-    [network],
-  );
 
   const allowMock = router.currentPolicy().allowMock;
   const policy = useMemo(() => policyFrom(ai, allowMock), [ai, allowMock]);

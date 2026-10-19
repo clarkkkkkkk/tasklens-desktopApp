@@ -35,12 +35,12 @@ export const capabilityLabels: Record<AICapability, string> = {
   'json-output': 'JSON output',
 };
 
-export type ProviderKind = 'local' | 'cloud' | 'mock';
+/** Every real provider runs on this device; `mock` is the labelled demo provider. */
+export type ProviderKind = 'local' | 'mock';
 /** Hardware a runtime can use. The bundled llama.cpp build is CPU-only. */
 export type Accelerator = 'cpu' | 'cuda' | 'rocm' | 'metal' | 'vulkan' | 'intel';
 export type SpeedClass = 'slow' | 'moderate' | 'fast';
 export type QualityClass = 'basic' | 'good' | 'excellent';
-export type CostClass = 'free' | 'low' | 'paid';
 /**
  * Where a model's specifications came from. Detected facts (file size, parameter count,
  * quantization, context length) are preferred over hand-entered requirements.
@@ -75,9 +75,6 @@ export interface AIModel {
   /** Used only when the footprint cannot be detected. */
   requirements?: ModelRequirements;
   estimatedPerformance?: { speedClass?: SpeedClass; qualityClass?: QualityClass };
-  privacy: 'local' | 'cloud';
-  supportsOffline: boolean;
-  cost?: CostClass;
   specSource: SpecSource;
   accelerators: Accelerator[];
   /** Verified/loaded and ready to run without further checks. */
@@ -109,7 +106,7 @@ export interface AIRequest {
   /** JSON schema the answer must follow. */
   schema: object;
   maxOutputTokens: number;
-  /** Attached only for image-capable models when the privacy policy allows it. */
+  /** Attached only for image-capable models. */
   images?: AIImage[];
   signal: AbortSignal;
 }
@@ -134,14 +131,7 @@ export interface AIProvider {
   prepare?(modelId: string, system: string, signal: AbortSignal): Promise<void>;
 }
 
-export type ProviderErrorKind =
-  | 'unavailable'
-  | 'network'
-  | 'auth'
-  | 'rate-limit'
-  | 'rejected'
-  | 'failed'
-  | 'cancelled';
+export type ProviderErrorKind = 'unavailable' | 'rejected' | 'failed' | 'cancelled';
 
 /** A provider failure. Messages are user-presentable and never include secrets or source text. */
 export class AIProviderError extends Error {

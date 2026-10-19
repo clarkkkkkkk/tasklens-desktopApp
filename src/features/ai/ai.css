@@ -1,4 +1,4 @@
-/* Adaptive AI routing: recommendation card, consent dialog, settings and simulator. Tokens only. */
+/* Adaptive AI routing: recommendation card, settings and simulator. Tokens only. */
 @layer components {
   .visually-hidden {
     position: absolute;
@@ -104,9 +104,6 @@
   .route-privacy > svg {
     flex-shrink: 0;
     margin-top: 1px;
-  }
-  .route-privacy.leaves {
-    background: color-mix(in srgb, var(--warning) 12%, var(--surface));
   }
   .route-alternatives ul,
   .route-excluded ul,
@@ -281,17 +278,6 @@
   .provider-list .field-help {
     margin: var(--space-1) 0 0;
   }
-  .network-dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    margin-right: var(--space-2);
-    border-radius: var(--radius-pill);
-    background: var(--success);
-  }
-  .network-dot.offline {
-    background: var(--text-secondary);
-  }
   .simulator-controls {
     display: flex;
     flex-wrap: wrap;
@@ -305,15 +291,10 @@
     font-size: var(--text-sm);
     color: var(--text-secondary);
   }
-  .simulator-controls .simulator-toggle,
   .simulator-models label {
     flex-direction: row;
     align-items: center;
     gap: var(--space-2);
-  }
-  .simulator-controls .simulator-toggle {
-    align-self: flex-end;
-    min-height: var(--control-height);
   }
   .simulator-models {
     display: flex;
@@ -330,49 +311,6 @@
   }
   .simulator-models label {
     display: flex;
-  }
-  .consent-dialog {
-    position: fixed;
-    inset: 0;
-    margin: auto;
-    width: min(560px, calc(100% - var(--space-8)));
-    max-height: calc(100dvh - var(--space-8));
-    padding: 0;
-    color: var(--text);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-search);
-    overflow: auto;
-  }
-  .consent-dialog::backdrop {
-    background: color-mix(in srgb, var(--app) 55%, transparent);
-    backdrop-filter: blur(var(--search-blur));
-  }
-  .consent-body {
-    padding: var(--space-6);
-    font-size: var(--text-body);
-    line-height: 1.6;
-  }
-  .consent-body h2 {
-    font-size: var(--text-title);
-    font-weight: 600;
-    margin-bottom: var(--space-3);
-  }
-  .consent-body h3 {
-    margin: var(--space-4) 0 var(--space-2);
-    font-size: var(--text-control);
-    font-weight: 600;
-  }
-  .consent-flow {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0 var(--space-6);
-  }
-  .consent-flow ul {
-    padding-left: var(--space-4);
-    list-style: disc;
-    font-size: var(--text-control);
   }
   .ai-provenance {
     margin-top: var(--space-2);

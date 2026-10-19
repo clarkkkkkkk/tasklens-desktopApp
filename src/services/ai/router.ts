@@ -6,12 +6,10 @@ import {
 } from './device';
 import { highlights, privacyStatement, reasonsFor, tradeoff } from './explain';
 import type { MemoryEstimate } from './footprint';
-import type { NetworkMonitor, NetworkState } from './network';
-import { cloudPermission, dataFlow, type DataFlow, type RoutingPolicy } from './policy';
+import type { RoutingPolicy } from './policy';
 import type { ProviderRegistry, ProviderSnapshot } from './registry';
 import type { TaskRequirements } from './requirements';
 import {
-  CLOUD_MARGIN,
   evaluate,
   priorityWeights,
   weightsForTask,
@@ -31,7 +29,6 @@ import {
 
 export interface RoutingSnapshot {
   device: DeviceProfile;
-  network: NetworkState;
   providers: ProviderSnapshot[];
 }
 
@@ -46,7 +43,8 @@ export interface ScoredCandidate {
   speedClass: SpeedClass;
   qualityClass: QualityClass;
   cautions: string[];
-  dataFlow: DataFlow;
+  /** The screenshot itself is given to the model, not only its recognized text. */
+  attachImage: boolean;
   highlights: string[];
   /** Trade-off compared with the selected candidate (alternatives only). */
   tradeoff?: string;
@@ -65,10 +63,9 @@ export interface Reason {
 }
 
 export interface RouteDecision {
-  status: 'ready' | 'needs-consent' | 'no-candidate';
+  status: 'ready' | 'no-candidate';
   requirements: TaskRequirements;
   device: DeviceAssessment;
-  network: NetworkState;
   policy: RoutingPolicy;
   weights: Weights;
   selected?: ScoredCandidate;
@@ -77,14 +74,10 @@ export interface RouteDecision {
   /** Up to three runners-up with trade-offs. */
   alternatives: ScoredCandidate[];
   excluded: ExcludedModel[];
-  /** Best local candidate when the selection is a cloud model. */
-  localAlternative?: ScoredCandidate;
   reasons: Reason[];
   privacy: string;
   headline: string;
 }
-
-const isLocal = (c: ScoredCandidate) => c.model.privacy === 'local';
 
 /**
  * Chooses the most appropriate available model for one job. Pure: the same inputs always give
@@ -98,7 +91,6 @@ export function recommend(
 ): RouteDecision {
   const device = assessDevice(snapshot.device);
   const weights = weightsForTask(priorityWeights[policy.priority], requirements);
-  const permission = cloudPermission(policy);
   const ranked: ScoredCandidate[] = [];
   const excluded: ExcludedModel[] = [];
 
@@ -108,12 +100,9 @@ export function recommend(
       const evaluation = evaluate(model, provider, status, {
         requirements,
         device,
-        network: snapshot.network,
-        permission,
         weights,
         allowMock: policy.allowMock,
         failures: failures.get(key) ?? 0,
-        manuallyChosen: policy.mode === 'manual' && policy.manualModel === key,
       });
       if (!evaluation.eligible) {
         excluded.push({ key, model, provider, reasons: evaluation.reasons });
@@ -130,7 +119,7 @@ export function recommend(
         speedClass: evaluation.speedClass,
         qualityClass: evaluation.qualityClass,
         cautions: evaluation.cautions,
-        dataFlow: dataFlow(model, provider.name, requirements, policy),
+        attachImage: requirements.hasImage && model.capabilities.includes('image-understanding'),
         highlights: [],
       };
       candidate.highlights = highlights(candidate);
@@ -144,8 +133,6 @@ export function recommend(
           providerId: provider.id,
           name: provider.name,
           capabilities: [],
-          privacy: provider.kind === 'cloud' ? 'cloud' : 'local',
-          supportsOffline: provider.kind !== 'cloud',
           specSource: 'declared',
           accelerators: [],
         },
@@ -154,35 +141,17 @@ export function recommend(
       });
   }
 
-  // Real models first; demo/mock only when nothing real can run. Ties favour local, then smaller.
+  // Real models first; demo/mock only when nothing real can run. Ties favour smaller models.
   ranked.sort(
     (a, b) =>
       Number(a.provider.kind === 'mock') - Number(b.provider.kind === 'mock') ||
       b.total - a.total ||
-      Number(isLocal(b)) - Number(isLocal(a)) ||
       (a.memory?.minRamGB ?? 0) - (b.memory?.minRamGB ?? 0),
   );
-  const real = ranked.filter((c) => c.provider.kind !== 'mock');
-  const bestLocal = real.find(isLocal);
-  const bestCloud = real.find((c) => !isLocal(c));
 
-  let selected = ranked[0];
-  let marginApplied = false;
   const manual =
     policy.mode === 'manual' ? ranked.find((c) => c.key === policy.manualModel) : undefined;
-  if (manual) selected = manual;
-  else if (
-    selected &&
-    !isLocal(selected) &&
-    bestLocal &&
-    selected.total - bestLocal.total < CLOUD_MARGIN
-  ) {
-    selected = bestLocal;
-    marginApplied = true;
-  }
-
-  const needsConsent =
-    !!selected && !isLocal(selected) && permission === 'ask' && !(manual && manual === selected);
+  const selected = manual ?? ranked[0];
   const alternatives = ranked
     .filter((c) => c !== selected)
     .slice(0, 3)
@@ -191,10 +160,6 @@ export function recommend(
     ? reasonsFor(selected, {
         requirements,
         device,
-        network: snapshot.network,
-        bestLocal,
-        bestCloud,
-        marginApplied,
         manual: !!manual,
       })
     : noCandidateReasons(excluded);
@@ -209,19 +174,17 @@ export function recommend(
   }
 
   return {
-    status: !selected ? 'no-candidate' : needsConsent ? 'needs-consent' : 'ready',
+    status: selected ? 'ready' : 'no-candidate',
     requirements,
     device,
-    network: snapshot.network,
     policy,
     weights,
     selected,
     ranked,
     alternatives,
     excluded,
-    localAlternative: selected && !isLocal(selected) ? bestLocal : undefined,
     reasons,
-    privacy: privacyStatement(selected, needsConsent),
+    privacy: privacyStatement(selected),
     headline: selected
       ? selected.provider.kind === 'mock'
         ? 'Demo / Mock AI: no real model available'
@@ -232,8 +195,7 @@ export function recommend(
 
 function noCandidateReasons(excluded: ExcludedModel[]): RouteDecision['reasons'] {
   // Local, real providers first: their reasons are the ones a user can act on.
-  const order = (e: ExcludedModel) =>
-    e.provider.kind === 'local' ? 0 : e.provider.kind === 'cloud' ? 1 : 2;
+  const order = (e: ExcludedModel) => (e.provider.kind === 'local' ? 0 : 1);
   const seen = new Set<string>();
   return [...excluded]
     .sort((a, b) => order(a) - order(b))
@@ -246,18 +208,16 @@ function noCandidateReasons(excluded: ExcludedModel[]): RouteDecision['reasons']
 }
 
 /**
- * A different candidate that can still do the job after `failedProviders` failed. Local
- * candidates come first because they never upload anything. The caller must still offer it to
- * the user: fallbacks are never silent.
+ * The best remaining real candidate after `failedProviders` failed. Every candidate runs on this
+ * device; the caller reports the switch so a fallback is never silent.
  */
 export function fallbackFor(
   decision: RouteDecision,
   failedProviders: string[],
 ): ScoredCandidate | undefined {
-  const remaining = decision.ranked.filter(
+  return decision.ranked.find(
     (c) => !failedProviders.includes(c.provider.id) && c.provider.kind !== 'mock',
   );
-  return remaining.find(isLocal) ?? remaining[0];
 }
 
 /** Stateful front end: gathers the snapshot, remembers failures and applies the policy. */
@@ -267,7 +227,6 @@ export class AIRouter {
   constructor(
     private readonly registry: ProviderRegistry,
     private readonly device: DeviceProfiler,
-    private readonly network: NetworkMonitor,
     private readonly policy: () => RoutingPolicy,
   ) {}
 
@@ -276,7 +235,7 @@ export class AIRouter {
       this.device.profile(),
       this.registry.discover(refresh),
     ]);
-    return { device, network: this.network.current(), providers };
+    return { device, providers };
   }
 
   async decide(requirements: TaskRequirements, snapshot?: RoutingSnapshot): Promise<RouteDecision> {

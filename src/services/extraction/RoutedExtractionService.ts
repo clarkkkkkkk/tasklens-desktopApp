@@ -1,5 +1,4 @@
 import type { ExtractedAction, Settings } from '../../types/action';
-import { ConsentBroker } from '../ai/consent';
 import { deriveRequirements, type TaskInputKind, type TaskRequirements } from '../ai/requirements';
 import type { RouteDecision, ScoredCandidate } from '../ai/router';
 import { AIProviderError, type AIImage, type AIProvider } from '../ai/types';
@@ -39,9 +38,7 @@ export interface ExtractionRouting {
 }
 
 export interface RoutedExtractionOptions {
-  /** Asks before uploads and fallbacks. Without a listening UI every request is declined. */
-  consent?: ConsentBroker;
-  /** Downscales a screenshot for image-capable models. Only called when policy allows. */
+  /** Downscales a screenshot for image-capable local models. */
   encodeImage?: (image: Blob) => Promise<AIImage>;
 }
 
@@ -55,18 +52,6 @@ const withContext = (
   error: unknown,
   extra: { ocr?: OcrDocument; decision?: RouteDecision; diagnostics?: ExtractionDiagnostics },
 ) => Object.assign(error instanceof Error ? error : toLocalAIError(error), extra);
-
-/** Source material may go to a cloud provider only under one of these explicit permissions. */
-function mayUpload(
-  candidate: ScoredCandidate,
-  decision: RouteDecision,
-  consented: boolean,
-): boolean {
-  if (candidate.model.privacy !== 'cloud') return true;
-  const { mode, manualModel } = decision.policy;
-  if (mode === 'local-only') return false;
-  return consented || mode === 'automatic' || (mode === 'manual' && manualModel === candidate.key);
-}
 
 function noCandidate(decision: RouteDecision): LocalAIError {
   const first = decision.reasons[0]?.text.replace(/^[^:]+: /, '');
@@ -82,22 +67,19 @@ function noCandidate(decision: RouteDecision): LocalAIError {
 }
 
 /**
- * Screenshot/voice/text → local OCR (screenshots) → router picks the best available model →
- * consent when required → provider → validation (one repair) → review. A failed provider is
- * replaced only after the user accepts the offered fallback.
+ * Screenshot/voice/text → local OCR (screenshots) → router picks the best model on this device →
+ * provider → validation (one repair) → review. When a provider fails, the next best local model
+ * takes over and the route notice says so.
  */
 export class RoutedExtractionService implements ExtractionService {
   readonly mode: 'local' | 'routed' = 'routed';
-  private readonly consent: ConsentBroker;
 
   constructor(
     private readonly ocr: OcrService,
     private readonly routing: ExtractionRouting,
     private readonly settings: () => Pick<Settings, 'defaultReminders'>,
     private readonly options: RoutedExtractionOptions = {},
-  ) {
-    this.consent = options.consent ?? new ConsentBroker();
-  }
+  ) {}
 
   async extract(input: ExtractionInput, { signal, onProgress, onRoute }: ExtractionOptions) {
     const image = input.image;
@@ -112,7 +94,7 @@ export class RoutedExtractionService implements ExtractionService {
           ? 'voice'
           : 'text';
 
-    // Route on what is known before OCR: fail fast when nothing can run, and warm a local winner
+    // Route on what is known before OCR: fail fast when nothing can run, and warm the winner
     // while OCR runs. Warm-up failures surface (if at all) when the completion runs.
     const early = await this.routing.decide(
       deriveRequirements({
@@ -126,11 +108,10 @@ export class RoutedExtractionService implements ExtractionService {
       }),
     );
     if (!early.selected) throw noCandidate(early);
-    if (early.selected.model.privacy === 'local')
-      void this.routing
-        .provider(early.selected.provider.id)
-        ?.prepare?.(early.selected.model.id, TASKLENS_SYSTEM_PROMPT, signal)
-        .catch(() => {});
+    void this.routing
+      .provider(early.selected.provider.id)
+      ?.prepare?.(early.selected.model.id, TASKLENS_SYSTEM_PROMPT, signal)
+      .catch(() => {});
 
     let ocr: OcrDocument | undefined;
     let context: PromptContext;
@@ -200,17 +181,13 @@ export class RoutedExtractionService implements ExtractionService {
         imagePixels: ocr ? ocr.imageWidth * ocr.imageHeight : undefined,
       }),
     );
-    let { candidate, consented } = await this.choose(decision, signal, ocr);
+    if (!decision.selected) throw withContext(noCandidate(decision), { ocr });
+    let candidate = decision.selected;
     const failed: string[] = [];
     let fallbackFrom: ScoredCandidate | undefined;
     for (;;) {
       onRoute?.({ decision, candidate, fallbackFrom });
       try {
-        if (!mayUpload(candidate, decision, consented))
-          throw new LocalAIError(
-            'CANCELLED',
-            'Nothing was sent: cloud processing needs your permission.',
-          );
         const bundle = await this.run(
           candidate,
           decision,
@@ -244,50 +221,11 @@ export class RoutedExtractionService implements ExtractionService {
               : toLocalAIError(error),
             { ocr, decision },
           );
-        const answer = await this.consent.request(
-          { kind: 'fallback', decision, failed: candidate, error: failure, alternative },
-          signal,
-        );
-        if (answer !== 'approve')
-          throw withContext(
-            new LocalAIError(
-              'MODEL_FAILED',
-              `${candidate.model.name} could not complete this: ${failure}`,
-            ),
-            { ocr, decision },
-          );
         fallbackFrom = candidate;
         candidate = alternative;
-        // Accepting a fallback that uploads is explicit permission for that provider.
-        consented = alternative.model.privacy === 'cloud';
         onProgress(2);
       }
     }
-  }
-
-  private async choose(decision: RouteDecision, signal: AbortSignal, ocr?: OcrDocument) {
-    if (!decision.selected) throw withContext(noCandidate(decision), { ocr });
-    if (decision.status !== 'needs-consent')
-      return { candidate: decision.selected, consented: false };
-    const answer = await this.consent.request(
-      {
-        kind: 'cloud',
-        decision,
-        candidate: decision.selected,
-        alternative: decision.localAlternative,
-      },
-      signal,
-    );
-    if (answer === 'approve') return { candidate: decision.selected, consented: true };
-    if (answer === 'alternative' && decision.localAlternative)
-      return { candidate: decision.localAlternative, consented: false };
-    throw withContext(
-      new LocalAIError('CANCELLED', 'Nothing was sent. Processing was cancelled.'),
-      {
-        ocr,
-        decision,
-      },
-    );
   }
 
   private async run(
@@ -308,7 +246,7 @@ export class RoutedExtractionService implements ExtractionService {
         candidate.provider.id,
       );
     const images =
-      candidate.dataFlow.attachImage && image && this.options.encodeImage
+      candidate.attachImage && image && this.options.encodeImage
         ? [await this.options.encodeImage(image)]
         : undefined;
     signal.throwIfAborted();
@@ -321,14 +259,10 @@ export class RoutedExtractionService implements ExtractionService {
       reasons:
         decision.selected === candidate
           ? decision.reasons.map((r) => r.text)
-          : ['Fallback chosen by you'],
+          : [`Used after ${decision.selected?.model.name ?? 'the first choice'} failed`],
     };
     const extractionMode: ExtractedAction['source']['extractionMode'] =
-      candidate.provider.kind === 'cloud'
-        ? 'cloud'
-        : candidate.provider.kind === 'mock'
-          ? 'mock'
-          : 'local';
+      candidate.provider.kind === 'mock' ? 'mock' : 'local';
     const attempts: ExtractionAttempt[] = [];
     let repair: string | undefined;
     // One controlled retry: the second attempt is told what was wrong with the first.

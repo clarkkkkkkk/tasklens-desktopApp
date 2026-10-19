@@ -22,9 +22,6 @@ export function bundledModel(status: LocalAIStatus | null, contextSize: number):
       fileBytes: status?.model.bytes ?? spec.bytes,
       contextLength: contextSize,
     },
-    privacy: 'local',
-    supportsOffline: true,
-    cost: 'free',
     specSource: status?.model.bytes ? 'detected' : 'manifest',
     // The bundled llama.cpp sidecars are CPU builds (baseline/AVX2).
     accelerators: ['cpu'],

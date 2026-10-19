@@ -94,36 +94,9 @@ export function localModel(
       quantization: 'Q4_K_M',
       contextLength: options.context ?? 32768,
     },
-    privacy: 'local',
-    supportsOffline: true,
-    cost: 'free',
     specSource: 'declared',
     accelerators: options.gpu === false ? ['cpu'] : ['cpu', 'cuda', 'rocm', 'metal'],
     ready: options.ready ?? true,
-  };
-}
-
-export function cloudModel(
-  id: string,
-  options: { vision?: boolean; providerId?: string } = {},
-): AIModel {
-  return {
-    id,
-    providerId: options.providerId ?? 'cloud',
-    name: id,
-    capabilities: [
-      ...TEXT,
-      'multilingual',
-      'long-context',
-      ...(options.vision === false ? [] : (['image-understanding'] as const)),
-    ],
-    footprint: { contextLength: 1_000_000 },
-    estimatedPerformance: { qualityClass: 'excellent', speedClass: 'fast' },
-    privacy: 'cloud',
-    supportsOffline: false,
-    cost: 'low',
-    specSource: 'declared',
-    accelerators: [],
   };
 }
 
@@ -150,10 +123,9 @@ export function providerGroup(
 
 export function testSnapshot(
   device: DeviceProfile,
-  online: boolean,
   providers: ProviderSnapshot[],
 ): RoutingSnapshot {
-  return { device, network: { online, source: 'simulated', checkedAt: 0 }, providers };
+  return { device, providers };
 }
 
 export const testPolicy = (

@@ -33,8 +33,8 @@ export async function readScreenshot(file: File): Promise<string> {
   }
 }
 /**
- * A downscaled JPEG for image-capable models. Only called when the router chose such a model
- * and the privacy policy allows sending the image.
+ * A downscaled JPEG for image-capable local models. Only called when the router chose such a
+ * model.
  */
 export async function encodeImageForAI(
   image: Blob,

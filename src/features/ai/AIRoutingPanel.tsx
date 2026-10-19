@@ -12,7 +12,6 @@ import { modelKey } from '../../services/ai/types';
 import type { Settings } from '../../types/action';
 import { RouteDecisionCard } from './RouteDecisionCard';
 import { RouterSimulator } from './RouterSimulator';
-import { cloudProvidersRegistered, effectiveMode } from './cloudAvailability';
 import { useAIRouting } from './useAIRouting';
 import './ai.css';
 
@@ -93,8 +92,6 @@ export function AIRoutingPanel({
   const task = sampleTasks.find((t) => t.id === taskId)!;
   const { snapshot, decision, policy, loading, error, refresh } = useAIRouting(task.signals);
   const ai = settings.ai;
-  const cloud = cloudProvidersRegistered(services);
-  const mode = effectiveMode(ai.mode, cloud);
   const update = (changes: Partial<Settings['ai']>) =>
     void onUpdate({ ...settings, ai: { ...ai, ...changes } });
   const device = snapshot ? assessDevice(snapshot.device) : null;
@@ -115,7 +112,7 @@ export function AIRoutingPanel({
       snapshot && ai.mode === 'manual'
         ? recommend(deriveRequirements(task.signals), snapshot, {
             ...policy,
-            mode: 'ask-before-cloud',
+            mode: 'automatic',
           })
         : null,
     [snapshot, ai.mode, policy, task],
@@ -129,8 +126,8 @@ export function AIRoutingPanel({
         <span className="badge">Adaptive</span>
       </h2>
       <p>
-        TaskLens chooses the AI for each job from this device&rsquo;s hardware, the network, the
-        models that are actually available and your privacy settings.
+        TaskLens chooses the AI for each job from this device&rsquo;s hardware and the local models
+        that are actually available. Everything runs on this device.
       </p>
       {error && <ErrorState message={error} />}
       <div className="setting-row">
@@ -148,22 +145,6 @@ export function AIRoutingPanel({
         </Button>
       </div>
       {snapshot && <HardwareDetails profile={snapshot.device} />}
-      <div className="setting-row">
-        <div>
-          <h3>Network</h3>
-          <p>
-            <span
-              className={`network-dot ${snapshot?.network.online === false ? 'offline' : 'online'}`}
-              aria-hidden
-            />
-            {snapshot?.network.online === false ? 'Offline: only local AI can run' : 'Online'}
-            <span className="field-help">
-              {' '}
-              · as reported by your operating system; no server is contacted to check
-            </span>
-          </p>
-        </div>
-      </div>
 
       <div className="setting-subsection">
         <h3 id="route-task-label">Recommendation for</h3>
@@ -199,9 +180,7 @@ export function AIRoutingPanel({
                 <p className="field-help">
                   {decision.selected.provider.kind === 'mock'
                     ? 'Used in this preview only. The desktop app routes to real models.'
-                    : decision.status === 'needs-consent'
-                      ? 'TaskLens will ask before using it for a job like this.'
-                      : 'Used automatically for jobs like this.'}
+                    : 'Used automatically for jobs like this.'}
                 </p>
               ) : null
             }
@@ -215,25 +194,23 @@ export function AIRoutingPanel({
 
       <fieldset className="setting-subsection ai-mode">
         <legend>AI mode</legend>
-        {aiModes
-          .filter((m) => cloud || m === 'local-only' || m === 'manual')
-          .map((m) => (
-            <label key={m} className={mode === m ? 'selected' : ''}>
-              <input
-                type="radio"
-                name="ai-mode"
-                value={m}
-                checked={mode === m}
-                disabled={pending}
-                onChange={() => update({ mode: m })}
-              />
-              <span>
-                <strong>{modeLabels[m].title}</strong>
-                {m === 'local-only' && <span className="badge">Default</span>}
-                <small>{modeLabels[m].description}</small>
-              </span>
-            </label>
-          ))}
+        {aiModes.map((m) => (
+          <label key={m} className={ai.mode === m ? 'selected' : ''}>
+            <input
+              type="radio"
+              name="ai-mode"
+              value={m}
+              checked={ai.mode === m}
+              disabled={pending}
+              onChange={() => update({ mode: m })}
+            />
+            <span>
+              <strong>{modeLabels[m].title}</strong>
+              {m === 'automatic' && <span className="badge">Default</span>}
+              <small>{modeLabels[m].description}</small>
+            </span>
+          </label>
+        ))}
       </fieldset>
 
       <div className="developer-fields">
@@ -270,24 +247,6 @@ export function AIRoutingPanel({
           </label>
         )}
       </div>
-      {cloud && mode !== 'local-only' && (
-        <div className="setting-row">
-          <div>
-            <h3>Share screenshots with cloud vision models</h3>
-            <p>
-              When off, a cloud model receives only the text recognized on this device, never the
-              image.
-            </p>
-          </div>
-          <input
-            type="checkbox"
-            aria-label="Share screenshots with cloud vision models"
-            checked={ai.shareImages}
-            disabled={pending}
-            onChange={(e) => update({ shareImages: e.target.checked })}
-          />
-        </div>
-      )}
 
       <div className="setting-subsection">
         <h3>
@@ -300,13 +259,7 @@ export function AIRoutingPanel({
                 <strong>{provider.name}</strong>
                 <span className="field-help">
                   {' '}
-                  ·{' '}
-                  {provider.kind === 'cloud'
-                    ? 'Cloud'
-                    : provider.kind === 'mock'
-                      ? 'Demo'
-                      : 'Local'}{' '}
-                  · {provider.runtime}
+                  · {provider.kind === 'mock' ? 'Demo' : 'Local'} · {provider.runtime}
                 </span>
                 <p className="field-help">
                   {status.available

@@ -21,7 +21,6 @@ const unmeasuredDevice: DeviceProfile = {
 export function fixedRouting(provider: AIProvider, model: AIModel): ExtractionRouting {
   const snapshot: RoutingSnapshot = {
     device: unmeasuredDevice,
-    network: { online: true, source: 'simulated', checkedAt: 0 },
     providers: [
       {
         provider: {

@@ -97,15 +97,17 @@ export const actionSchema = z
       capturedAt: z.string().datetime().optional(),
       recordingDate: dateSchema.optional(),
       timezone: z.string().max(100).optional(),
-      extractionMode: z.enum(['mock', 'local', 'cloud']).optional(),
+      /** Values left by the removed cloud prototype read as unknown instead of failing the load. */
+      extractionMode: z.enum(['mock', 'local']).optional().catch(undefined),
       /** Which AI produced the draft, for provenance in review. */
       extractedBy: z
         .object({
           provider: z.string().max(100),
           model: z.string().max(200),
-          kind: z.enum(['local', 'cloud', 'mock']),
+          kind: z.enum(['local', 'mock']),
         })
-        .optional(),
+        .optional()
+        .catch(undefined),
       fileName: z.string().optional(),
       previewUrl: z
         .string()
@@ -160,17 +162,15 @@ export const localAISettingsSchema = z.object({
   threads: z.number().int().min(1).max(64).nullable().default(null),
 });
 /**
- * AI routing preferences. Additive with defaults, so existing envelopes load unchanged; keys
- * from removed providers are dropped on read. Holds no credentials.
+ * AI routing preferences. Additive with defaults, so existing envelopes load unchanged; keys and
+ * values from removed options (cloud modes, privacy/cost priorities) fall back on read. Holds no
+ * credentials.
  */
 export const aiRoutingSettingsSchema = z.object({
-  /** Local Only by default: nothing leaves the device until the user opts in. */
-  mode: z.enum(aiModes).default('local-only'),
-  priority: z.enum(aiPriorities).default('balanced'),
+  mode: z.enum(aiModes).catch('automatic'),
+  priority: z.enum(aiPriorities).catch('balanced'),
   /** `providerId/modelId` chosen in Manual mode. */
   manualModel: z.string().max(300).nullable().default(null),
-  /** Send the screenshot itself (not only OCR text) to image-capable cloud models. */
-  shareImages: z.boolean().default(true),
   ollama: z.object({ enabled: z.boolean().default(true) }).default({}),
 });
 export type AIRoutingSettings = z.infer<typeof aiRoutingSettingsSchema>;

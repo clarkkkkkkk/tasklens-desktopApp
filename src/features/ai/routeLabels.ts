@@ -4,7 +4,5 @@ import type { ScoredCandidate } from '../../services/ai/router';
 export function routeBadge(candidate?: ScoredCandidate): string {
   if (!candidate) return 'On-device';
   if (candidate.provider.kind === 'mock') return 'Demo / Mock AI';
-  return candidate.model.privacy === 'cloud'
-    ? `Cloud · ${candidate.model.name}`
-    : `On-device · ${candidate.model.name}`;
+  return `On-device · ${candidate.model.name}`;
 }

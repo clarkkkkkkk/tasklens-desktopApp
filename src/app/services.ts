@@ -27,9 +27,7 @@ import { nativeAvailable } from '../services/localai/native';
 import { NativeOcrService } from '../services/ocr/NativeOcrService';
 import { ConfigurationReminderScheduler } from '../services/reminders/ReminderScheduler';
 import type { ReminderScheduler } from '../services/reminders/ReminderScheduler';
-import { ConsentBroker } from '../services/ai/consent';
 import { NativeDeviceProfiler, type DeviceProfiler } from '../services/ai/device';
-import { NetworkMonitor } from '../services/ai/network';
 import type { RoutingPolicy } from '../services/ai/policy';
 import { ProviderRegistry } from '../services/ai/registry';
 import { AIRouter } from '../services/ai/router';
@@ -40,14 +38,11 @@ import { OllamaProvider } from '../services/ai/providers/OllamaProvider';
 import { encodeImageForAI } from '../lib/images';
 import { defaultSettings, type Settings } from '../types/action';
 
-/** The adaptive AI layer: providers, hardware/network detection, routing and consent. */
+/** The adaptive on-device AI layer: providers, hardware detection and routing. */
 export interface AIServices {
   router: AIRouter;
   registry: ProviderRegistry;
   device: DeviceProfiler;
-  network: NetworkMonitor;
-  /** Asks before uploads and fallbacks; CloudConsentPrompt answers it. */
-  consent: ConsentBroker;
 }
 export interface Services {
   audioPreprocessor: AudioPreprocessor;
@@ -93,13 +88,10 @@ export function createServices(): Services {
     mode: settings.current.ai.mode,
     priority: settings.current.ai.priority,
     manualModel: settings.current.ai.manualModel,
-    shareImages: settings.current.ai.shareImages,
     allowMock: useMock,
   });
   const device = new NativeDeviceProfiler();
-  const network = new NetworkMonitor();
-  const router = new AIRouter(registry, device, network, policy);
-  const consent = new ConsentBroker();
+  const router = new AIRouter(registry, device, policy);
 
   // Access browser storage lazily, so denied storage becomes a recoverable UI error.
   return {
@@ -116,12 +108,11 @@ export function createServices(): Services {
     extraction: useMock
       ? demo
       : new RoutedExtractionService(new NativeOcrService(), router, () => settings.current, {
-          consent,
           encodeImage: encodeImageForAI,
         }),
     demoExtraction: demo,
     reminders: new ConfigurationReminderScheduler(),
-    ai: { router, registry, device, network, consent },
+    ai: { router, registry, device },
     settings,
   };
 }

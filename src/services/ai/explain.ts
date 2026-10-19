@@ -1,6 +1,5 @@
 import type { DeviceAssessment } from './device';
 import { formatGB } from './footprint';
-import type { NetworkState } from './network';
 import type { TaskRequirements } from './requirements';
 import type { Reason, ScoredCandidate } from './router';
 import type { AICapability } from './types';
@@ -12,14 +11,11 @@ const capabilityPraise: Partial<Record<AICapability, string>> = {
 };
 
 const vision = (c: ScoredCandidate) => c.model.capabilities.includes('image-understanding');
-const isLocal = (c: ScoredCandidate) => c.model.privacy === 'local';
 
 /** Short chips for a candidate card. */
 export function highlights(c: ScoredCandidate): string[] {
   if (c.provider.kind === 'mock') return ['Not real AI', 'Deterministic'];
-  const chips: string[] = [];
-  if (isLocal(c)) chips.push('Private', 'Offline');
-  else chips.push('Cloud');
+  const chips = ['Private', 'Offline'];
   if (c.speedClass === 'fast') chips.push('Fast');
   if (c.memory && c.memory.weightsGB < 2) chips.push('Low memory');
   if (vision(c)) chips.push('Sees images');
@@ -34,8 +30,6 @@ export function tradeoff(
 ): string {
   if (alt.provider.kind === 'mock') return 'sample output only, not AI analysis';
   const parts: string[] = [];
-  if (isLocal(alt) && !isLocal(selected)) parts.push('local/offline');
-  if (!isLocal(alt) && isLocal(selected)) parts.push('cloud, sends data off this device');
   const order = ['basic', 'good', 'excellent'];
   const q = order.indexOf(alt.qualityClass) - order.indexOf(selected.qualityClass);
   const visionGap = req.hasImage && vision(alt) !== vision(selected);
@@ -48,8 +42,7 @@ export function tradeoff(
   else if (s < 0) parts.push('slower');
   if (alt.memory && selected.memory && alt.memory.minRamGB < selected.memory.minRamGB * 0.7)
     parts.push('lower memory use');
-  if (isLocal(alt) && alt.breakdown.device.score < 0.3)
-    parts.push('needs more memory than is free now');
+  if (alt.breakdown.device.score < 0.3) parts.push('needs more memory than is free now');
   if (!parts.length) parts.push(`scored ${Math.round(selected.total - alt.total)} points lower`);
   return parts.join(', ');
 }
@@ -59,14 +52,10 @@ export function reasonsFor(
   ctx: {
     requirements: TaskRequirements;
     device: DeviceAssessment;
-    network: NetworkState;
-    bestLocal?: ScoredCandidate;
-    bestCloud?: ScoredCandidate;
-    marginApplied: boolean;
     manual: boolean;
   },
 ): Reason[] {
-  const { requirements: req, device, network } = ctx;
+  const { requirements: req, device } = ctx;
   const reasons: Reason[] = [];
   const add = (tone: Reason['tone'], text: string) => reasons.push({ tone, text });
   if (selected.provider.kind === 'mock') {
@@ -80,63 +69,36 @@ export function reasonsFor(
   for (const p of req.preferred)
     if (selected.model.capabilities.includes(p.capability) && capabilityPraise[p.capability])
       add('pro', capabilityPraise[p.capability]!);
-  if (isLocal(selected)) {
-    if (!network.online) add('pro', 'No internet connection needed');
-    add('pro', 'Runs locally');
-    if (device.totalRamGB !== null && device.totalRamGB <= 8)
-      add('info', `Device has limited RAM (${Math.round(device.totalRamGB)} GB)`);
-    const fit = selected.breakdown.device;
-    if (fit.score >= 0.8) add('pro', fit.note);
-    else if (fit.score >= 0.55) add('info', fit.note);
-    if (selected.offload === 'full' && device.bestGpu)
-      add('pro', `Accelerated by your ${device.bestGpu.name}`);
-    else if (
-      device.bestGpu &&
-      !device.bestGpu.integrated &&
-      !selected.model.accelerators.some((a) => a !== 'cpu')
-    )
-      add(
-        'info',
-        `${selected.provider.runtime} runs on the CPU; your ${device.bestGpu.name} isn't used by it`,
-      );
-    if (selected.model.capabilities.includes('structured-extraction') && !req.hasImage)
-      add('pro', 'Suitable for structured text extraction');
-    add('pro', 'No source material leaves this device');
-  } else {
-    add('pro', 'Internet connection available');
-    add('pro', 'Runs in the cloud, so your device stays free');
-    const local = ctx.bestLocal;
-    if (local) {
-      if (req.hasImage && !vision(local))
-        add('info', `Local ${local.model.name} is weaker for image extraction`);
-      else
-        add(
-          'info',
-          `Local ${local.model.name} scored ${Math.round(selected.total - local.total)} points lower`,
-        );
-    } else add('info', 'No local model can run this job right now');
-  }
-  if (req.complexity === 'simple' && selected.speedClass !== 'slow')
-    add('pro', 'Fast enough for a short, simple job');
-  if (ctx.marginApplied && ctx.bestCloud)
+  add('pro', 'Runs locally');
+  if (device.totalRamGB !== null && device.totalRamGB <= 8)
+    add('info', `Device has limited RAM (${Math.round(device.totalRamGB)} GB)`);
+  const fit = selected.breakdown.device;
+  if (fit.score >= 0.8) add('pro', fit.note);
+  else if (fit.score >= 0.55) add('info', fit.note);
+  if (selected.offload === 'full' && device.bestGpu)
+    add('pro', `Accelerated by your ${device.bestGpu.name}`);
+  else if (
+    device.bestGpu &&
+    !device.bestGpu.integrated &&
+    !selected.model.accelerators.some((a) => a !== 'cpu')
+  )
     add(
       'info',
-      `${ctx.bestCloud.model.name} scored slightly higher, but not enough to justify sending data off this device`,
+      `${selected.provider.runtime} runs on the CPU; your ${device.bestGpu.name} isn't used by it`,
     );
+  if (selected.model.capabilities.includes('structured-extraction') && !req.hasImage)
+    add('pro', 'Suitable for structured text extraction');
+  add('pro', 'No source material leaves this device');
+  if (req.complexity === 'simple' && selected.speedClass !== 'slow')
+    add('pro', 'Fast enough for a short, simple job');
   for (const caution of selected.cautions) add('con', caution);
   return reasons;
 }
 
-export function privacyStatement(
-  selected: ScoredCandidate | undefined,
-  needsConsent: boolean,
-): string {
+export function privacyStatement(selected: ScoredCandidate | undefined): string {
   if (!selected) return 'Nothing is processed until an AI model is available.';
   if (selected.provider.kind === 'mock') return 'Nothing is analyzed; a fixed sample is returned.';
-  if (!selected.dataFlow.leavesDevice)
-    return 'Processed on this device. No source material leaves it.';
-  const what = selected.dataFlow.sends.map((s) => s.toLowerCase()).join('; ');
-  return `Cloud processing required: ${what} would be sent to ${selected.provider.name}.${needsConsent ? ' TaskLens asks before sending.' : ''}`;
+  return 'Processed on this device. No source material leaves it.';
 }
 
 export const memoryLine = (c: ScoredCandidate) =>

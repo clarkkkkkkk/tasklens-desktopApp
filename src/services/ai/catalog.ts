@@ -110,9 +110,6 @@ const localExamples: AIModel[] = [
       name: 'Small local model · 1.5B Q4',
       capabilities: ['text-generation', 'structured-extraction', 'json-output'],
       footprint: { parameterBillions: 1.5, quantization: 'Q4_K_M', contextLength: 32768 },
-      privacy: 'local',
-      supportsOffline: true,
-      cost: 'free',
       accelerators: ['cpu', 'cuda', 'rocm', 'metal'],
       ready: true,
     },
@@ -130,9 +127,6 @@ const localExamples: AIModel[] = [
         'long-context',
       ],
       footprint: { parameterBillions: 7, quantization: 'Q4_K_M', contextLength: 128000 },
-      privacy: 'local',
-      supportsOffline: true,
-      cost: 'free',
       accelerators: ['cpu', 'cuda', 'rocm', 'metal'],
       ready: true,
     },
@@ -151,9 +145,6 @@ const localExamples: AIModel[] = [
         'reasoning',
       ],
       footprint: { parameterBillions: 14, quantization: 'Q4_K_M', contextLength: 32768 },
-      privacy: 'local',
-      supportsOffline: true,
-      cost: 'free',
       accelerators: ['cpu', 'cuda', 'rocm', 'metal'],
       ready: true,
     },
@@ -161,34 +152,11 @@ const localExamples: AIModel[] = [
   ),
 ];
 
-const cloudExample = example(
-  {
-    id: 'example-cloud-vision',
-    name: 'Cloud vision model',
-    capabilities: [
-      'text-generation',
-      'structured-extraction',
-      'json-output',
-      'image-understanding',
-      'multilingual',
-      'long-context',
-    ],
-    footprint: { contextLength: 1_000_000 },
-    estimatedPerformance: { qualityClass: 'excellent', speedClass: 'fast' },
-    privacy: 'cloud',
-    supportsOffline: false,
-    cost: 'low',
-    accelerators: [],
-  },
-  'example-cloud',
-);
-
 export interface CatalogChoice {
   bundled: boolean;
   small: boolean;
   vision: boolean;
   large: boolean;
-  cloud: boolean;
 }
 
 export function exampleProviders(choice: CatalogChoice): ProviderSnapshot[] {
@@ -223,20 +191,6 @@ export function exampleProviders(choice: CatalogChoice): ProviderSnapshot[] {
       status: { available: true },
       models: local,
     },
-    ...(choice.cloud
-      ? [
-          {
-            provider: {
-              id: 'example-cloud',
-              name: 'Example cloud provider',
-              kind: 'cloud' as const,
-              runtime: 'Example cloud API',
-            },
-            status: { available: true },
-            models: [cloudExample],
-          },
-        ]
-      : []),
   ];
 }
 

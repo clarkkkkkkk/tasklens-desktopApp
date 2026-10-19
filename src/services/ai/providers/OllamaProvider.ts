@@ -88,9 +88,6 @@ export function ollamaModel(info: OllamaModelInfo): AIModel | null {
       fileBytes: info.sizeBytes || undefined,
       contextLength: info.contextLength ?? undefined,
     },
-    privacy: 'local',
-    supportsOffline: true,
-    cost: 'free',
     specSource: 'detected',
     // Ollama offloads to whatever GPU backend the system has.
     accelerators: ['cpu', 'cuda', 'rocm', 'metal'],

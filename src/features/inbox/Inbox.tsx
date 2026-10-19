@@ -31,7 +31,6 @@ import { presets } from '../../services/reminders/ReminderScheduler';
 import { ExtractionDebug } from '../extraction/ExtractionDebug';
 import { RouteWhy } from '../ai/RouteDecisionCard';
 import { routeBadge } from '../ai/routeLabels';
-import { cloudProvidersRegistered, effectiveMode } from '../ai/cloudAvailability';
 
 type Origin = 'file' | 'paste' | 'sample';
 /** After this long, on-device processing offers Keep waiting / Cancel. Nothing is saved. */
@@ -272,14 +271,10 @@ export function Inbox({
   }
   const demo = !!job?.demo || services.extraction.mode === 'mock';
   const latest = results.map((r) => snapshot.actions.find((a) => a.id === r.id) || r);
-  const cloudRoute = !demo && route?.candidate.model.privacy === 'cloud' ? route.candidate : null;
   const stageLabel = (index: number) =>
     index === 2 && route && !demo
-      ? cloudRoute
-        ? `Understanding details with ${cloudRoute.model.name}…`
-        : `Understanding details locally with ${route.candidate.model.name}…`
+      ? `Understanding details locally with ${route.candidate.model.name}…`
       : extractionSteps[index];
-  const aiMode = effectiveMode(snapshot.settings.ai.mode, cloudProvidersRegistered(services));
   return (
     <section
       hidden={!active}
@@ -374,17 +369,8 @@ export function Inbox({
                 <p>Running a sample workflow. No AI is analyzing this image.</p>
               ) : elapsed >= notifyAfter ? (
                 <p>
-                  {cloudRoute
-                    ? `Still waiting for ${cloudRoute.model.name} (${elapsed}s).`
-                    : `Still working on this device (${elapsed}s).`}{' '}
-                  This is taking longer than usual. Keep waiting or cancel; nothing is saved until
-                  you review it.
-                </p>
-              ) : cloudRoute ? (
-                <p>
-                  Text was read on this device. Sending it
-                  {cloudRoute.dataFlow.attachImage ? ' and the screenshot' : ''} to{' '}
-                  {cloudRoute.provider.name} as your AI settings allow.
+                  Still working on this device ({elapsed}s). This is taking longer than usual. Keep
+                  waiting or cancel; nothing is saved until you review it.
                 </p>
               ) : (
                 <p>Processing locally. Your screenshot stays on this device.</p>
@@ -475,20 +461,9 @@ export function Inbox({
       </div>
       <div className="privacy-note">
         <ShieldCheck size={16} />
-        {aiMode === 'local-only' ? (
-          <p>
-            Your screenshots stay on this device. <span>Always yours, always private.</span>
-          </p>
-        ) : (
-          <p>
-            Local by default.{' '}
-            <span>
-              {aiMode === 'ask-before-cloud'
-                ? 'TaskLens asks before anything is sent to a cloud AI.'
-                : 'Cloud AI is used only as set in AI settings; each result shows where it ran.'}
-            </span>
-          </p>
-        )}
+        <p>
+          Your screenshots stay on this device. <span>Always yours, always private.</span>
+        </p>
       </div>
       {services.extraction.mode === 'mock' && (
         <div className="phase-note">

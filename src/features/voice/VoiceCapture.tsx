@@ -316,12 +316,9 @@ export function VoiceCapture({
     finalizing: 'Finishing audio…',
     preprocessing: 'Preparing audio…',
     transcribing: 'Transcribing on this device…',
-    extracting:
-      route?.candidate.model.privacy === 'cloud'
-        ? `Finding actionable details with ${route.candidate.model.name} (cloud)…`
-        : route
-          ? `Finding actionable details locally with ${route.candidate.model.name}…`
-          : 'Finding actionable details locally…',
+    extracting: route
+      ? `Finding actionable details locally with ${route.candidate.model.name}…`
+      : 'Finding actionable details locally…',
     ready_for_review: 'Ready for review',
     cancelled: 'Capture cancelled',
     error: 'Capture needs attention',

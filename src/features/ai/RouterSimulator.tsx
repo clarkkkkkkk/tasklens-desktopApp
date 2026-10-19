@@ -6,14 +6,7 @@ import {
   type CatalogChoice,
 } from '../../services/ai/catalog';
 import type { DeviceProfile } from '../../services/ai/device';
-import {
-  aiModes,
-  aiPriorities,
-  modeLabels,
-  priorityLabels,
-  type AIMode,
-  type AIPriority,
-} from '../../services/ai/policy';
+import { aiPriorities, priorityLabels, type AIPriority } from '../../services/ai/policy';
 import { deriveRequirements } from '../../services/ai/requirements';
 import { recommend } from '../../services/ai/router';
 import { RouteDecisionCard } from './RouteDecisionCard';
@@ -23,7 +16,6 @@ const modelChoices: { id: keyof CatalogChoice; label: string }[] = [
   { id: 'small', label: 'Small 1.5B' },
   { id: 'vision', label: 'Local vision 7B' },
   { id: 'large', label: 'Large 14B' },
-  { id: 'cloud', label: 'Cloud vision' },
 ];
 
 /**
@@ -39,43 +31,30 @@ export function RouterSimulator({ thisDevice }: { thisDevice: DeviceProfile | nu
     [thisDevice],
   );
   const [deviceId, setDeviceId] = useState('low'),
-    [online, setOnline] = useState(false),
     [task, setTask] = useState('screenshot'),
-    [mode, setMode] = useState<AIMode>('ask-before-cloud'),
     [priority, setPriority] = useState<AIPriority>('balanced'),
     [models, setModels] = useState<CatalogChoice>({
       bundled: true,
       small: true,
       vision: true,
       large: true,
-      cloud: true,
     });
   const device = devices.find((d) => d.id === deviceId) ?? devices[0];
   const decision = useMemo(
     () =>
       recommend(
         deriveRequirements(sampleTasks.find((t) => t.id === task)!.signals),
-        {
-          device: device.profile,
-          network: { online, source: 'simulated', checkedAt: 0 },
-          providers: exampleProviders(models),
-        },
-        {
-          mode: mode === 'manual' ? 'ask-before-cloud' : mode,
-          priority,
-          manualModel: null,
-          shareImages: true,
-          allowMock: false,
-        },
+        { device: device.profile, providers: exampleProviders(models) },
+        { mode: 'automatic', priority, manualModel: null, allowMock: false },
       ),
-    [device, online, task, mode, priority, models],
+    [device, task, priority, models],
   );
   return (
     <details className="router-simulator">
       <summary>Try the router with example devices</summary>
       <p className="field-help">
-        A simulation with an example model catalog. It shows how TaskLens decides; nothing is
-        installed, loaded or sent.
+        A simulation with an example catalog of local models. It shows how TaskLens decides; nothing
+        is installed, loaded or sent.
       </p>
       <div className="simulator-controls">
         <label>
@@ -99,18 +78,6 @@ export function RouterSimulator({ thisDevice }: { thisDevice: DeviceProfile | nu
           </select>
         </label>
         <label>
-          AI mode
-          <select value={mode} onChange={(e) => setMode(e.target.value as AIMode)}>
-            {aiModes
-              .filter((m) => m !== 'manual')
-              .map((m) => (
-                <option key={m} value={m}>
-                  {modeLabels[m].title}
-                </option>
-              ))}
-          </select>
-        </label>
-        <label>
           Priority
           <select value={priority} onChange={(e) => setPriority(e.target.value as AIPriority)}>
             {aiPriorities.map((p) => (
@@ -119,10 +86,6 @@ export function RouterSimulator({ thisDevice }: { thisDevice: DeviceProfile | nu
               </option>
             ))}
           </select>
-        </label>
-        <label className="simulator-toggle">
-          <input type="checkbox" checked={online} onChange={(e) => setOnline(e.target.checked)} />
-          Online
         </label>
       </div>
       <fieldset className="simulator-models">

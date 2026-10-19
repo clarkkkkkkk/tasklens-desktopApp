@@ -133,7 +133,6 @@ describe('bundled llama.cpp adapter', () => {
       () => 16384,
     ).getModels();
     expect(model).toMatchObject({
-      privacy: 'local',
       specSource: 'detected',
       ready: true,
       accelerators: ['cpu'],
