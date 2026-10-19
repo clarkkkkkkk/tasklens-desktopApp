@@ -36,6 +36,8 @@ export function AppProvider({ services, children }: { services: Services; childr
   }, [reload]);
   useEffect(() => {
     services.settings.current = snapshot.settings;
+    // Provider options (Ollama on/off, cloud model names) change what discovery reports.
+    services.ai.registry.invalidate();
     services.localAI.setConfig({
       contextSize: snapshot.settings.localAI.contextSize,
       threads: snapshot.settings.localAI.threads,

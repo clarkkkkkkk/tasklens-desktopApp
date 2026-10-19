@@ -1,7 +1,9 @@
 # Architecture
 
 ## Current
-Screenshot → local OCR (Tesseract) → OCR regions → source units → local Qwen3-4B (llama.cpp) → structured JSON → schema, evidence, date/time and confidence validation → Review (Source Trace, open questions) → Confirm → ActionRepository → localStorage → UI.
+Screenshot → local OCR (Tesseract) → OCR regions → source units → **AI router** → selected provider (bundled Qwen3-4B on llama.cpp by default, or a model from a local Ollama server; no cloud providers ship) → structured JSON → schema, evidence, date/time and confidence validation → Review (Source Trace, open questions) → Confirm → ActionRepository → localStorage → UI.
+
+The router picks a model for each job from the detected hardware, the network state, the available providers and models, the job's requirements and the user's AI mode. Local Only is the default. It explains every choice, asks before any upload in Ask Before Cloud mode, and offers rather than performs fallbacks. See [docs/AI_ROUTING.md](docs/AI_ROUTING.md).
 
 Voice notes (whisper.cpp) and typed text join the same pipeline at the source-unit step. `MockExtractionService` implements the same `ExtractionService` contract for browser development, tests, onboarding and demo mode. See [LOCAL_AI.md](LOCAL_AI.md) for setup, privacy and limitations.
 
@@ -9,7 +11,8 @@ Layers are intentionally small:
 - `src/components`, `src/features`, `src/layouts`: accessible UI consuming application hooks.
 - `src/app`: application state, repository orchestration, dependency injection and user-visible failures.
 - `src/types`, `src/lib`: domain schemas, date helpers, selectors and validation.
-- `src/services/extraction`: ExtractionService interface, deterministic MockExtractionService and LocalAIExtractionService. `prompts/` holds the versioned system prompt, output schema and prompt builder; `validation/` holds the output validator and deterministic date/time helpers; `evaluation/` holds the opt-in real-model regression suite.
+- `src/services/ai`: provider-agnostic AI contracts, device/network detection, requirements, scoring, policy, consent, the router and provider adapters (`providers/`). `src/features/ai` holds the TaskLens AI settings panel, recommendation card, simulator and consent dialog.
+- `src/services/extraction`: ExtractionService interface, deterministic MockExtractionService, RoutedExtractionService (the pipeline with routing, consent and fallback) and LocalAIExtractionService (the same pipeline with a fixed bundled-model route). `prompts/` holds the versioned system prompt, output schema and prompt builder; `validation/` holds the output validator and deterministic date/time helpers; `evaluation/` holds the opt-in real-model regression suite.
 - `src/services/ocr`: OcrService contract, OCR document schema and the native Tesseract client.
 - `src/services/localai`: LocalModelManager (model status, import, validation, load/unload, completion) and the native IPC/error layer.
 - `src/repositories`: ActionRepository interface and versioned LocalStorageRepository implementation.
@@ -62,7 +65,7 @@ To change the schema: bump `SNAPSHOT_VERSION`, update `snapshotSchema`, add the 
 SQLite repository, native reminder delivery, GPU acceleration, macOS crash-safe runtime supervision, and broader multilingual evaluation. ReminderScheduler currently computes upcoming enabled configurations. It does not run timers, request permissions or deliver notifications. A future native implementation must define restart recovery, clock/timezone changes, deduplication, permission refusal and rescheduling before enabling OS delivery.
 
 ## Security and offline behavior
-Bundled fonts/assets only; no runtime external network calls. Tauri CSP restricts connections to its IPC origin and local development websocket in dev mode. Local AI adds no webview network access: OCR and model calls are Tauri commands, and the only socket TaskLens opens is Rust → `127.0.0.1:<random port>` to its own llama-server. Native commands accept only the main window, UUID job IDs and bounded inputs; child processes get argument lists, never shell strings. Browser file APIs support chosen/dropped/pasted images; native drag interception is disabled so the webview receives HTML drag/drop. No filesystem-wide capabilities, remote URLs, authentication, telemetry or secrets.
+Bundled fonts/assets only; no runtime external network calls. AI routing adds `ai_device_profile` (hardware facts only, no identifiers) and an Ollama bridge that, like the llama.cpp client, connects only to IPv4 loopback (`127.0.0.1:11434`) and holds the shared local-inference gate. No cloud provider ships, so there are no remote AI calls. Routing settings hold no secrets. Tauri CSP restricts connections to its IPC origin and local development websocket in dev mode. Local AI adds no webview network access: OCR and model calls are Tauri commands, and the only socket TaskLens opens is Rust → `127.0.0.1:<random port>` to its own llama-server. Native commands accept only the main window, UUID job IDs and bounded inputs; child processes get argument lists, never shell strings. Browser file APIs support chosen/dropped/pasted images; native drag interception is disabled so the webview receives HTML drag/drop. No filesystem-wide capabilities, remote URLs, authentication, telemetry or secrets.
 
 ## Versioned onboarding
 Settings now include `onboardingCompletedVersion`, a nonnegative integer defaulting to 0 when absent in legacy data. This additive migration retains the `tasklens:data:v1` envelope and all existing preferences/actions. `CURRENT_ONBOARDING_VERSION` is 1; release-step selection is separate from presentation so later releases can offer only their new steps. Completion never downgrades a higher version.

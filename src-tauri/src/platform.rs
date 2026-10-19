@@ -305,6 +305,42 @@ fn wait(
     }
 }
 
+/// Runs a short read-only system tool (structured arguments, never a shell) and returns its
+/// stdout, at most 64 KiB. `None` when it is missing, fails or exceeds `timeout`.
+pub fn capture(program: &Path, args: &[&str], timeout: Duration) -> Option<String> {
+    use std::io::Read;
+    let mut child = spawn(
+        command(program)
+            .args(args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null()),
+    )
+    .ok()?;
+    let stdout = child.stdout.take()?;
+    let reader = std::thread::spawn(move || {
+        let mut buffer = Vec::new();
+        let _ = stdout.take(64 * 1024).read_to_end(&mut buffer);
+        buffer
+    });
+    let start = Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                let output = reader.join().ok()?;
+                return status
+                    .success()
+                    .then(|| String::from_utf8_lossy(&output).into_owned());
+            }
+            Ok(None) if start.elapsed() < timeout => std::thread::sleep(Duration::from_millis(20)),
+            _ => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return None;
+            }
+        }
+    }
+}
+
 pub const CANCELLED: &str = "Processing was cancelled.";
 
 pub fn file_size(path: &Path) -> Option<u64> {

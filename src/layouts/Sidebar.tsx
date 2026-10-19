@@ -12,6 +12,7 @@ import {
 import type { ExtractedAction, View } from '../types/action';
 import { useEffect, useState } from 'react';
 import { useApp } from '../app/context';
+import { cloudProvidersRegistered, effectiveMode } from '../features/ai/cloudAvailability';
 import { needsReview, selectActions } from '../lib/actions';
 const navigation = [
   { id: 'inbox', label: 'Inbox', icon: Inbox },
@@ -79,9 +80,10 @@ export function Sidebar({
   );
 }
 
-/** Subtle on-device indicator; says so while the local model is working. */
+/** Subtle privacy indicator: on-device by default, and honest when cloud AI is allowed. */
 function LocalStatus() {
-  const { services } = useApp();
+  const { services, snapshot } = useApp();
+  const mode = effectiveMode(snapshot.settings.ai.mode, cloudProvidersRegistered(services));
   const [processing, setProcessing] = useState(false);
   useEffect(() => {
     let dispose: (() => void) | undefined;
@@ -97,7 +99,15 @@ function LocalStatus() {
   return (
     <div className="local-status" role="status">
       <ShieldCheck size={16} />
-      <span>{processing ? 'Processing locally' : 'On your device. Only.'}</span>
+      <span>
+        {processing
+          ? 'Processing locally'
+          : mode === 'local-only'
+            ? 'On your device. Only.'
+            : mode === 'ask-before-cloud'
+              ? 'Local first. Asks before cloud.'
+              : 'Local first. Cloud allowed.'}
+      </span>
       <span className="status-dot" />
     </div>
   );

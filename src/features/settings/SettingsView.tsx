@@ -1,5 +1,6 @@
 import { VoiceSettings } from '../voice/VoiceSettings';
 import { LocalAISettings } from './LocalAISettings';
+import { AIRoutingPanel } from '../ai/AIRoutingPanel';
 import { MotionHeading } from '../../components/motion/MotionHeading';
 import { useState } from 'react';
 import { Bell, Download, HardDrive, Monitor, ShieldCheck } from '../../components/icons';
@@ -148,6 +149,7 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
           <span className="badge">Active</span>
         </div>
       </section>
+      <AIRoutingPanel settings={settings} onUpdate={update} pending={pending} />
       <LocalAISettings settings={settings} onUpdate={update} pending={pending} />
       <section className="settings-section">
         <h2>

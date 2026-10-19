@@ -44,7 +44,8 @@ pub struct Request<'a> {
     pub port: u16,
     pub method: &'a str,
     pub path: &'a str,
-    pub api_key: &'a str,
+    /// Bearer key for TaskLens's own llama-server; `None` for servers without one (Ollama).
+    pub api_key: Option<&'a str>,
     pub body: Option<&'a [u8]>,
     pub timeout: Duration,
     pub cancel: Option<&'a AtomicBool>,
@@ -62,12 +63,16 @@ pub fn send(
     stream.set_write_timeout(Some(Duration::from_secs(10)))?;
     stream.set_nodelay(true)?;
     let body = request.body.unwrap_or_default();
+    let authorization = request
+        .api_key
+        .map(|key| format!("Authorization: Bearer {key}\r\n"))
+        .unwrap_or_default();
     let head = format!(
-        "{} {} HTTP/1.1\r\nHost: 127.0.0.1:{}\r\nAuthorization: Bearer {}\r\nContent-Type: application/json\r\nAccept: application/json, text/event-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+        "{} {} HTTP/1.1\r\nHost: 127.0.0.1:{}\r\n{}Content-Type: application/json\r\nAccept: application/json, text/event-stream, application/x-ndjson\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
         request.method,
         request.path,
         request.port,
-        request.api_key,
+        authorization,
         body.len()
     );
     let mut writer = stream.try_clone()?;
@@ -192,7 +197,7 @@ mod tests {
                 port,
                 method: "GET",
                 path: "/health",
-                api_key: "k",
+                api_key: Some("k"),
                 body: None,
                 timeout: Duration::from_secs(5),
                 cancel: None,

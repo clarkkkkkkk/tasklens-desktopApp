@@ -250,6 +250,14 @@ export function DetailsPanel({
                 Sample result · not AI analysis. Check every detail before confirming.
               </div>
             )}
+            {action.source.extractedBy && action.source.extractionMode !== 'mock' && (
+              <p className="field-help ai-provenance">
+                {action.source.extractedBy.kind === 'cloud'
+                  ? `Drafted by ${action.source.extractedBy.model} (cloud, ${action.source.extractedBy.provider}).`
+                  : `Drafted on this device by ${action.source.extractedBy.model}.`}{' '}
+                Check the details before confirming.
+              </p>
+            )}
             <OpenQuestions
               questions={action.ambiguities ?? []}
               disabled={pending}

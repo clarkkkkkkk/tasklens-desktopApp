@@ -16,6 +16,7 @@ export type LocalAIErrorCode =
   | 'VALIDATION_FAILED'
   | 'CANCELLED'
   | 'DESKTOP_REQUIRED'
+  | 'NO_AI_AVAILABLE'
   | 'UNKNOWN';
 
 /** A user-presentable failure. Native messages are already free of paths and stack traces. */

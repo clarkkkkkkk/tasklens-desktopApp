@@ -3,7 +3,7 @@
 //! The webview never talks to llama.cpp directly; its CSP still allows only Tauri IPC.
 //! Rust forwards bounded requests to the loopback-only server and returns raw text, which
 //! the TypeScript extraction pipeline validates before anything reaches the review UI.
-mod http;
+pub(crate) mod http;
 pub mod model;
 pub mod server;
 
@@ -248,7 +248,7 @@ pub async fn local_ai_prewarm(
                     port,
                     method: "POST",
                     path,
-                    api_key: &key,
+                    api_key: Some(&key),
                     body: Some(body.as_bytes()),
                     timeout: Duration::from_secs(600),
                     cancel: Some(&job.cancel),
@@ -346,7 +346,7 @@ fn complete(
             port,
             method: "POST",
             path: "/completion",
-            api_key: key,
+            api_key: Some(key),
             body: Some(body.as_bytes()),
             timeout: Duration::from_secs(900),
             cancel: Some(cancel),
