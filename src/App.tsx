@@ -41,6 +41,10 @@ export default function App() {
     setVoiceBusy(!!cancel);
   }, []);
   const pendingBrandFocus = useRef(false);
+  const requestedView = useRef(view);
+  useLayoutEffect(() => {
+    requestedView.current = view;
+  }, [view]);
   const pageContent = useRef<HTMLDivElement>(null);
   const replayOpener = useRef<HTMLElement | null>(null);
   const needsOnboarding =
@@ -48,7 +52,10 @@ export default function App() {
     !loadError &&
     snapshot.settings.onboardingCompletedVersion < CURRENT_ONBOARDING_VERSION;
   const touring = !loadError && (replay || needsOnboarding || finishingTour);
-  useEntrance(pageContent, view, 'page', !touring && !loading && !brandHandoff);
+  useEntrance(pageContent, view, 'page', !touring && !loading);
+  useLayoutEffect(() => {
+    pageContent.current?.scrollTo(0, 0);
+  }, [view]);
   const finishBrandHandoff = useCallback(() => {
     pendingBrandFocus.current = true;
     setBrandHandoff(null);
@@ -138,13 +145,13 @@ export default function App() {
           onFinishingChange={setFinishingTour}
           onExit={exitReplay}
           onFinish={async (reason) => {
+            const showBrand = reason === 'complete' && !reducedMotion();
             const tour = document.querySelector<HTMLElement>('.onboarding');
             if (tour) {
               tour.inert = true;
               tour.setAttribute('aria-hidden', 'true');
-              prepareExit(tour, 160)();
+              if (!showBrand) prepareExit(tour, 160)();
             }
-            const showBrand = reason === 'complete' && !reducedMotion();
             if (showBrand) setBrandHandoff({ firstRun: !replay });
             setFinishingTour(false);
             setView('inbox');
@@ -169,6 +176,7 @@ export default function App() {
         <Sidebar
           view={view}
           onNavigate={(v) => {
+            if (v === requestedView.current) return;
             if (voiceCancel.current) {
               setPendingView(v);
               return;
@@ -180,6 +188,7 @@ export default function App() {
             document.querySelectorAll('.motion-exit-snapshot').forEach((node) => node.remove());
             onClose();
             setCaptureHint(false);
+            requestedView.current = v;
             setView(v);
           }}
           actions={snapshot.actions}

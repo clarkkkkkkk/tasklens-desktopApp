@@ -13,7 +13,7 @@ for (const width of [1440, 900, 600]) {
     await page.setViewportSize({ width, height: 920 });
     await demoStep(page);
     await page.getByRole('button', { name: 'Start using TaskLens', exact: true }).click();
-    const intro = page.getByRole('status', { name: 'Opening TaskLens', exact: true });
+    const intro = page.locator('.brand-handoff');
     await expect(intro).toBeVisible();
     await expect(intro).toHaveAttribute('data-phase', 'reveal');
     await intro.evaluate((element) => {
@@ -58,7 +58,7 @@ test('reduced motion skips the brand sequence and settles an in-flight handoff',
 }) => {
   await demoStep(page);
   await page.getByRole('button', { name: 'Start using TaskLens', exact: true }).click();
-  await expect(page.getByRole('status', { name: 'Opening TaskLens', exact: true })).toBeVisible();
+  await expect(page.locator('.brand-handoff')).toBeVisible();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(page.locator('.brand-handoff')).toHaveCount(0);
   await expect(page.locator('#main-content')).toBeFocused();

@@ -33,7 +33,8 @@ export function BrandHandoff({ onComplete }: { onComplete: () => void }) {
     // Resizing can change sidebar geometry; settle at the real destination immediately.
     window.addEventListener('resize', finish);
     preference.addEventListener('change', motionChange);
-    layer.focus({ preventScroll: true });
+    // The visual layer never owns focus or interactive controls.
+    const timeout = window.setTimeout(finish, 3200);
 
     async function run() {
       if (!targetLogo || !targetName || preference.matches) return finish();
@@ -119,6 +120,7 @@ export function BrandHandoff({ onComplete }: { onComplete: () => void }) {
     void run();
     return () => {
       active = false;
+      clearTimeout(timeout);
       window.removeEventListener('resize', finish);
       preference.removeEventListener('change', motionChange);
       animations.forEach((animation) => animation.cancel());
@@ -126,13 +128,7 @@ export function BrandHandoff({ onComplete }: { onComplete: () => void }) {
   }, []);
 
   return (
-    <div
-      ref={root}
-      className="brand-handoff"
-      role="status"
-      aria-label="Opening TaskLens"
-      tabIndex={-1}
-    >
+    <div ref={root} className="brand-handoff" inert aria-hidden="true">
       <div ref={scrim} className="brand-handoff-scrim" aria-hidden="true" />
       <img
         ref={logo}

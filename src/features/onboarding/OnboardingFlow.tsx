@@ -1,5 +1,6 @@
 import { MotionHeading } from '../../components/motion/MotionHeading';
-import { useEffect, useRef, useState } from 'react';
+import { animateMotion, useEntrance } from '../../components/motion/motion';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, FileImage, CalendarDays, ShieldCheck } from '../../components/icons';
 import { useApp } from '../../app/context';
 import { Button, ConfidenceBadge, ErrorState } from '../../components/ui';
@@ -34,6 +35,7 @@ export function OnboardingFlow({
   );
   const [index, setIndex] = useState(0),
     [workflow, setWorkflow] = useState(0);
+  const [transitioning, setTransitioning] = useState(false);
   const [pending, setPending] = useState(false),
     [error, setError] = useState('');
   const [demo, setDemo] = useState<ExtractedAction | null>(null),
@@ -41,10 +43,31 @@ export function OnboardingFlow({
     [attempt, setAttempt] = useState(0);
   const heading = useRef<HTMLHeadingElement>(null);
   const busy = useRef(false);
+  const composition = useRef<HTMLElement>(null);
+  const preview = useRef<HTMLDivElement>(null);
+  const transition = useRef(0);
   const step = steps[index];
-  useEffect(() => {
-    heading.current?.focus();
+  useEntrance(composition, index, 'onboarding');
+  useLayoutEffect(() => {
+    composition.current?.parentElement?.scrollTo(0, 0);
+    heading.current?.focus({ preventScroll: true });
   }, [index]);
+  useEffect(
+    () => () => {
+      transition.current++;
+    },
+    [],
+  );
+  async function changeStep(next: number) {
+    if (next === index) return;
+    const request = ++transition.current;
+    setTransitioning(true);
+    if (composition.current) await animateMotion(composition.current, 'onboarding', 0, true);
+    if (request === transition.current) {
+      setIndex(next);
+      setTransitioning(false);
+    }
+  }
   useEffect(() => {
     if (!replay) return;
     const escape = (event: KeyboardEvent) => {
@@ -134,108 +157,127 @@ export function OnboardingFlow({
             ))}
           </div>
         </div>
-        <section className={`onboarding-step onboarding-${step}`} key={step}>
-          <div className="onboarding-copy">
-            <div className="eyebrow">
-              {step === 'welcome' ? 'A LITTLE LESS TO REMEMBER' : 'YOUR SPACE FOR CLARITY'}
+        <div
+          className="onboarding-stage"
+          role="region"
+          aria-label="Introduction content"
+          tabIndex={0}
+        >
+          <section ref={composition} className={`onboarding-step onboarding-${step}`}>
+            <div className="onboarding-copy">
+              <div className="eyebrow">
+                {step === 'welcome' ? 'A LITTLE LESS TO REMEMBER' : 'YOUR SPACE FOR CLARITY'}
+              </div>
+              <MotionHeading ref={heading} tabIndex={-1}>
+                {titles[step]}
+              </MotionHeading>
+              {step === 'welcome' && (
+                <>
+                  <p>
+                    TaskLens helps turn screenshots and everyday information into organized tasks,
+                    events, and reminders.
+                  </p>
+                  <div className="onboarding-values">
+                    <span>
+                      <ShieldCheck size={18} /> Local-first workspace
+                    </span>
+                    <span>
+                      <Check size={18} /> No account required
+                    </span>
+                  </div>
+                </>
+              )}
+              {step === 'workflow' && (
+                <WorkflowStep
+                  selected={workflow}
+                  onSelect={(selected) => {
+                    if (selected === workflow) return;
+                    setWorkflow(selected);
+                    if (preview.current) void animateMotion(preview.current, 'feedback');
+                  }}
+                />
+              )}
+              {step === 'preferences' && (
+                <>
+                  <p>Choose the reminders you’d like on new items.</p>
+                  <p>You can change these for any task later.</p>
+                </>
+              )}
+              {step === 'demo' && (
+                <>
+                  <p>Explore a sample result. Try changing its location.</p>
+                  <span className="badge">Interactive demo</span>
+                  <p className="field-help">
+                    Sample extraction, not AI analysis. Nothing here is saved as a task.
+                  </p>
+                  <h2>You’re ready.</h2>
+                  <p>Your next screenshot is a good place to start.</p>
+                </>
+              )}
             </div>
-            <MotionHeading ref={heading} tabIndex={-1} revealWords>
-              {titles[step]}
-            </MotionHeading>
-            {step === 'welcome' && (
-              <>
-                <p>
-                  TaskLens helps turn screenshots and everyday information into organized tasks,
-                  events, and reminders.
-                </p>
-                <div className="onboarding-values">
-                  <span>
-                    <ShieldCheck size={18} /> Local-first workspace
-                  </span>
-                  <span>
-                    <Check size={18} /> No account required
-                  </span>
+            <div className="onboarding-visual">
+              {step === 'welcome' && (
+                <div className="onboarding-welcome-art">
+                  <img src="/TaskLens.png" alt="" />
+                  <p>A clearer day starts here.</p>
                 </div>
-              </>
-            )}
-            {step === 'workflow' && <WorkflowStep selected={workflow} onSelect={setWorkflow} />}
-            {step === 'preferences' && (
-              <>
-                <p>Choose the reminders you’d like on new items.</p>
-                <p>You can change these for any task later.</p>
-              </>
-            )}
-            {step === 'demo' && (
-              <>
-                <p>Explore a sample result. Try changing its location.</p>
-                <span className="badge">Interactive demo</span>
-                <p className="field-help">
-                  Sample extraction, not AI analysis. Nothing here is saved as a task.
-                </p>
-                <h2>You’re ready.</h2>
-                <p>Your next screenshot is a good place to start.</p>
-              </>
-            )}
-          </div>
-          <div className="onboarding-visual">
-            {step === 'welcome' && (
-              <div className="onboarding-welcome-art">
-                <img src="/TaskLens.png" alt="" />
-                <p>A clearer day starts here.</p>
-              </div>
-            )}
-            {step === 'workflow' && (
-              <div className="onboarding-preview" key={workflow}>
-                <span className="badge">Sample workflow</span>
-                {workflow === 0 ? (
-                  <>
-                    <FileImage size={32} />
-                    <h2>A screenshot worth keeping</h2>
-                    <p>An announcement. A date. A few details to remember.</p>
-                  </>
-                ) : workflow === 1 ? (
-                  <>
-                    <Check size={32} />
-                    <h2>Details, ready for review</h2>
-                    <p>Check the date, location, and requirements before saving.</p>
-                  </>
+              )}
+              {step === 'workflow' && (
+                <div ref={preview} className="onboarding-preview onboarding-workflow-preview">
+                  <span className="badge">Sample workflow</span>
+                  {workflow === 0 ? (
+                    <>
+                      <FileImage size={32} />
+                      <h2>A screenshot worth keeping</h2>
+                      <p>An announcement. A date. A few details to remember.</p>
+                    </>
+                  ) : workflow === 1 ? (
+                    <>
+                      <Check size={32} />
+                      <h2>Details, ready for review</h2>
+                      <p>Check the date, location, and requirements before saving.</p>
+                    </>
+                  ) : (
+                    <>
+                      <CalendarDays size={32} />
+                      <h2>A place for every plan</h2>
+                      <p>Today · Upcoming · Calendar</p>
+                    </>
+                  )}
+                </div>
+              )}
+              {step === 'preferences' && (
+                <ReminderPreferencesStep
+                  settings={snapshot.settings}
+                  pending={pending}
+                  onChange={(settings) => void persist(settings)}
+                />
+              )}
+              {step === 'demo' &&
+                (demo ? (
+                  <DemoStep
+                    action={demo}
+                    onLocation={(location) => setDemo({ ...demo, location })}
+                  />
+                ) : demoError ? (
+                  <ErrorState message={demoError}>
+                    <Button
+                      onClick={() => {
+                        setDemoError('');
+                        setAttempt(attempt + 1);
+                      }}
+                    >
+                      Retry sample
+                    </Button>
+                  </ErrorState>
                 ) : (
-                  <>
-                    <CalendarDays size={32} />
-                    <h2>A place for every plan</h2>
-                    <p>Today · Upcoming · Calendar</p>
-                  </>
-                )}
-              </div>
-            )}
-            {step === 'preferences' && (
-              <ReminderPreferencesStep
-                settings={snapshot.settings}
-                pending={pending}
-                onChange={(settings) => void persist(settings)}
-              />
-            )}
-            {step === 'demo' &&
-              (demo ? (
-                <DemoStep action={demo} onLocation={(location) => setDemo({ ...demo, location })} />
-              ) : demoError ? (
-                <ErrorState message={demoError}>
-                  <Button
-                    onClick={() => {
-                      setDemoError('');
-                      setAttempt(attempt + 1);
-                    }}
-                  >
-                    Retry sample
-                  </Button>
-                </ErrorState>
-              ) : (
-                <div className="onboarding-preview" role="status">
-                  Preparing sample extraction…<p>No AI is analyzing this image.</p>
-                </div>
-              ))}
-          </div>
-        </section>
+                  <div className="onboarding-preview" role="status">
+                    Preparing sample extraction…<p>No AI is analyzing this image.</p>
+                  </div>
+                ))}
+            </div>
+          </section>
+        </div>
         {error && (
           <ErrorState message={error}>
             <span>Retry the action to save your choices.</span>
@@ -247,15 +289,20 @@ export function OnboardingFlow({
           </Button>
           <div>
             {index > 0 && (
-              <Button disabled={pending} onClick={() => setIndex(index - 1)}>
+              <Button
+                disabled={pending || transitioning}
+                onClick={() => void changeStep(index - 1)}
+              >
                 Back
               </Button>
             )}
             <Button
               variant="primary"
-              disabled={pending}
+              disabled={pending || transitioning}
               onClick={
-                index === steps.length - 1 ? () => finish('complete') : () => setIndex(index + 1)
+                index === steps.length - 1
+                  ? () => finish('complete')
+                  : () => void changeStep(index + 1)
               }
             >
               {pending

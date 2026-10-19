@@ -1,6 +1,5 @@
-import { useEntrance } from '../../components/motion/motion';
 import { MotionHeading } from '../../components/motion/MotionHeading';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from '../../components/icons';
 import { useApp } from '../../app/context';
 import { selectActions } from '../../lib/actions';
@@ -20,8 +19,6 @@ export function CalendarView({
     [month, setMonth] = useState(parseLocalDate(initialDate || localDate()));
   const items = selectActions(snapshot.actions, 'calendar');
   const label = month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  const grid = useRef<HTMLDivElement>(null);
-  useEntrance(grid, label, 'fade');
   function move(amount: number) {
     setMonth(new Date(month.getFullYear(), month.getMonth() + amount, 1));
   }
@@ -57,7 +54,7 @@ export function CalendarView({
             <span key={d}>{d}</span>
           ))}
         </div>
-        <div ref={grid} className="calendar-grid" aria-label={label}>
+        <div className="calendar-grid" aria-label={label}>
           {monthCells(month).map((date, i) =>
             date ? (
               <button

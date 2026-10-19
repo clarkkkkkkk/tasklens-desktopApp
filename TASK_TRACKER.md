@@ -378,3 +378,15 @@ Full browser run: 30 passed, three failed during concurrent native builds and de
 ### Integrated verification record — 2026-10-18
 
 Main integration merge `8f32047` preserves checkpoint `8713545` and upstream `cf09166`. Integrated checks passed: TypeScript/lint, formatting, frontend build, Cargo check/format, 62 frontend unit tests, 17 Rust tests, two asset tests and six targeted browser tests. One real-model test and two native opt-in tests remained skipped/ignored. Full integrated real-model and installed platform acceptance remain open. See [the integration record](docs/MAIN_INTEGRATION_2026-10-18.md) for conflict decisions, commands and limitations.
+
+## Motion refinement — 2026-10-19
+
+- [x] One onboarding composition with 90ms exit + 210ms entrance, unscaled headings, stable header/progress/footer and keyboard-accessible contained scrolling.
+- [x] Stable workflow preview identity and focus with short feedback; preserve demo edits and onboarding persistence.
+- [x] Retain shared 320ms/12px/full-opacity page entrances; remove independent Calendar and status entrances; verify active-page clicks and latest-navigation interruption behavior.
+- [x] Inert, aria-hidden measured brand handoff, Inbox ready behind the scrim, resize/reduced-motion settlement and bounded paused-compositor recovery.
+- [x] TypeScript/lint, formatting, production build, 62 unit tests and final full 45-test browser suite pass. One opt-in real-model unit evaluation remains skipped. The previously failing sample/navigation case also passed five consecutive targeted runs on the final version; diagnostic history is retained in the report.
+- [x] Observe the browser and compare original/revised recordings; test 1440×920, 900×640 and 600×640 layouts, existing axe checks, unsaved edits, voice review, search and restart persistence.
+- [ ] Native Tauri/WebKit/macOS visual and GPU-performance acceptance of this motion refinement. Browser testing does not certify native rendering or AI inference.
+
+Exact files, timings, measurements, recording locations and acceptance limits: [motion refinement report](docs/MOTION_REFINEMENT_2026-10-19.md). No AI/native/persistence changes or new animation dependencies. Work remains on `codex/motion-refinement`, without a push or main merge.

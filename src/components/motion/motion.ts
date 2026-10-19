@@ -1,7 +1,22 @@
 import { useLayoutEffect, type RefObject } from 'react';
 
-export type MotionKind = 'page' | 'panel' | 'fade' | 'workspace' | 'word' | 'feedback';
-const fallback = { page: 320, panel: 220, fade: 160, workspace: 320, word: 300, feedback: 160 };
+export type MotionKind =
+  | 'page'
+  | 'panel'
+  | 'fade'
+  | 'workspace'
+  | 'word'
+  | 'feedback'
+  | 'onboarding';
+const fallback = {
+  page: 320,
+  panel: 220,
+  fade: 160,
+  workspace: 320,
+  word: 300,
+  feedback: 160,
+  onboarding: 210,
+};
 export function reducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
@@ -28,18 +43,23 @@ export function animateMotion(
   if (reducedMotion() || !element.isConnected) return Promise.resolve();
   const distance = kind === 'panel' ? 'translateY(12px)' : 'translateY(8px)';
   const frames =
-    kind === 'page'
-      ? [{ transform: currentTransform || 'translateY(12px)' }, { transform: 'none' }]
-      : kind === 'fade'
-        ? [{ opacity: 0 }, { opacity: 1 }]
-        : kind === 'feedback'
-          ? [{ opacity: 0.55 }, { opacity: 1 }]
-          : [
-              { opacity: kind === 'panel' ? 1 : 0, transform: currentTransform || distance },
-              { opacity: 1, transform: 'none' },
-            ];
+    kind === 'onboarding'
+      ? [
+          { opacity: 0, transform: 'translateY(12px)' },
+          { opacity: 1, transform: 'none' },
+        ]
+      : kind === 'page'
+        ? [{ transform: currentTransform || 'translateY(12px)' }, { transform: 'none' }]
+        : kind === 'fade'
+          ? [{ opacity: 0 }, { opacity: 1 }]
+          : kind === 'feedback'
+            ? [{ opacity: 0.55 }, { opacity: 1 }]
+            : [
+                { opacity: kind === 'panel' ? 1 : 0, transform: currentTransform || distance },
+                { opacity: 1, transform: 'none' },
+              ];
   const animation = element.animate(exit ? [...frames].reverse() : frames, {
-    duration: exit ? (kind === 'fade' ? 160 : 140) : duration(kind),
+    duration: exit ? (kind === 'onboarding' ? 90 : kind === 'fade' ? 160 : 140) : duration(kind),
     delay: exit ? 0 : delay,
     easing:
       getComputedStyle(document.documentElement).getPropertyValue('--motion-ease').trim() ||
@@ -52,10 +72,16 @@ export function animateMotion(
     if (preference.matches) animation.cancel();
   };
   preference.addEventListener('change', stop);
+  // Finite UI transitions must also settle when the compositor is suspended.
+  const timeout = window.setTimeout(
+    () => animation.cancel(),
+    Number(animation.effect?.getComputedTiming().endTime || 0) + 100,
+  );
   return animation.finished
     .then(() => {})
     .catch(() => {})
     .finally(() => {
+      clearTimeout(timeout);
       preference.removeEventListener('change', stop);
       if (running.get(element) === animation) running.delete(element);
       animation.cancel();
