@@ -115,6 +115,14 @@ Remote main cf09166 adds compact-output prompt v7, persisted static-prefix prewa
 
 Main integration merge `8f32047` preserves checkpoint `8713545` and upstream `cf09166`. Integrated checks passed: TypeScript/lint, formatting, frontend build, Cargo check/format, 62 frontend unit tests, 17 Rust tests, two asset tests and six targeted browser tests. One real-model test and two native opt-in tests remained skipped/ignored. Full integrated real-model and installed platform acceptance remain open. See [the integration record](docs/MAIN_INTEGRATION_2026-10-18.md) for conflict decisions, commands and limitations.
 
+## Reliability/AI merge follow-up — 2026-10-20
+
+- Merge `e51ff64` combines the reminders/lifecycle checkpoint with local-only AI routing; `Services` exposes both `nativeReminders` and `ai`.
+- `ReminderSafeRepository`: a failed task write no longer leaves delivery durably paused with no warning. It reconciles against the unchanged stored tasks and rethrows the original error; unreadable data still stays paused. New regression test.
+- `AppProvider`: writes share one `commit` helper; complete/restore no longer hides a reminder registration warning behind "Item completed".
+- Rust: cleared the Windows-only `unused_mut` warning in `assets.rs` and clippy's `as_chunks` suggestion in `ai/device.rs`. `Dispatch.action_id` (reliability WIP) is still unread and left for the reliability work to use or remove.
+- Checks: TypeScript, lint, Prettier, 113 frontend unit tests, `cargo fmt`, clippy, Rust tests. Native reminder acceptance is unchanged and still pending.
+
 ## Native reliability branch — 2026-10-20
 
 `codex/native-reliability` implements an unfinished Milestone A: opt-in native reminders, a SQLite delivery journal (tasks stay in localStorage), Settings activation/privacy/background controls, durable scheduling fences and shared close guards. Notifications require explicit activation after upgrade. No automatic autostart, task migration or backup import is included yet. Fedora OS submission checks have run; visibility, broader lifecycle/recovery and Windows/macOS native acceptance are tracked separately. See [implementation and gate status](docs/NATIVE_RELIABILITY.md) for commands, ownership boundaries, storage paths, unencrypted-data disclosure and remaining A–E work. No push/main merge is included.

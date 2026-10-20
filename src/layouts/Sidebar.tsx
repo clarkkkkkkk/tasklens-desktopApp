@@ -79,7 +79,7 @@ export function Sidebar({
   );
 }
 
-/** Subtle on-device indicator; says so while the local model is working. */
+/** Subtle privacy indicator: all AI runs on this device. */
 function LocalStatus() {
   const { services } = useApp();
   const [processing, setProcessing] = useState(false);

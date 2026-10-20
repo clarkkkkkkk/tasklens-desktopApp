@@ -234,7 +234,7 @@ impl Runtime {
                     port,
                     method: "GET",
                     path: "/health",
-                    api_key: &key,
+                    api_key: Some(&key),
                     body: None,
                     timeout: Duration::from_secs(2),
                     cancel: None,

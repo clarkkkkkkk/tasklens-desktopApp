@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod ai;
 mod assets;
 mod jobs;
 mod local_ai;
@@ -75,6 +76,9 @@ fn main() {
             local_ai::local_ai_complete,
             local_ai::local_ai_prewarm,
             local_ai::local_jobs_cancel,
+            ai::ai_device_profile,
+            ai::ai_ollama_discover,
+            ai::ai_ollama_chat,
         ])
         .build(tauri::generate_context!())
         .expect("TaskLens could not start")

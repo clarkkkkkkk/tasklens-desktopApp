@@ -24,10 +24,13 @@ import type { ExtractedAction } from '../../types/action';
 import {
   extractionSteps,
   type ExtractionDiagnostics,
+  type RouteNotice,
 } from '../../services/extraction/ExtractionService';
 import { toLocalAIError, type LocalAIErrorCode } from '../../services/localai/native';
 import { presets } from '../../services/reminders/ReminderScheduler';
 import { ExtractionDebug } from '../extraction/ExtractionDebug';
+import { RouteWhy } from '../ai/RouteDecisionCard';
+import { routeBadge } from '../ai/routeLabels';
 
 type Origin = 'file' | 'paste' | 'sample';
 /** After this long, on-device processing offers Keep waiting / Cancel. Nothing is saved. */
@@ -43,7 +46,10 @@ const SETUP_ERRORS = new Set<LocalAIErrorCode>([
   'MODEL_NOT_INSTALLED',
   'MODEL_CORRUPTED',
   'MODEL_LOAD_FAILED',
+  'NO_AI_AVAILABLE',
 ]);
+/** Text recognition always runs locally; which model runs next is the router's decision. */
+const OCR_COMPONENTS = ['tesseract', 'eng.traineddata', 'ceb.traineddata', 'tgl.traineddata'];
 
 export function Inbox({
   active,
@@ -75,7 +81,8 @@ export function Inbox({
     [busy, setBusy] = useState(false),
     [error, setError] = useState<{ message: string; code?: LocalAIErrorCode } | null>(null),
     [results, setResults] = useState<ExtractedAction[]>([]),
-    [diagnostics, setDiagnostics] = useState<Partial<ExtractionDiagnostics> | null>(null);
+    [diagnostics, setDiagnostics] = useState<Partial<ExtractionDiagnostics> | null>(null),
+    [route, setRoute] = useState<RouteNotice | null>(null);
   const source = job?.source ?? null;
   // Real elapsed seconds of the current run; drives the safety notice, never a fake percentage.
   const [elapsed, setElapsed] = useState(0),
@@ -107,17 +114,7 @@ export function Inbox({
   const defaults = snapshot.settings.defaultReminders;
   const process = useCallback(
     async (next: Job) => {
-      if (
-        !next.demo &&
-        !componentsReady(intelligence, [
-          'extraction',
-          'llama-server',
-          'tesseract',
-          'eng.traineddata',
-          'ceb.traineddata',
-          'tgl.traineddata',
-        ])
-      ) {
+      if (!next.demo && !componentsReady(intelligence, OCR_COMPONENTS)) {
         setError({ message: intelligence.message });
         return;
       }
@@ -132,12 +129,17 @@ export function Inbox({
       setError(null);
       setResults([]);
       setDiagnostics(null);
+      setRoute(null);
       setStep(-1);
       const service = next.demo ? services.demoExtraction : services.extraction;
       try {
         const bundle = await service.extract(
           { ...next.source, image: next.image },
-          { signal: abort.signal, onProgress: (s) => current() && setStep(s) },
+          {
+            signal: abort.signal,
+            onProgress: (s) => current() && setStep(s),
+            onRoute: (r) => current() && setRoute(r),
+          },
         );
         if (!current()) return;
         setDiagnostics(bundle.diagnostics ?? null);
@@ -253,6 +255,7 @@ export function Inbox({
     setJob(null);
     setResults([]);
     setDiagnostics(null);
+    setRoute(null);
     setStep(-1);
     setError(null);
     onRemove();
@@ -268,6 +271,10 @@ export function Inbox({
   }
   const demo = !!job?.demo || services.extraction.mode === 'mock';
   const latest = results.map((r) => snapshot.actions.find((a) => a.id === r.id) || r);
+  const stageLabel = (index: number) =>
+    index === 2 && route && !demo
+      ? `Understanding details locally with ${route.candidate.model.name}…`
+      : extractionSteps[index];
   return (
     <section
       hidden={!active}
@@ -343,12 +350,14 @@ export function Inbox({
               {busy ? <LoaderCircle size={17} className="spin" /> : <Check size={17} />}
               <strong>
                 {busy
-                  ? extractionSteps[Math.max(0, Math.min(step, extractionSteps.length - 1))]
+                  ? stageLabel(Math.max(0, Math.min(step, extractionSteps.length - 1)))
                   : results.length
                     ? 'Ready for review'
                     : 'Not processed'}
               </strong>
-              <span className="badge">{demo ? 'Mock extraction' : 'On-device'}</span>
+              <span className="badge">
+                {demo ? 'Mock extraction' : routeBadge(route?.candidate)}
+              </span>
             </div>
             <div className="progress-track">
               {extractionSteps.map((label, index) => (
@@ -400,6 +409,7 @@ export function Inbox({
                 <ArrowRight size={15} />
               </Button>
             )}
+            {route && !demo && <RouteWhy route={route} />}
           </div>
           {developer && diagnostics && <ExtractionDebug diagnostics={diagnostics} />}
         </div>

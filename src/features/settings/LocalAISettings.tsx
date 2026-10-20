@@ -96,9 +96,9 @@ export function LocalAISettings({
         </span>
       </h2>
       <p>
-        TaskLens reads screenshots with bundled Tesseract OCR and understands them with Qwen3, both
-        running on this computer. Screenshots, text and results never leave this device, and
-        extraction works offline.
+        The bundled runtime: Tesseract OCR reads screenshots and the included model understands
+        them, both on this computer. When TaskLens AI routes a job here, screenshots, text and
+        results never leave this device, and extraction works offline.
       </p>
       {!manager.available ? (
         <p className="field-help">

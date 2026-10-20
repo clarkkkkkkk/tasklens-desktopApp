@@ -58,6 +58,24 @@ describe('durable scheduler fence around localStorage writes', () => {
     expect(order).toEqual(['pause', 'reconcile', 'pause', 'reconcile']);
     expect((await f.repository.load()).actions).toHaveLength(2);
   });
+  it('resumes delivery from stored tasks when a write fails', async () => {
+    const f = fixture();
+    const saved = { ...newAction(), title: 'Saved' };
+    await f.repository.saveAction(saved);
+    f.reconcile.mockClear();
+    const full = vi
+      .spyOn(LocalStorageRepository.prototype, 'saveAction')
+      .mockRejectedValueOnce(new Error('quota exceeded'));
+    await expect(f.repository.saveAction({ ...newAction(), title: 'Lost' })).rejects.toThrow(
+      'quota exceeded',
+    );
+    full.mockRestore();
+    expect(f.reconcile).toHaveBeenCalledOnce();
+    expect(f.reconcile).toHaveBeenCalledWith(
+      'fence',
+      expect.objectContaining({ actions: [expect.objectContaining({ id: saved.id })] }),
+    );
+  });
   it('leaves the fence paused when canonical data cannot be read', async () => {
     const f = fixture();
     f.map.set(STORAGE_KEY, 'not json');

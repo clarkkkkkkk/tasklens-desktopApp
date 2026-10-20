@@ -43,6 +43,8 @@ export function AppProvider({ services, children }: { services: Services; childr
   }, [reload, services.repository]);
   useEffect(() => {
     services.settings.current = snapshot.settings;
+    // Provider options (Ollama on/off) change what discovery reports.
+    services.ai.registry.invalidate();
     services.localAI.setConfig({
       contextSize: snapshot.settings.localAI.contextSize,
       threads: snapshot.settings.localAI.threads,
@@ -53,26 +55,32 @@ export function AppProvider({ services, children }: { services: Services; childr
     const timer = setTimeout(() => setNotice(''), 5000);
     return () => clearTimeout(timer);
   }, [notice]);
+  /** Applies a committed write; a reminder registration warning outranks the success message. */
+  async function commit(write: Promise<Snapshot>, success: string) {
+    setSnapshot(await write);
+    setNotice(services.repository.reminderWarning || success);
+  }
+  function persist(a: ExtractedAction) {
+    return services.repository.saveAction({ ...a, updatedAt: new Date().toISOString() });
+  }
   async function save(a: ExtractedAction) {
-    setSnapshot(
-      await services.repository.saveAction({ ...a, updatedAt: new Date().toISOString() }),
-    );
-    setNotice(
-      services.repository.reminderWarning ||
-        (a.status === 'needs_review' ? 'Draft saved to Needs Review.' : 'Saved on this device.'),
+    await commit(
+      persist(a),
+      a.status === 'needs_review' ? 'Draft saved to Needs Review.' : 'Saved on this device.',
     );
   }
   async function remove(id: string) {
-    setSnapshot(await services.repository.deleteAction(id));
-    setNotice(services.repository.reminderWarning || 'Item deleted.');
+    await commit(services.repository.deleteAction(id), 'Item deleted.');
   }
   async function complete(a: ExtractedAction) {
-    await save({ ...a, status: a.status === 'completed' ? 'confirmed' : 'completed' });
-    setNotice(a.status === 'completed' ? 'Item restored.' : 'Item completed. Nicely done.');
+    const restoring = a.status === 'completed';
+    await commit(
+      persist({ ...a, status: restoring ? 'confirmed' : 'completed' }),
+      restoring ? 'Item restored.' : 'Item completed. Nicely done.',
+    );
   }
   async function saveSettings(settings: Settings) {
-    setSnapshot(await services.repository.saveSettings(settings));
-    setNotice(services.repository.reminderWarning || 'Preferences saved.');
+    await commit(services.repository.saveSettings(settings), 'Preferences saved.');
   }
   return (
     <AppContext.Provider

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { transcriptSchema } from '../services/voice/types';
 import { ocrDocumentSchema } from '../services/ocr/types';
+import { aiModes, aiPriorities } from '../services/ai/policy';
 
 export const dateSchema = z
   .string()
@@ -104,7 +105,17 @@ export const actionSchema = z
       capturedAt: z.string().datetime().optional(),
       recordingDate: dateSchema.optional(),
       timezone: z.string().max(100).optional(),
-      extractionMode: z.enum(['mock', 'local']).optional(),
+      /** Values left by the removed cloud prototype read as unknown instead of failing the load. */
+      extractionMode: z.enum(['mock', 'local']).optional().catch(undefined),
+      /** Which AI produced the draft, for provenance in review. */
+      extractedBy: z
+        .object({
+          provider: z.string().max(100),
+          model: z.string().max(200),
+          kind: z.enum(['local', 'mock']),
+        })
+        .optional()
+        .catch(undefined),
       fileName: z.string().optional(),
       previewUrl: z
         .string()
@@ -158,9 +169,24 @@ export const localAISettingsSchema = z.object({
   contextSize: z.number().int().min(2048).max(32768).default(8192),
   threads: z.number().int().min(1).max(64).nullable().default(null),
 });
+/**
+ * AI routing preferences. Additive with defaults, so existing envelopes load unchanged; keys and
+ * values from removed options (cloud modes, privacy/cost priorities) fall back on read. Holds no
+ * credentials.
+ */
+export const aiRoutingSettingsSchema = z.object({
+  mode: z.enum(aiModes).catch('automatic'),
+  priority: z.enum(aiPriorities).catch('balanced'),
+  /** `providerId/modelId` chosen in Manual mode. */
+  manualModel: z.string().max(300).nullable().default(null),
+  ollama: z.object({ enabled: z.boolean().default(true) }).default({}),
+});
+export type AIRoutingSettings = z.infer<typeof aiRoutingSettingsSchema>;
+export const defaultAIRoutingSettings: AIRoutingSettings = aiRoutingSettingsSchema.parse({});
 export const settingsSchema = z.object({
   onboardingCompletedVersion: z.number().int().nonnegative().default(0),
   localAI: localAISettingsSchema.default({}),
+  ai: aiRoutingSettingsSchema.default({}),
   remindersEnabled: z.boolean(),
   defaultReminders: z.array(z.enum(['night', 'hour', 'quarter'])),
   theme: z.literal('light'),
@@ -169,6 +195,7 @@ export type Settings = z.infer<typeof settingsSchema>;
 export const defaultSettings: Settings = {
   onboardingCompletedVersion: 0,
   localAI: { developerMode: false, contextSize: 8192, threads: null },
+  ai: defaultAIRoutingSettings,
   remindersEnabled: true,
   defaultReminders: ['night', 'hour', 'quarter'],
   theme: 'light',

@@ -5,6 +5,7 @@ import { Button, ErrorState } from '../../components/ui';
 import { Microphone, FileImage, Pencil } from '../../components/icons';
 import type { ExtractedAction } from '../../types/action';
 import type { AudioSource, CaptureStatus } from '../../services/voice/types';
+import type { RouteNotice } from '../../services/extraction/ExtractionService';
 import { downloadText } from '../../lib/images';
 import './voice.css';
 const working = new Set<CaptureStatus>([
@@ -42,7 +43,8 @@ export function VoiceCapture({
     [recordingDate, setRecordingDate] = useState(''),
     [source, setSource] = useState<ExtractedAction['source']>(),
     [warnings, setWarnings] = useState<string[]>([]),
-    [stopRequested, setStopRequested] = useState(false);
+    [stopRequested, setStopRequested] = useState(false),
+    [route, setRoute] = useState<RouteNotice | null>(null);
   const file = useRef<HTMLInputElement>(null),
     audio = useRef<AudioSource | null>(null),
     controller = useRef<AbortController | null>(null),
@@ -127,7 +129,12 @@ export function VoiceCapture({
   }
   async function extract(input: ExtractedAction['source'], version: number, signal: AbortSignal) {
     setStatus('extracting');
-    const extraction = services.extraction.extract(input, { signal, onProgress: () => {} });
+    setRoute(null);
+    const extraction = services.extraction.extract(input, {
+      signal,
+      onProgress: () => {},
+      onRoute: (r) => version === generation.current && setRoute(r),
+    });
     pendingExtraction.current = extraction;
     const bundle = await extraction;
     if (version !== generation.current || signal.aborted) return;
@@ -309,7 +316,9 @@ export function VoiceCapture({
     finalizing: 'Finishing audio…',
     preprocessing: 'Preparing audio…',
     transcribing: 'Transcribing on this device…',
-    extracting: 'Finding actionable details locally…',
+    extracting: route
+      ? `Finding actionable details locally with ${route.candidate.model.name}…`
+      : 'Finding actionable details locally…',
     ready_for_review: 'Ready for review',
     cancelled: 'Capture cancelled',
     error: 'Capture needs attention',

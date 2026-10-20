@@ -31,7 +31,15 @@
     "format": "gguf",
     "architecture": "qwen3",
     "promptTemplate": "qwen3-non-thinking",
-    "stopTokens": ["<|im_end|>", "<|endoftext|>"]
+    "stopTokens": ["<|im_end|>", "<|endoftext|>"],
+    "capabilities": [
+      "text-generation",
+      "structured-extraction",
+      "json-output",
+      "multilingual",
+      "summarization",
+      "classification"
+    ]
   },
   "llamaCpp": {
     "repository": "https://github.com/ggml-org/llama.cpp",

@@ -174,10 +174,14 @@ export function qwenPromptPrefix(system: string): string {
   return `<|im_start|>system\n${system}<|im_end|>\n<|im_start|>user\n`;
 }
 
+/** The user turn plus, on the repair retry, what was wrong with the previous answer. */
+export function appendRepair(user: string, repair?: string): string {
+  return repair ? `${user}\n\nPREVIOUS_ATTEMPT_PROBLEM\n${sanitizeUnitText(repair)}` : user;
+}
+
 /** Qwen3 non-thinking template. The empty thought block prevents reasoning in JSON output. */
 export function qwenChatPrompt(system: string, user: string, repair?: string): string {
-  const reminder = repair ? `\n\nPREVIOUS_ATTEMPT_PROBLEM\n${sanitizeUnitText(repair)}` : '';
-  return `${qwenPromptPrefix(system)}${user}${reminder}\n/no_think<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n`;
+  return `${qwenPromptPrefix(system)}${appendRepair(user, repair)}\n/no_think<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n`;
 }
 
 /** Prefix to evaluate ahead of time (during OCR) so the first extraction skips its prefill. */
