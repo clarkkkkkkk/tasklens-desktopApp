@@ -493,8 +493,10 @@ mod windows {
     fn string(subkey: &str, name: &str) -> Option<String> {
         let bytes = value(subkey, name)?;
         let units: Vec<u16> = bytes
-            .chunks_exact(2)
-            .map(|c| u16::from_le_bytes([c[0], c[1]]))
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|&pair| u16::from_le_bytes(pair))
             .take_while(|&u| u != 0)
             .collect();
         Some(String::from_utf16_lossy(&units).trim().to_string()).filter(|s| !s.is_empty())

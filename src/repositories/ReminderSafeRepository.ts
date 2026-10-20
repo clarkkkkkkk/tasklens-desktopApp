@@ -23,7 +23,13 @@ export class ReminderSafeRepository implements ActionRepository {
     const next = this.queue.then(async () => {
       // A failed durable pause prevents the task write. A failed reconciliation DOES NOT undo a successful task save.
       const token = await this.reminders.pause();
-      const snapshot = await operation();
+      let snapshot: Snapshot;
+      try {
+        snapshot = await operation();
+      } catch (error) {
+        await this.resumeFromStored(token);
+        throw error;
+      }
       try {
         await this.reminders.reconcile(token, snapshot);
         this.warning = null;
@@ -36,6 +42,14 @@ export class ReminderSafeRepository implements ActionRepository {
     });
     this.queue = next.catch(() => undefined);
     return next;
+  }
+  /** A failed write leaves stored tasks unchanged, so delivery can resume from them. Unreadable data stays paused. */
+  private async resumeFromStored(token: string) {
+    try {
+      await this.reminders.reconcile(token, await this.tasks.load());
+    } catch {
+      // The fence stays paused; Settings reports it and offers retry.
+    }
   }
   load() {
     return this.serialize(() => this.tasks.load());

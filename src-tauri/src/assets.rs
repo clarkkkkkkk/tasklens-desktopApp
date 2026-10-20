@@ -70,6 +70,8 @@ fn container_identity(path: &Path, executable: &Path, image: &Path, root: &Path)
 }
 fn fingerprint(app: &tauri::AppHandle, path: &Path, s: &Value) -> Result<Value, String> {
     let meta = fs::metadata(path).map_err(|_| "MODEL_NOT_INSTALLED: A bundled local intelligence resource is missing. Reinstall TaskLens to repair it.")?;
+    // Only the Linux AppImage branch below rewrites the identity.
+    #[cfg_attr(not(target_os = "linux"), allow(unused_mut))]
     let mut identity = json!(path.canonicalize().unwrap_or_else(|_| path.to_owned()));
     #[cfg(target_os = "linux")]
     {
