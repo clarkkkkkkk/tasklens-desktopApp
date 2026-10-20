@@ -1,5 +1,6 @@
 :root {
   --motion-page: 320ms;
+  --motion-onboarding: 210ms;
   --motion-panel: 220ms;
   --motion-fade: 160ms;
   --motion-workspace: 320ms;
@@ -24,11 +25,6 @@
 .icon-button:not(:disabled):active {
   transform: scale(0.98);
 }
-.processing-area,
-.error-state,
-.inline-confirm {
-  animation: motion-reveal var(--motion-page) var(--motion-ease) both;
-}
 .toast {
   transform: translateY(8px);
   transition:
@@ -43,14 +39,6 @@
   pointer-events: none !important;
   animation: none !important;
   transition: none !important;
-}
-@keyframes motion-reveal {
-  from {
-    transform: translateY(8px);
-  }
-  to {
-    transform: none;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .motion-word,

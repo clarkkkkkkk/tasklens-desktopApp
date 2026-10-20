@@ -10,6 +10,8 @@ import type {
   ModelManager,
 } from '../services/voice/types';
 import { audioPreprocessor } from '../services/voice/types';
+import { ReminderSafeRepository } from '../repositories/ReminderSafeRepository';
+import { NativeReminders, type ReminderService } from '../services/reliability/Reminders';
 import type { ActionRepository } from '../repositories/ActionRepository';
 import { LocalStorageRepository } from '../repositories/LocalStorageRepository';
 import type { ExtractionService } from '../services/extraction/ExtractionService';
@@ -58,6 +60,7 @@ export interface Services {
   /** Always the mock: onboarding and samples must work before a model is installed. */
   demoExtraction: ExtractionService;
   reminders: ReminderScheduler;
+  nativeReminders: ReminderService;
   ai: AIServices;
   /** Latest saved settings, readable by services created before data loads. */
   settings: { current: Settings };
@@ -93,18 +96,23 @@ export function createServices(): Services {
   const device = new NativeDeviceProfiler();
   const router = new AIRouter(registry, device, policy);
 
+  const nativeReminders = new NativeReminders();
   // Access browser storage lazily, so denied storage becomes a recoverable UI error.
+  const storage = new LocalStorageRepository({
+    getItem: (key) => window.localStorage.getItem(key),
+    setItem: (key, value) => window.localStorage.setItem(key, value),
+    removeItem: (key) => window.localStorage.removeItem(key),
+  });
   return {
     audioPreprocessor,
     voice: new NativeVoiceCapture(audioPreprocessor),
     speech: new NativeSpeechToText(),
     models: new NativeModelManager(),
     localAI,
-    repository: new LocalStorageRepository({
-      getItem: (key) => window.localStorage.getItem(key),
-      setItem: (key, value) => window.localStorage.setItem(key, value),
-      removeItem: (key) => window.localStorage.removeItem(key),
-    }),
+    repository: nativeReminders.available
+      ? new ReminderSafeRepository(storage, nativeReminders)
+      : storage,
+    nativeReminders,
     extraction: useMock
       ? demo
       : new RoutedExtractionService(new NativeOcrService(), router, () => settings.current, {

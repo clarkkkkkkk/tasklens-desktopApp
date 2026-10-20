@@ -1,3 +1,4 @@
+import { NativeReminderSettings } from './NativeReminderSettings';
 import { VoiceSettings } from '../voice/VoiceSettings';
 import { LocalAISettings } from './LocalAISettings';
 import { AIRoutingPanel } from '../ai/AIRoutingPanel';
@@ -26,9 +27,9 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
       setPending(false);
     }
   }
-  function backup() {
+  async function backup() {
     try {
-      downloadText(services.repository.exportRaw(), 'tasklens-backup.json');
+      downloadText(await services.repository.exportRaw(), 'tasklens-backup.json');
     } catch {
       setError('Storage is unavailable. The backup could not be read.');
     }
@@ -72,7 +73,10 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
         <div className="setting-row">
           <div>
             <h3>Enable reminders</h3>
-            <p>Keep reminder configurations active. OS notifications are not yet available.</p>
+            <p>
+              Keep reminder selections active. Desktop notification delivery requires separate
+              explicit activation below.
+            </p>
           </div>
           <input
             aria-label="Enable reminders"
@@ -82,6 +86,7 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
             onChange={(e) => void update({ ...settings, remindersEnabled: e.target.checked })}
           />
         </div>
+        <NativeReminderSettings />
         <div className="setting-subsection">
           <h3>Default reminder presets</h3>
           <p className="field-help">Applied to new items and sample results.</p>

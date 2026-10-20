@@ -1,0 +1,111 @@
+{
+  "date": "2026-10-18",
+  "scope": "Native microphone capture, not speech recognition or language/noise accuracy",
+  "artifact": "Relocated AVX2/cache-fix Fedora release executable (prompt v4)",
+  "isolation": {
+    "externalNetworking": false,
+    "checkoutAccessible": false,
+    "resourcesReadOnly": true,
+    "isolatedProfile": true
+  },
+  "recordingRetained": false,
+  "results": [
+    {
+      "name": "native first-launch readiness without imports",
+      "seconds": 0.19225959799999964,
+      "detail": {
+        "status": {
+          "message": "Local AI is ready.",
+          "revision": 4,
+          "components": {
+            "whisper": {
+              "state": "ready",
+              "message": null
+            },
+            "tesseract": {
+              "state": "ready",
+              "message": null
+            },
+            "ceb.traineddata": {
+              "state": "ready",
+              "message": null
+            },
+            "eng.traineddata": {
+              "state": "ready",
+              "message": null
+            },
+            "extraction": {
+              "state": "ready",
+              "message": null
+            },
+            "whisper-cli": {
+              "state": "ready",
+              "message": null
+            },
+            "tgl.traineddata": {
+              "state": "ready",
+              "message": null
+            },
+            "llama-server": {
+              "state": "ready",
+              "message": null
+            }
+          },
+          "state": "ready",
+          "elapsedMs": 450
+        },
+        "model": "/home/clark/.cache/tasklens-avx2-acceptance/usr/lib/TaskLens/resources/models/Qwen3-4B-Q4_K_M.gguf",
+        "ocr": {
+          "available": true,
+          "binaryFound": true,
+          "dataDirectory": "/home/clark/.cache/tasklens-avx2-acceptance/usr/lib/TaskLens/resources/tessdata",
+          "languages": [
+            {
+              "code": "eng",
+              "installed": true
+            },
+            {
+              "code": "ceb",
+              "installed": true
+            },
+            {
+              "code": "tgl",
+              "installed": true
+            }
+          ],
+          "version": "tesseract 5.5.1"
+        }
+      }
+    },
+    {
+      "name": "onboarding skip and screenshot OCR",
+      "seconds": 4.267786314,
+      "detail": {
+        "regions": 12,
+        "text": "BSCE 3-A Group Chat\n\nMika (Class Rep)\n\nGuys!! Tomorrow ang pictorial ugma and\nmuch better all of us mag black pants\n\nMika (Class Rep)\n\nNo jeans please\n\nMika (Class Rep)\n\nMga 1:30PM kinahanglan naa na tanan sa\ncampus.\n\nMika (Class Rep)\n\nWala pa final ang exact time sa pictorial, i-\nannounce pa later."
+      }
+    },
+    {
+      "name": "native microphone capture and temporary recording cleanup",
+      "seconds": 1.7973386949999985,
+      "detail": {
+        "durationMs": 1450,
+        "transcribed": false
+      }
+    },
+    {
+      "name": "manual task save remains usable without inference",
+      "seconds": 0.6175366000000013,
+      "detail": {
+        "saved": true
+      }
+    },
+    {
+      "name": "returning native window preserves onboarding state",
+      "seconds": 5.811233390000001,
+      "detail": {
+        "persisted": true
+      }
+    }
+  ]
+}

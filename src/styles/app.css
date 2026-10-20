@@ -1474,3 +1474,11 @@
 .local-intelligence-notice p {
   margin: 0;
 }
+
+.reminder-health {
+  position: fixed;
+  top: 88px;
+  right: 24px;
+  max-width: 352px;
+  z-index: 60;
+}

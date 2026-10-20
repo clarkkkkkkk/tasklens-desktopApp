@@ -35,11 +35,11 @@ describe('local repository', () => {
     const r = new LocalStorageRepository(s);
     await expect(r.load()).rejects.toThrow('newer version of TaskLens');
     await expect(r.saveAction(action())).rejects.toThrow('kept intact');
-    expect(r.exportRaw()).toBe('{"version":99}');
+    expect(await r.exportRaw()).toBe('{"version":99}');
     s.setItem(STORAGE_KEY, '{"version":1,"actions":"oops"}');
     await expect(r.load()).rejects.toThrow('could not read this local data version');
     await expect(r.saveAction(action())).rejects.toThrow();
-    expect(r.exportRaw()).toBe('{"version":1,"actions":"oops"}');
+    expect(await r.exportRaw()).toBe('{"version":1,"actions":"oops"}');
   });
   it('reports denied/quota storage without claiming success', async () => {
     const r = new LocalStorageRepository({

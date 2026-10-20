@@ -1,11 +1,16 @@
 .onboarding {
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
   padding: var(--space-8);
   background: var(--app);
 }
 .onboarding-shell {
   max-width: var(--content-max);
   margin: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 .onboarding-header,
 .onboarding-brand,
@@ -47,13 +52,26 @@
 .onboarding-progress .filled {
   background: var(--accent);
 }
+.onboarding-header,
+.onboarding-progress,
+.onboarding-actions {
+  flex-shrink: 0;
+}
+.onboarding-stage {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  overflow-anchor: none;
+}
 .onboarding-step {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  align-items: center;
+  align-items: start;
   gap: var(--space-12);
-  min-height: 440px;
-  animation: onboarding-enter 300ms ease-out both;
+  padding: var(--space-4) 0;
+  min-height: 100%;
 }
 .onboarding-copy h1 {
   font-size: var(--text-hero);
@@ -90,7 +108,10 @@
   display: grid;
   gap: var(--space-4);
   min-width: 0;
-  animation: onboarding-enter 300ms ease-out both;
+}
+.onboarding-workflow-preview {
+  min-height: 280px;
+  align-content: start;
 }
 .onboarding-preview h2,
 .onboarding-preview h3,
@@ -115,6 +136,9 @@
   color: var(--text);
   font: inherit;
   cursor: pointer;
+  transition:
+    background-color 140ms,
+    border-color 140ms;
 }
 .onboarding-workflow button[aria-pressed='true'] {
   background: var(--accent-soft);
@@ -183,16 +207,6 @@
 }
 [hidden] {
   display: none !important;
-}
-@keyframes onboarding-enter {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
 }
 @media (max-width: 999px) {
   .onboarding-step {

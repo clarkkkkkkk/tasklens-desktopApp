@@ -378,3 +378,35 @@ Full browser run: 30 passed, three failed during concurrent native builds and de
 ### Integrated verification record — 2026-10-18
 
 Main integration merge `8f32047` preserves checkpoint `8713545` and upstream `cf09166`. Integrated checks passed: TypeScript/lint, formatting, frontend build, Cargo check/format, 62 frontend unit tests, 17 Rust tests, two asset tests and six targeted browser tests. One real-model test and two native opt-in tests remained skipped/ignored. Full integrated real-model and installed platform acceptance remain open. See [the integration record](docs/MAIN_INTEGRATION_2026-10-18.md) for conflict decisions, commands and limitations.
+
+## Motion refinement — 2026-10-19
+
+- [x] One onboarding composition with 90ms exit + 210ms entrance, unscaled headings, stable header/progress/footer and keyboard-accessible contained scrolling.
+- [x] Stable workflow preview identity and focus with short feedback; preserve demo edits and onboarding persistence.
+- [x] Retain shared 320ms/12px/full-opacity page entrances; remove independent Calendar and status entrances; verify active-page clicks and latest-navigation interruption behavior.
+- [x] Inert, aria-hidden measured brand handoff, Inbox ready behind the scrim, resize/reduced-motion settlement and bounded paused-compositor recovery.
+- [x] TypeScript/lint, formatting, production build, 62 unit tests and final full 45-test browser suite pass. One opt-in real-model unit evaluation remains skipped. The previously failing sample/navigation case also passed five consecutive targeted runs on the final version; diagnostic history is retained in the report.
+- [x] Observe the browser and compare original/revised recordings; test 1440×920, 900×640 and 600×640 layouts, existing axe checks, unsaved edits, voice review, search and restart persistence.
+- [ ] Native Tauri/WebKit/macOS visual and GPU-performance acceptance of this motion refinement. Browser testing does not certify native rendering or AI inference.
+
+Exact files, timings, measurements, recording locations and acceptance limits: [motion refinement report](docs/MOTION_REFINEMENT_2026-10-19.md). No AI/native/persistence changes or new animation dependencies. Work remains on `codex/motion-refinement`, without a push or main merge.
+
+## Native reliability — 2026-10-20 (in progress)
+
+- [x] Branch from clean main `af0a68f` into `codex/native-reliability`; preserve task key/schema, source evidence and AI implementation.
+- [x] Add delivery-journal worker, durable pause/reconcile protocol, explicit consent/preview, native submission outcomes and restart-safe claims/summary coverage.
+- [x] Add Settings controls, privacy-safe payload defaults, date-only/anchor checks, DST occurrence controls and shared close guards.
+- [x] Expanded Fedora isolated native run: ten OS submission/scheduling/lifecycle/restart checks passed, including real close/hide/reopen and one missed-summary submission without replay; no banner visibility claim.
+- [x] Frontend unit tests: 71 passed, one opt-in real-model evaluation skipped. Rust: 34 passed, two existing opt-in tests ignored.
+- [x] Final frontend check/format/build, 71 unit tests, all 46 browser tests on a frozen source copy, Rust check/format/build and 34 Rust tests passed. One real-model test skipped; two native fixture tests ignored. Full native acceptance script: eleven checks passed. Earlier interrupted/harness failures remain documented.
+- [ ] Milestone A gate: observed notification interaction/visibility, permission denial, suspend/resume, notification-center task activation and remaining desktop permission/suspend behavior. Actual guarded Quit, close/hide/reopen and missed-summary submission/deduplication have passed.
+- [ ] Finish Windows/macOS activation callbacks, Windows user ACLs and native platform verification.
+- [ ] B: validated backup envelopes/import/preview/conflicts/restore/recovery protection.
+- [ ] C: opt-in OS autostart registration, hidden login startup, deferred AI initialization, installer identity and login/relocation tests.
+- [ ] D: lossless canonical SQLite migration, atomic task/schedule writes, receipts, database recovery/live backups and no dual writes.
+- [ ] E: 100/1,000/5,000-task before/after benchmarks and completed native platform acceptance.
+
+Current implementation, honest limitations and encryption follow-up: [reliability checkpoint](docs/NATIVE_RELIABILITY.md). No milestone gate is inferred from compilation alone.
+
+- [x] Isolated real D-Bus unavailable-service acceptance: error propagation/status and guarded Quit passed without modifying the normal desktop service.
+- [x] Explicit custom-reminder editor approval preserves the saved UTC instant and source/notes; legacy custom values are not automatically approved on load. Native unit regression added; focused frontend regression passed. Actual native custom-reminder delivery remains unverified.

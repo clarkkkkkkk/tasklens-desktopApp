@@ -10,7 +10,7 @@ edition = "2021"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
 
 tauri-plugin-single-instance = "2"
 cpal = "0.15.3"
@@ -23,8 +23,17 @@ image = { version = "0.25", default-features = false, features = ["png", "jpeg",
 sha2 = "0.10"
 uuid = { version = "1", features = ["v4"] }
 rfd = "0.15"
+rusqlite = { version = "=0.40.2", features = ["bundled", "backup"] }
+chrono = { version = "=0.4.45", features = ["serde"] }
+chrono-tz = "=0.10.4"
+iana-time-zone = "=0.1.65"
+tokio = { version = "1", features = ["time"] }
+
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+notify-rust = "=4.18.1"
 
 [target.'cfg(windows)'.dependencies]
+windows = { version = "=0.62.2", features = ["UI_Notifications"] }
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security", "Win32_System_JobObjects", "Win32_System_Registry", "Win32_System_SystemInformation", "Win32_System_Threading"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
@@ -32,4 +41,8 @@ libc = "0.2"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2"
+objc2 = "=0.6.4"
+objc2-foundation = "=0.3.2"
+objc2-user-notifications = "=0.3.2"
+block2 = "=0.6.2"
 block = "0.1"

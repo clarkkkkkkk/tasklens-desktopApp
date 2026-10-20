@@ -11,23 +11,25 @@ export function buildReminders(
   selected: Settings['defaultReminders'] = [],
 ): Reminder[] {
   if (!date) return [];
-  const anchor = new Date(`${date}T${time || '09:00'}:00`);
+  const anchor = new Date(`${date}T${time || '00:00'}:00`);
   if (Number.isNaN(anchor.getTime())) return [];
-  return presets.map((p) => {
-    let when: Date;
-    if (p.id === 'night') {
-      when = parseLocalDate(date);
-      when.setDate(when.getDate() - 1);
-      when.setHours(20, 0, 0, 0);
-    } else when = new Date(anchor.getTime() - p.offsetMinutes * 60000);
-    return {
-      id: p.id,
-      label: p.label,
-      datetime: when.toISOString(),
-      enabled: selected.includes(p.id),
-      offsetMinutes: p.offsetMinutes,
-    };
-  });
+  return presets
+    .filter((p) => p.id === 'night' || !!time)
+    .map((p) => {
+      let when: Date;
+      if (p.id === 'night') {
+        when = parseLocalDate(date);
+        when.setDate(when.getDate() - 1);
+        when.setHours(20, 0, 0, 0);
+      } else when = new Date(anchor.getTime() - p.offsetMinutes * 60000);
+      return {
+        id: p.id,
+        label: p.label,
+        datetime: when.toISOString(),
+        enabled: selected.includes(p.id),
+        offsetMinutes: p.offsetMinutes,
+      };
+    });
 }
 export function rebaseReminders(item: ExtractedAction): ExtractedAction {
   const selected = presets
@@ -66,4 +68,13 @@ export class ConfigurationReminderScheduler implements ReminderScheduler {
       )
       .sort((a, b) => a.reminder.datetime.localeCompare(b.reminder.datetime));
   }
+}
+
+/** Explicit editor save approves the exact displayed custom instants; legacy values stay unapproved on load. */
+export function approveDisplayedReminders(reminders: Reminder[]): Reminder[] {
+  return reminders.map((reminder) =>
+    presets.some((preset) => preset.id === reminder.id)
+      ? reminder
+      : { ...reminder, customApproved: reminder.enabled },
+  );
 }

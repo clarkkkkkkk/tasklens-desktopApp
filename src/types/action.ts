@@ -24,6 +24,14 @@ export const reminderSchema = z.object({
   datetime: z.string().datetime({ offset: true }),
   enabled: z.boolean(),
   offsetMinutes: z.number().optional(),
+  customApproved: z.boolean().optional(),
+  approval: z
+    .object({
+      timezone: z.string().min(1).max(100),
+      anchorInstant: z.string().datetime({ offset: true }),
+      occurrence: z.enum(['first', 'second']),
+    })
+    .optional(),
 });
 /** Fields that can cite source evidence (OCR regions or transcript segments). */
 export const evidenceFields = [
