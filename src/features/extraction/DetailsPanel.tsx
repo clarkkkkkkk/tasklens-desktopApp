@@ -1,5 +1,4 @@
 import { SourceTranscript } from '../voice/SourceTranscript';
-import { useEntrance } from '../../components/motion/motion';
 import { useEffect, useRef, useState } from 'react';
 import {
   Bell,
@@ -80,7 +79,6 @@ export function DetailsPanel({
     [pending, setPending] = useState(false);
   const panel = useRef<HTMLElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
-  useEntrance(panel, action.id, 'panel', active);
   useEffect(() => {
     onPendingChange?.(pending);
   }, [pending, onPendingChange]);

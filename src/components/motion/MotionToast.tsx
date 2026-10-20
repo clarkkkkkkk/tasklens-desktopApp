@@ -1,9 +1,6 @@
-import { useState } from 'react';
 import { Check } from '../icons';
-/** Keep the last message painted during exit without announcing it again. */
+/** Status messages appear and disappear immediately. */
 export function MotionToast({ message }: { message: string }) {
-  const [lastMessage, setLastMessage] = useState(message);
-  if (message && message !== lastMessage) setLastMessage(message);
   return (
     <div
       className={`toast ${message ? 'visible' : ''}`}
@@ -11,10 +8,10 @@ export function MotionToast({ message }: { message: string }) {
       aria-live="polite"
       aria-hidden={!message}
     >
-      {lastMessage && (
+      {message && (
         <>
           <Check size={16} />
-          {lastMessage}
+          {message}
         </>
       )}
     </div>

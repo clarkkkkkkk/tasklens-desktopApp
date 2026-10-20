@@ -28,7 +28,6 @@
     outline-offset: 2px;
     background: color-mix(in srgb, var(--accent) 16%, transparent);
     pointer-events: none;
-    transition: opacity 140ms ease;
   }
   .source-trace > .field-help {
     color: var(--text);

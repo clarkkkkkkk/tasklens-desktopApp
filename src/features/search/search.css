@@ -27,7 +27,6 @@
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-search);
   overflow: hidden;
-  animation: search-open var(--search-enter-duration) var(--search-ease) both;
 }
 .workspace-search[open] {
   display: flex;
@@ -37,13 +36,6 @@
   background: color-mix(in srgb, var(--app) 55%, transparent);
   backdrop-filter: blur(var(--search-blur));
   -webkit-backdrop-filter: blur(var(--search-blur));
-  animation: search-backdrop-in var(--search-enter-duration) ease-out both;
-}
-.workspace-search.is-closing {
-  animation: search-close var(--search-exit-duration) ease-in both;
-}
-.workspace-search.is-closing::backdrop {
-  animation: search-backdrop-out var(--search-exit-duration) ease-in both;
 }
 .workspace-search-input {
   display: flex;
@@ -218,42 +210,7 @@
 .workspace-search-footer > button:hover {
   color: var(--text);
 }
-@keyframes search-open {
-  from {
-    opacity: 0;
-    transform: translateY(calc(-1 * var(--search-travel))) scale(0.99);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-@keyframes search-close {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(calc(-1 * var(--search-travel))) scale(0.99);
-  }
-}
-@keyframes search-backdrop-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes search-backdrop-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
+
 @media (max-width: 719px) {
   .workspace-search {
     width: calc(100% - var(--space-6));
@@ -273,7 +230,6 @@
 @media (prefers-reduced-motion: reduce) {
   .workspace-search,
   .workspace-search::backdrop {
-    animation: none;
     transform: none;
   }
 }

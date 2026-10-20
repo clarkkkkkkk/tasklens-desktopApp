@@ -90,7 +90,7 @@ test('workflow preview retains its card, selection focus and one motion owner', 
   }
 });
 
-test('all sidebar pages share one opaque entrance without moving shell or replaying updates', async ({
+test('all sidebar pages change immediately without moving the shell or animating content', async ({
   page,
 }) => {
   await page.goto('/');
@@ -114,26 +114,12 @@ test('all sidebar pages share one opaque entrance without moving shell or replay
     await button(page, name).click();
     await expect(page.getByRole('heading', { name, exact: true, level: 1 })).toBeVisible();
     await expect(button(page, name)).toHaveAttribute('aria-current', 'page');
-    const animations = await page.locator('.main-content').evaluate((element) => {
-      const all = element
-        .getAnimations({ subtree: true })
-        .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity);
-      return all.map((animation) => ({
-        target: (animation.effect as KeyframeEffect).target === element,
-        duration: animation.effect!.getTiming().duration,
-        frames: (animation.effect as KeyframeEffect)
-          .getKeyframes()
-          .map((frame) => ({ transform: frame.transform, opacity: frame.opacity })),
-      }));
-    });
-    expect(animations.length).toBeLessThanOrEqual(1);
-    for (const animation of animations) {
-      expect(animation.target).toBe(true);
-      expect(animation.duration).toBe(320);
-      expect(
-        animation.frames.every((frame) => frame.opacity === undefined || frame.opacity === '1'),
-      ).toBe(true);
-    }
+    expect(
+      await page
+        .locator('.main-content')
+        .evaluate((element) => element.getAnimations({ subtree: true }).length),
+    ).toBe(0);
+    await expect(page.locator('.main-content')).toHaveCSS('transform', 'none');
     await expect(page.locator('.main-content')).toHaveCSS('opacity', '1');
     expect(
       await page
@@ -277,4 +263,49 @@ test('resize and suspended brand animations cannot leave the workspace blocked',
     false,
   );
   await expect(page.locator('#main-content')).toBeFocused();
+});
+
+test('onboarding, previews, controls and dialogs are static while the logo intro still animates', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const noMotion = async () => {
+    expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+    expect(
+      await page.locator('button').evaluateAll((buttons) =>
+        buttons.every((button) =>
+          getComputedStyle(button)
+            .transitionDuration.split(',')
+            .every((duration) => parseFloat(duration) === 0),
+        ),
+      ),
+    ).toBe(true);
+  };
+  await noMotion();
+  await button(page, 'Get Started').click();
+  await expect(page.getByRole('heading', { name: 'From chaos to clarity.' })).toBeFocused();
+  await noMotion();
+  await page.getByRole('button', { name: /^Review/ }).click();
+  await noMotion();
+  await button(page, 'Continue').click();
+  await noMotion();
+  await button(page, 'Continue').click();
+  await expect(page.getByLabel('Sample location')).toHaveValue('Campus');
+  await noMotion();
+  await button(page, 'Start using TaskLens').click();
+  const intro = page.locator('.brand-handoff');
+  await expect(intro).toBeVisible();
+  expect(
+    await intro.evaluate((element) => element.getAnimations({ subtree: true }).length),
+  ).toBeGreaterThan(0);
+  await expect(intro).toHaveCount(0);
+  await noMotion();
+  await page.getByRole('button', { name: 'Search your workspace', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Search your workspace' })).toBeVisible();
+  await noMotion();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await button(page, 'New item').click();
+  await expect(page.getByLabel('Title', { exact: true })).toBeVisible();
+  await noMotion();
 });

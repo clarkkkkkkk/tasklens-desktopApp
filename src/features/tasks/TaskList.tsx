@@ -1,4 +1,3 @@
-import { animateMotion, prepareExit } from '../../components/motion/motion';
 import {
   CalendarDays,
   Check,
@@ -8,7 +7,7 @@ import {
   MapPin,
   RotateCcw,
 } from '../../components/icons';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { ExtractedAction } from '../../types/action';
 import { useApp } from '../../app/context';
 import { displayDate, displayTime } from '../../lib/dates';
@@ -28,31 +27,14 @@ export function TaskList({
   const { complete } = useApp();
   const [error, setError] = useState(''),
     [pending, setPending] = useState<string | null>(null);
-  const list = useRef<HTMLUListElement>(null);
   const busy = useRef(false);
-  const alive = useRef(true);
-  useEffect(() => {
-    alive.current = true;
-    return () => {
-      alive.current = false;
-    };
-  }, []);
   async function toggle(item: ExtractedAction) {
     if (busy.current) return;
     busy.current = true;
-    const row = Array.from(list.current?.children || []).find(
-      (node) => (node as HTMLElement).dataset.actionId === item.id,
-    ) as HTMLElement | undefined;
-    const exit = prepareExit(row || null);
     setPending(item.id);
     setError('');
     try {
       await complete(item);
-      requestAnimationFrame(() => {
-        if (!alive.current) return;
-        if (row?.isConnected) void animateMotion(row, 'feedback');
-        else exit();
-      });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to update item');
     } finally {
@@ -64,7 +46,7 @@ export function TaskList({
   return (
     <>
       {error && <ErrorState message={error} />}
-      <ul ref={list} className="task-list">
+      <ul className="task-list">
         {items.map((item) => {
           const completed = item.status === 'completed',
             overdue = isOverdue(item);

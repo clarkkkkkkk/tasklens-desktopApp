@@ -136,9 +136,6 @@
   color: var(--text);
   font: inherit;
   cursor: pointer;
-  transition:
-    background-color 140ms,
-    border-color 140ms;
 }
 .onboarding-workflow button[aria-pressed='true'] {
   background: var(--accent-soft);
@@ -224,7 +221,6 @@
 @media (prefers-reduced-motion: reduce) {
   .onboarding-step,
   .onboarding-preview {
-    animation: none;
     transform: none;
   }
 }

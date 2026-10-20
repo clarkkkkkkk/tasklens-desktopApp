@@ -194,7 +194,6 @@
     border-radius: var(--radius-sm);
     font-size: var(--text-control);
     color: var(--text);
-    transition: background-color var(--duration);
   }
   .segmented button.selected {
     background: var(--surface);

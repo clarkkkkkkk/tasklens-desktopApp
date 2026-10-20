@@ -26,10 +26,8 @@ interface SearchDialogProps {
 export function SearchDialog({ actions, loading, error, onClose, onSelect }: SearchDialogProps) {
   const dialog = useRef<HTMLDialogElement>(null);
   const input = useRef<HTMLInputElement>(null);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const closingRef = useRef(false);
   const composing = useRef(false);
-  const [closing, setClosing] = useState(false);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const id = useId();
@@ -52,7 +50,6 @@ export function SearchDialog({ actions, loading, error, onClose, onSelect }: Sea
     element?.showModal();
     input.current?.focus({ preventScroll: true });
     return () => {
-      clearTimeout(closeTimer.current);
       element?.close();
     };
   }, []);
@@ -67,21 +64,9 @@ export function SearchDialog({ actions, loading, error, onClose, onSelect }: Sea
   function dismiss(action?: ExtractedAction) {
     if (closingRef.current) return;
     closingRef.current = true;
-    setClosing(true);
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const duration = dialog.current
-      ? Number.parseFloat(
-          getComputedStyle(dialog.current).getPropertyValue('--search-exit-duration'),
-        )
-      : 0;
-    closeTimer.current = setTimeout(
-      () => {
-        dialog.current?.close();
-        onClose();
-        if (action) requestAnimationFrame(() => onSelect(action));
-      },
-      reducedMotion || !Number.isFinite(duration) ? 0 : duration,
-    );
+    dialog.current?.close();
+    onClose();
+    if (action) requestAnimationFrame(() => onSelect(action));
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLDialogElement>) {
@@ -111,7 +96,7 @@ export function SearchDialog({ actions, loading, error, onClose, onSelect }: Sea
   return (
     <dialog
       ref={dialog}
-      className={`workspace-search ${closing ? 'is-closing' : ''}`}
+      className="workspace-search"
       aria-labelledby={`${id}-title`}
       onKeyDown={onKeyDown}
       onCancel={(event) => {

@@ -6,7 +6,7 @@ import { LocalIntelligenceStatus } from './components/LocalIntelligenceStatus';
 import { BundleReview } from './features/voice/BundleReview';
 import { MotionToast } from './components/motion/MotionToast';
 import { BrandHandoff } from './components/motion/BrandHandoff';
-import { prepareExit, reducedMotion, useEntrance } from './components/motion/motion';
+import { reducedMotion } from './components/motion/motion';
 import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
 import { CURRENT_ONBOARDING_VERSION } from './features/onboarding/onboarding.constants';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -85,7 +85,6 @@ export default function App() {
     !loadError &&
     snapshot.settings.onboardingCompletedVersion < CURRENT_ONBOARDING_VERSION;
   const touring = !loadError && (replay || needsOnboarding || finishingTour);
-  useEntrance(pageContent, view, 'page', !touring && !loading);
   useLayoutEffect(() => {
     pageContent.current?.scrollTo(0, 0);
   }, [view]);
@@ -101,7 +100,6 @@ export default function App() {
     }
   }, [brandHandoff]);
   const exitReplay = useCallback(() => {
-    prepareExit(document.querySelector('.onboarding'), 160)();
     setReplay(false);
     setFinishingTour(false);
     requestAnimationFrame(() => replayOpener.current?.focus());
@@ -120,7 +118,6 @@ export default function App() {
         return;
       }
       focusVersion.current++;
-      document.querySelectorAll('.motion-exit-snapshot').forEach((node) => node.remove());
       opener.current =
         document.activeElement instanceof HTMLElement ? document.activeElement : null;
       setSelection(a);
@@ -159,10 +156,6 @@ export default function App() {
   }, [loading, dirty, voiceBusy, bundle, touring, snapshot.actions, onOpen, announce]);
   const onClose = useCallback(() => {
     const version = ++focusVersion.current;
-    prepareExit(
-      document.querySelector('.inbox-result-dialog[open]:not(.motion-exit-snapshot)') ||
-        document.querySelector('.details-panel:not(.motion-exit-snapshot)'),
-    )();
     setSelection(null);
     setDirty(false);
     requestAnimationFrame(() => {
@@ -213,7 +206,6 @@ export default function App() {
             if (tour) {
               tour.inert = true;
               tour.setAttribute('aria-hidden', 'true');
-              if (!showBrand) prepareExit(tour, 160)();
             }
             if (showBrand) setBrandHandoff({ firstRun: !replay });
             setFinishingTour(false);
@@ -248,7 +240,6 @@ export default function App() {
               announce('Save or close your current edits before changing views.');
               return;
             }
-            document.querySelectorAll('.motion-exit-snapshot').forEach((node) => node.remove());
             onClose();
             setCaptureHint(false);
             requestedView.current = v;

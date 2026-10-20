@@ -1,5 +1,4 @@
 import { MotionHeading } from '../../components/motion/MotionHeading';
-import { animateMotion, useEntrance } from '../../components/motion/motion';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, FileImage, CalendarDays, ShieldCheck } from '../../components/icons';
 import { useApp } from '../../app/context';
@@ -35,7 +34,6 @@ export function OnboardingFlow({
   );
   const [index, setIndex] = useState(0),
     [workflow, setWorkflow] = useState(0);
-  const [transitioning, setTransitioning] = useState(false);
   const [pending, setPending] = useState(false),
     [error, setError] = useState('');
   const [demo, setDemo] = useState<ExtractedAction | null>(null),
@@ -44,29 +42,13 @@ export function OnboardingFlow({
   const heading = useRef<HTMLHeadingElement>(null);
   const busy = useRef(false);
   const composition = useRef<HTMLElement>(null);
-  const preview = useRef<HTMLDivElement>(null);
-  const transition = useRef(0);
   const step = steps[index];
-  useEntrance(composition, index, 'onboarding');
   useLayoutEffect(() => {
     composition.current?.parentElement?.scrollTo(0, 0);
     heading.current?.focus({ preventScroll: true });
   }, [index]);
-  useEffect(
-    () => () => {
-      transition.current++;
-    },
-    [],
-  );
-  async function changeStep(next: number) {
-    if (next === index) return;
-    const request = ++transition.current;
-    setTransitioning(true);
-    if (composition.current) await animateMotion(composition.current, 'onboarding', 0, true);
-    if (request === transition.current) {
-      setIndex(next);
-      setTransitioning(false);
-    }
+  function changeStep(next: number) {
+    setIndex(Math.max(0, Math.min(next, steps.length - 1)));
   }
   useEffect(() => {
     if (!replay) return;
@@ -193,7 +175,6 @@ export function OnboardingFlow({
                   onSelect={(selected) => {
                     if (selected === workflow) return;
                     setWorkflow(selected);
-                    if (preview.current) void animateMotion(preview.current, 'feedback');
                   }}
                 />
               )}
@@ -223,7 +204,7 @@ export function OnboardingFlow({
                 </div>
               )}
               {step === 'workflow' && (
-                <div ref={preview} className="onboarding-preview onboarding-workflow-preview">
+                <div className="onboarding-preview onboarding-workflow-preview">
                   <span className="badge">Sample workflow</span>
                   {workflow === 0 ? (
                     <>
@@ -289,16 +270,13 @@ export function OnboardingFlow({
           </Button>
           <div>
             {index > 0 && (
-              <Button
-                disabled={pending || transitioning}
-                onClick={() => void changeStep(index - 1)}
-              >
+              <Button disabled={pending} onClick={() => void changeStep(index - 1)}>
                 Back
               </Button>
             )}
             <Button
               variant="primary"
-              disabled={pending || transitioning}
+              disabled={pending}
               onClick={
                 index === steps.length - 1
                   ? () => finish('complete')
