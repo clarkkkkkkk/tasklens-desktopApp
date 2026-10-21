@@ -25,7 +25,9 @@ export function BundleReview({
     return () => {
       element?.close();
       const target =
-        opener?.isConnected && opener !== document.body
+        opener?.isConnected &&
+        opener.matches('button, a[href], input, select, textarea, [role="button"]') &&
+        !opener.matches(':disabled')
           ? opener
           : document.querySelector<HTMLElement>('.inbox-view:not([hidden]) [data-voice-open]');
       target?.focus({ preventScroll: true });

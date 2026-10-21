@@ -84,6 +84,20 @@ export function Inbox({
     [diagnostics, setDiagnostics] = useState<Partial<ExtractionDiagnostics> | null>(null),
     [route, setRoute] = useState<RouteNotice | null>(null);
   const source = job?.source ?? null;
+  const owner = useRef<'voice' | 'image' | null>(null);
+  const [voiceActive, setVoiceActive] = useState(false);
+  const [selectedName, setSelectedName] = useState('');
+  const pendingImage = useRef<Promise<unknown> | null>(null);
+  const acquireVoice = useCallback(() => {
+    if (owner.current) return false;
+    owner.current = 'voice';
+    setVoiceActive(true);
+    return true;
+  }, []);
+  const releaseVoice = useCallback(() => {
+    if (owner.current === 'voice') owner.current = null;
+    setVoiceActive(false);
+  }, []);
   // Real elapsed seconds of the current run; drives the safety notice, never a fake percentage.
   const [elapsed, setElapsed] = useState(0),
     [notifyAfter, setNotifyAfter] = useState(EXTRACTION_SAFETY_SECONDS);
@@ -113,9 +127,14 @@ export function Inbox({
   );
   const defaults = snapshot.settings.defaultReminders;
   const process = useCallback(
-    async (next: Job) => {
+    async (next: Job, prepared = false) => {
+      if (locked || owner.current === 'voice' || (owner.current === 'image' && !prepared)) return;
+      owner.current = 'image';
       if (!next.demo && !componentsReady(intelligence, OCR_COMPONENTS)) {
         setError({ message: intelligence.message });
+        setBusy(false);
+        busyRef.current = false;
+        owner.current = null;
         return;
       }
       controller.current?.abort();
@@ -133,7 +152,7 @@ export function Inbox({
       setStep(-1);
       const service = next.demo ? services.demoExtraction : services.extraction;
       try {
-        const bundle = await service.extract(
+        const extraction = service.extract(
           { ...next.source, image: next.image },
           {
             signal: abort.signal,
@@ -141,6 +160,8 @@ export function Inbox({
             onRoute: (r) => current() && setRoute(r),
           },
         );
+        pendingImage.current = extraction;
+        const bundle = await extraction;
         if (!current()) return;
         setDiagnostics(bundle.diagnostics ?? null);
         if (!bundle.actions.length) {
@@ -176,14 +197,20 @@ export function Inbox({
         if (version === generation.current) {
           setBusy(false);
           busyRef.current = false;
+          owner.current = null;
         }
       }
     },
-    [intelligence, services, defaults],
+    [intelligence, services, defaults, locked],
   );
   const accept = useCallback(
     async (file: File, origin: Origin) => {
-      if (busyRef.current || locked) return;
+      if (owner.current || busyRef.current || locked) return;
+      owner.current = 'image';
+      setSelectedName(file.name);
+      pendingImage.current = null;
+      setJob(null);
+      setResults([]);
       onCaptureInteraction?.();
       const version = ++generation.current;
       busyRef.current = true;
@@ -209,12 +236,13 @@ export function Inbox({
           },
         };
         setJob(next);
-        await process(next);
+        await process(next, true);
       } catch (e) {
         if (version === generation.current) {
           setError({ message: e instanceof Error ? e.message : 'Unable to load image' });
           setBusy(false);
           busyRef.current = false;
+          owner.current = null;
         }
       }
     },
@@ -239,20 +267,25 @@ export function Inbox({
     window.addEventListener('paste', paste);
     return () => window.removeEventListener('paste', paste);
   }, [active, suspendPaste, accept]);
-  function cancel() {
+  async function cancel() {
     controller.current?.abort();
     generation.current++;
+    // Keep the cross-input gate until the extraction promise has actually stopped.
+    await pendingImage.current?.catch(() => {});
+    owner.current = null;
     busyRef.current = false;
     setBusy(false);
     setStep(-1);
     setError({ message: 'Processing was cancelled.', code: 'CANCELLED' });
   }
-  function remove() {
+  async function remove() {
+    if (busyRef.current) await cancel();
     controller.current?.abort();
     generation.current++;
-    busyRef.current = false;
+    owner.current = null;
     setBusy(false);
     setJob(null);
+    setSelectedName('');
     setResults([]);
     setDiagnostics(null);
     setRoute(null);
@@ -271,10 +304,7 @@ export function Inbox({
   }
   const demo = !!job?.demo || services.extraction.mode === 'mock';
   const latest = results.map((r) => snapshot.actions.find((a) => a.id === r.id) || r);
-  const stageLabel = (index: number) =>
-    index === 2 && route && !demo
-      ? `Understanding details locally with ${route.candidate.model.name}…`
-      : extractionSteps[index];
+  const stageLabel = (index: number) => extractionSteps[index];
   return (
     <section
       hidden={!active}
@@ -292,17 +322,34 @@ export function Inbox({
         <MotionHeading>Inbox</MotionHeading>
         <p>Turn screenshots and information into organized actions.</p>
       </div>
-      <VoiceCapture locked={locked || busy} onResult={onBundle} onGuardChange={onVoiceGuard} />
+      <VoiceCapture
+        locked={locked || busy}
+        onResult={onBundle}
+        onGuardChange={onVoiceGuard}
+        acquire={acquireVoice}
+        release={releaseVoice}
+        onOpenSettings={onOpenSettings}
+      />
+      {voiceActive && (
+        <p className="field-help">Finish or cancel your current capture to add a screenshot.</p>
+      )}
+      {busy && !source && (
+        <div className="capture-file-pending" role="status">
+          <FileImage size={18} />
+          <span>{selectedName}</span>
+          <strong>Preparing image…</strong>
+        </div>
+      )}
       {error && (
         <ErrorState message={error.message}>
           <div className="action-pair">
             {job && (
-              <Button onClick={() => void process(job)} disabled={busy || locked}>
+              <Button onClick={() => void process(job)} disabled={busy || locked || voiceActive}>
                 Try again
               </Button>
             )}
             {job && (
-              <Button onClick={remove} disabled={locked}>
+              <Button onClick={() => void remove()} disabled={locked || voiceActive}>
                 Choose another image
               </Button>
             )}
@@ -318,11 +365,11 @@ export function Inbox({
       {!source ? (
         <Dropzone
           onFile={(file) => void accept(file, 'file')}
-          disabled={busy || locked}
+          disabled={busy || locked || voiceActive}
           onError={(message) => setError({ message })}
         />
       ) : (
-        <div className="upload-card">
+        <div className="upload-card capture-region">
           <div className="upload-header">
             <FileImage size={17} />
             <span>{source.fileName}</span>
@@ -330,9 +377,9 @@ export function Inbox({
             <button
               className="icon-button"
               aria-label="Remove screenshot"
-              disabled={locked}
+              disabled={locked || voiceActive}
               title={locked ? 'Save or close your edits before removing the screenshot' : undefined}
-              onClick={remove}
+              onClick={() => void remove()}
             >
               <Trash2 size={16} />
             </button>
@@ -340,15 +387,10 @@ export function Inbox({
           <div className="preview-image">
             <img src={source.previewUrl} alt={`Preview of ${source.fileName}`} />
           </div>
-          <div
-            key={busy ? 'processing' : 'result'}
-            className="processing-area"
-            role="status"
-            aria-live="polite"
-          >
+          <div className="processing-area">
             <div className="processing-title">
               {busy ? <LoaderCircle size={17} className="spin" /> : <Check size={17} />}
-              <strong>
+              <strong role="status">
                 {busy
                   ? stageLabel(Math.max(0, Math.min(step, extractionSteps.length - 1)))
                   : results.length
@@ -389,7 +431,7 @@ export function Inbox({
                     Keep waiting
                   </Button>
                 )}
-                <Button onClick={cancel}>
+                <Button onClick={() => void cancel()}>
                   <X size={15} />
                   Cancel processing
                 </Button>
@@ -419,7 +461,11 @@ export function Inbox({
           <span>
             <Sparkles size={16} /> Just looking around?
           </span>
-          <button className="text-button" onClick={() => void sample()} disabled={busy || locked}>
+          <button
+            className="text-button"
+            onClick={() => void sample()}
+            disabled={busy || locked || voiceActive}
+          >
             Try a sample screenshot
             <ArrowRight size={14} />
           </button>

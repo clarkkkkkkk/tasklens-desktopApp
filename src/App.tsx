@@ -289,7 +289,7 @@ export default function App() {
                     }
                     captureHint={captureHint}
                     onCaptureInteraction={() => setCaptureHint(false)}
-                    locked={dirty || !!bundle || voiceBusy}
+                    locked={dirty || !!bundle}
                     onVoiceGuard={onVoiceGuard}
                     onBundle={setBundle}
                     onOpenSettings={() => {
@@ -374,7 +374,11 @@ export default function App() {
                   await voiceCancel.current?.();
                   setView(pendingView);
                   setPendingView(null);
-                })();
+                })().catch(() =>
+                  announce(
+                    'Capture cleanup could not finish. Stay here and restart TaskLens before capturing again.',
+                  ),
+                );
               }}
             >
               Stop and leave

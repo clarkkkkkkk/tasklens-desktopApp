@@ -265,7 +265,7 @@ test('resize and suspended brand animations cannot leave the workspace blocked',
   await expect(page.locator('#main-content')).toBeFocused();
 });
 
-test('onboarding, previews, controls and dialogs are static while the logo intro still animates', async ({
+test('onboarding, previews, non-capture controls and dialogs are static while the logo intro still animates', async ({
   page,
 }) => {
   await page.goto('/');
@@ -273,11 +273,13 @@ test('onboarding, previews, controls and dialogs are static while the logo intro
     expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
     expect(
       await page.locator('button').evaluateAll((buttons) =>
-        buttons.every((button) =>
-          getComputedStyle(button)
-            .transitionDuration.split(',')
-            .every((duration) => parseFloat(duration) === 0),
-        ),
+        buttons
+          .filter((button) => !button.closest('.capture-region'))
+          .every((button) =>
+            getComputedStyle(button)
+              .transitionDuration.split(',')
+              .every((duration) => parseFloat(duration) === 0),
+          ),
       ),
     ).toBe(true);
   };

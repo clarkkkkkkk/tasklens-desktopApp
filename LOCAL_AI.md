@@ -94,3 +94,7 @@ Invalid or silent speech is rejected before stopping the reusable extraction ser
 ### Main's compact-output v7 and prefix cache (2026-10-18)
 
 Prompt v7 generates an absent date/time/end_time/arrival_time/location as `null`; `expandCompactBundle` restores the full raw shape before the existing validator. The validator also derives an end time from a stated range written only in the start time. Each extraction first calls `local_ai_prewarm`, which restores the fixed system-prompt prefix from llama.cpp slot files in `app_data_dir()/prompt-cache` (named by model/path/prefix hash; older files removed) or evaluates and saves it once. llama-server gains `--slot-save-path`; it stays loopback-only with the per-launch key. The Inbox shows a Keep waiting / Cancel notice after 60 s of real processing; nothing is saved automatically. Measurements on the partner's host: `docs/evaluation/performance-optimization.md`. A complete Qwen3-4B suite and installed offline acceptance of the integrated build remain pending.
+
+### Cancellation reliability follow-up (2026-10-21)
+
+Native inference checks cancellation before submitting a request and before each socket read. Cancellation uses a terminal I/O error rather than `Interrupted`, which Rust buffered readers automatically retry. This releases the local model gate promptly after cancellation; it does not change inference quality or accelerate normal token generation. See `docs/evaluation/audio-performance-2026-10-21.md` for the real-model measurements, rejected cache experiment and verification limits.

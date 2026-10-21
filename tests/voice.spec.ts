@@ -5,7 +5,7 @@ test('voice review preserves transcripts, multiple drafts and saves only on conf
   page,
 }, testInfo) => {
   await page.goto('/tests/voice-harness.html');
-  await page.getByRole('button', { name: 'Voice', exact: true }).click();
+  await page.getByRole('button', { name: 'Record a voice note', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Recording', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Done recording' }).click();
   const dialog = page.getByRole('dialog', { name: 'Captured actions' });
@@ -45,11 +45,13 @@ test('voice review preserves transcripts, multiple drafts and saves only on conf
   await page.screenshot({ path: testInfo.outputPath('voice-review-600.png') });
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await dialog.getByRole('button', { name: 'Close review', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Voice', exact: true })).toBeFocused();
+  await expect(
+    page.getByRole('button', { name: 'Record a voice note', exact: true }),
+  ).toBeFocused();
 });
 test('cancellation and navigation discard prevent late results', async ({ page }) => {
   await page.goto('/tests/voice-harness.html?slow');
-  await page.getByRole('button', { name: 'Voice', exact: true }).click();
+  await page.getByRole('button', { name: 'Record a voice note', exact: true }).click();
   await page.getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByRole('button', { name: 'Keep capturing' }).click();
   await expect(page.getByRole('heading', { name: 'Recording', exact: true })).toBeVisible();
@@ -61,15 +63,15 @@ test('cancellation and navigation discard prevent late results', async ({ page }
 });
 test('permission failure, silence and retry are actionable', async ({ page }) => {
   await page.goto('/tests/voice-harness.html?denied');
-  await page.getByRole('button', { name: 'Voice', exact: true }).click();
+  await page.getByRole('button', { name: 'Record a voice note', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('microphone access');
   await page.goto('/tests/voice-harness.html?silence');
-  await page.getByRole('button', { name: 'Voice', exact: true }).click();
+  await page.getByRole('button', { name: 'Record a voice note', exact: true }).click();
   await page.getByRole('button', { name: 'Done recording' }).click();
   await expect(page.getByRole('alert')).toContainText('No clear speech');
   await page.goto('/tests/voice-harness.html?retry');
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.getByRole('button', { name: 'Voice', exact: true }).click();
+  await page.getByRole('button', { name: 'Record a voice note', exact: true }).click();
   await page.getByRole('button', { name: 'Done recording' }).click();
   await expect(page.getByRole('alert')).toContainText('Local extraction failed');
   await page.getByRole('button', { name: 'Retry extraction' }).click();
@@ -101,15 +103,18 @@ test('native close choices protect recordings and review edits with reduced moti
 }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/tests/voice-harness.html');
-  await page.getByRole('button', { name: 'Voice', exact: true }).click();
-  await expect(page.locator('.voice-level > span')).toHaveCSS('transform', 'none');
+  await page.getByRole('button', { name: 'Record a voice note', exact: true }).click();
+  await expect(page.locator('.voice-waveform > span').first()).toHaveCSS(
+    'transform',
+    'matrix(1, 0, 0, 0.12, 0, 0)',
+  );
   await page.evaluate(() => Reflect.get(window, 'voiceTest').requestClose());
   await page.getByRole('button', { name: 'Keep capturing', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Recording', exact: true })).toBeVisible();
   await page.evaluate(() => Reflect.get(window, 'voiceTest').requestClose());
   await page.getByRole('button', { name: 'Stop and discard', exact: true }).click();
   await expect.poll(() => page.evaluate(() => Reflect.get(window, 'voiceTest').closed)).toBe(1);
-  await page.getByRole('button', { name: 'Voice', exact: true }).click();
+  await page.getByRole('button', { name: 'Record a voice note', exact: true }).click();
   await page.getByRole('button', { name: 'Done recording', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Captured actions' });
   await dialog.getByRole('button', { name: 'Edit details', exact: true }).click();

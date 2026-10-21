@@ -20,6 +20,14 @@ struct Cancellable<'a> {
 impl Read for Cancellable<'_> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         loop {
+            if self.cancel.is_some_and(|c| c.load(Ordering::SeqCst)) {
+                // read_exact/read_until transparently retry Interrupted. Cancellation must
+                // escape those helpers so dropping the connection stops native generation.
+                return Err(io::Error::other(CANCELLED_IO));
+            }
+            if Instant::now() > self.deadline {
+                return Err(io::Error::new(io::ErrorKind::TimedOut, "deadline"));
+            }
             match self.stream.read(buf) {
                 Err(e)
                     if matches!(
@@ -27,12 +35,7 @@ impl Read for Cancellable<'_> {
                         io::ErrorKind::WouldBlock | io::ErrorKind::TimedOut
                     ) =>
                 {
-                    if self.cancel.is_some_and(|c| c.load(Ordering::SeqCst)) {
-                        return Err(io::Error::new(io::ErrorKind::Interrupted, CANCELLED_IO));
-                    }
-                    if Instant::now() > self.deadline {
-                        return Err(io::Error::new(io::ErrorKind::TimedOut, "deadline"));
-                    }
+                    continue;
                 }
                 other => return other,
             }
@@ -57,6 +60,11 @@ pub fn send(
     request: Request<'_>,
     mut sink: impl FnMut(&[u8]) -> io::Result<()>,
 ) -> io::Result<u16> {
+    // A queued extraction may have been cancelled before it acquired the model gate.
+    // Do not submit it to the runtime at all.
+    if request.cancel.is_some_and(|c| c.load(Ordering::SeqCst)) {
+        return Err(io::Error::other(CANCELLED_IO));
+    }
     let address = SocketAddr::from((Ipv4Addr::LOCALHOST, request.port));
     let stream = TcpStream::connect_timeout(&address, Duration::from_secs(2))?;
     stream.set_read_timeout(Some(Duration::from_millis(200)))?;
@@ -217,6 +225,75 @@ mod tests {
         assert_eq!(get(port), (200, b"hello world".to_vec()));
         let port = serve(b"HTTP/1.1 503 Service Unavailable\r\nContent-Length: 2\r\n\r\n{}");
         assert_eq!(get(port), (503, b"{}".to_vec()));
+    }
+
+    #[test]
+    fn cancelled_request_never_connects() {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let cancel = AtomicBool::new(true);
+        let error = send(
+            Request {
+                port: listener.local_addr().unwrap().port(),
+                method: "POST",
+                path: "/completion",
+                api_key: None,
+                body: None,
+                timeout: Duration::from_secs(5),
+                cancel: Some(&cancel),
+            },
+            |_| Ok(()),
+        )
+        .unwrap_err();
+        assert_eq!(error.to_string(), CANCELLED_IO);
+        assert_eq!(
+            listener.accept().unwrap_err().kind(),
+            io::ErrorKind::WouldBlock
+        );
+    }
+
+    #[test]
+    fn cancellation_escapes_buffered_read_exact() {
+        use std::sync::{mpsc, Arc};
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let (ready, waiting) = mpsc::channel();
+        let (release, finish) = mpsc::channel();
+        let server = std::thread::spawn(move || {
+            let (mut socket, _) = listener.accept().unwrap();
+            let mut request = [0; 4096];
+            socket.read(&mut request).unwrap();
+            socket
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\nx")
+                .unwrap();
+            ready.send(()).unwrap();
+            let _ = finish.recv_timeout(Duration::from_secs(3));
+        });
+        let cancel = Arc::new(AtomicBool::new(false));
+        let worker_flag = cancel.clone();
+        let worker = std::thread::spawn(move || {
+            send(
+                Request {
+                    port,
+                    method: "GET",
+                    path: "/completion",
+                    api_key: None,
+                    body: None,
+                    timeout: Duration::from_secs(5),
+                    cancel: Some(&worker_flag),
+                },
+                |_| Ok(()),
+            )
+        });
+        waiting.recv().unwrap();
+        let started = Instant::now();
+        cancel.store(true, Ordering::SeqCst);
+        let error = worker.join().unwrap().unwrap_err();
+        let _ = release.send(());
+        server.join().unwrap();
+        assert_eq!(error.to_string(), CANCELLED_IO);
+        assert_ne!(error.kind(), io::ErrorKind::Interrupted);
+        assert!(started.elapsed() < Duration::from_secs(2));
     }
 
     #[test]

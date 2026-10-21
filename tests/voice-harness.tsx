@@ -1,4 +1,10 @@
 // Explicit test entrypoint. Never imported by the production application.
+// Match production stylesheet order so CSS layers and fonts render accurately.
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '@fontsource/inter/latin-600.css';
+import '../src/styles/app.css';
+import '../src/components/motion/motion.css';
 import ReactDOM from 'react-dom/client';
 import App from '../src/App';
 import { AppProvider } from '../src/app/AppProvider';
@@ -11,8 +17,6 @@ import { validateExtraction } from '../src/services/extraction/validation/valida
 import { rawBundle, rawItem } from './fixtures/extraction/raw';
 import { defaultSettings } from '../src/types/action';
 import { phrases, transcript } from './fixtures/voice';
-import '../src/styles/app.css';
-import '../src/components/motion/motion.css';
 const query = new URLSearchParams(location.search);
 if (!localStorage.getItem('tasklens:data:v1'))
   localStorage.setItem(
@@ -24,6 +28,10 @@ if (!localStorage.getItem('tasklens:data:v1'))
     }),
   );
 const services = createServices();
+let recordingTimer: ReturnType<typeof setInterval> | undefined;
+const amplitudeSamples = [0, 0.02, 0.12, 0.32, 0.55, 0.2, 0.04, 0];
+let starts = 0,
+  imports = 0;
 let cancelled = 0,
   attempts = 0,
   closed = 0,
@@ -35,6 +43,9 @@ Object.assign(window, {
       closeRequest?.(async () => {
         closed++;
       });
+    },
+    get starts() {
+      return starts;
     },
     get closed() {
       return closed;
@@ -53,17 +64,33 @@ Object.assign(window, {
 services.voice = {
   available: true,
   async start(level) {
+    starts++;
     if (query.has('denied'))
       throw new Error('TaskLens needs microphone access to record voice notes.');
-    level(8000, 0.3);
+    let tick = 0;
+    level(0, 0);
+    recordingTimer = setInterval(() => {
+      tick++;
+      level(tick * 100, query.has('quiet') ? 0 : amplitudeSamples[tick % amplitudeSamples.length]);
+    }, 100);
     return { jobId: crypto.randomUUID(), capturedAt: '2026-10-11T04:00:00.000Z' };
   },
-  async stop() {},
-  async importFile(file) {
+  async stop() {
+    clearInterval(recordingTimer);
+    if (query.has('staged')) await new Promise((resolve) => setTimeout(resolve, 500));
+  },
+  async importFile(file, signal) {
+    imports++;
+    if (query.has('import-fails-once') && imports === 1)
+      throw new Error('Audio import interrupted.');
+    if (query.has('staged')) await new Promise((resolve) => setTimeout(resolve, 500));
+    signal.throwIfAborted();
     return { jobId: crypto.randomUUID(), fileName: file.name };
   },
   async cancel() {
     cancelled++;
+    clearInterval(recordingTimer);
+    if (query.has('cleanup-fails')) throw new Error('Fixture cleanup failed');
   },
   async guardClose(handler) {
     closeRequest = handler;
@@ -73,8 +100,13 @@ services.voice = {
   },
 };
 services.speech = {
-  async transcribe(_source, signal) {
-    await new Promise((resolve) => setTimeout(resolve, query.has('slow') ? 1500 : 50));
+  async transcribe(_source, signal, progress) {
+    progress('preprocessing');
+    if (query.has('staged')) await new Promise((resolve) => setTimeout(resolve, 500));
+    progress('transcribing');
+    await new Promise((resolve) =>
+      setTimeout(resolve, query.has('slow') || query.has('staged') ? 1500 : 50),
+    );
     signal.throwIfAborted();
     if (query.has('silence')) throw new Error('No clear speech was detected.');
     return transcript(`${phrases[0]} ${phrases[2]}`);
@@ -82,8 +114,13 @@ services.speech = {
 };
 services.extraction = {
   mode: 'local',
-  async extract(input, { signal }) {
+  async extract(input, { signal, onProgress }) {
     attempts++;
+    onProgress(2);
+    if (query.has('staged')) await new Promise((resolve) => setTimeout(resolve, 1500));
+    signal.throwIfAborted();
+    onProgress(3);
+    if (query.has('staged')) await new Promise((resolve) => setTimeout(resolve, 500));
     signal.throwIfAborted();
     // Slow on-device run: never finishes on its own, only on cancellation.
     if (query.has('hang'))
