@@ -33,7 +33,8 @@ test('voice review preserves transcripts, multiple drafts and saves only on conf
   await expect(dialog.getByText('Discard your unsaved edits?')).toBeVisible();
   await dialog.getByRole('button', { name: 'Keep editing' }).click();
   await dialog.getByRole('button', { name: 'Confirm & save', exact: true }).click();
-  await expect(dialog.getByRole('button', { name: 'Mark completed' })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Consultation', exact: true })).toBeVisible();
+  await expect(dialog.getByLabel('Review action')).toHaveValue('1');
   const actions = await page.evaluate(
     () => JSON.parse(localStorage.getItem('tasklens:data:v1')!).actions,
   );
@@ -45,9 +46,7 @@ test('voice review preserves transcripts, multiple drafts and saves only on conf
   await page.screenshot({ path: testInfo.outputPath('voice-review-600.png') });
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await dialog.getByRole('button', { name: 'Close review', exact: true }).click();
-  await expect(
-    page.getByRole('button', { name: 'Record a voice note', exact: true }),
-  ).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Review actions', exact: true })).toBeFocused();
 });
 test('cancellation and navigation discard prevent late results', async ({ page }) => {
   await page.goto('/tests/voice-harness.html?slow');

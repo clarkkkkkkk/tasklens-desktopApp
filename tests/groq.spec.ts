@@ -2,18 +2,25 @@ import { expect, test, type Page } from '@playwright/test';
 async function cloud(page: Page, query = '') {
   await page.goto(`/tests/groq-harness.html?${query}`);
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByLabel('Groq API key', { exact: true }).fill('synthetic-fixture-key');
-  await page.getByRole('button', { name: 'Connect API key', exact: true }).click();
-  await expect(page.getByLabel('Groq API key', { exact: true })).toHaveValue('');
   await page.getByRole('radio', { name: 'Groq Cloud', exact: false }).click();
-  await expect(page.getByRole('region', { name: 'Groq privacy disclosure' })).toBeVisible();
-  expect(await page.evaluate(() => Reflect.get(window, 'groqTest').counts.generated)).toBe(0);
-  await page.getByRole('button', { name: 'Agree and select Groq Cloud' }).click();
-  await expect(page.getByText('Groq Cloud selected.', { exact: true })).toBeVisible();
+  await completeWizard(page);
   expect(await page.evaluate(() => localStorage.getItem('tasklens:data:v1'))).not.toContain(
     'synthetic-fixture-key',
   );
   await page.getByRole('button', { name: /^Inbox/ }).click();
+}
+async function completeWizard(page: Page) {
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await page.getByRole('button', { name: 'I have my key', exact: true }).click();
+  await page.getByLabel('Groq API key', { exact: true }).fill('synthetic-fixture-key');
+  await page.getByRole('button', { name: 'Connect & verify', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Privacy permission', exact: true }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => Reflect.get(window, 'groqTest').counts.generated)).toBe(0);
+  await page.getByRole('checkbox', { name: 'I agree to send source text to Groq' }).check();
+  await page.getByRole('button', { name: 'Agree & continue', exact: true }).click();
+  await page.getByRole('button', { name: 'Start using TaskLens', exact: true }).click();
 }
 test('consent precedes extraction, cloud text works without Qwen, and review stays explicit', async ({
   page,
@@ -52,7 +59,7 @@ test('cancels online capture and allows a manual task without saving a late resu
   await page
     .getByLabel('Upload screenshot')
     .setInputFiles('tests/fixtures/screenshots/pictorial.png');
-  await expect(page.getByText('Sending for online extraction…', { exact: true })).toBeVisible();
+  await expect(page.getByText('Sending securely…', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Cancel processing', exact: true }).click();
   await expect(page.getByLabel('Screenshot capture')).toHaveAttribute('data-state', 'cancelled');
   await page.getByRole('button', { name: 'Create task manually', exact: true }).click();
@@ -64,12 +71,19 @@ test('cancels online capture and allows a manual task without saving a late resu
 test('invalid keys, session status and disconnect are clear', async ({ page }) => {
   await page.goto('/tests/groq-harness.html');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Connect API key', exact: true }).click();
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await page.getByRole('button', { name: 'I have my key', exact: true }).click();
   await page.getByLabel('Groq API key', { exact: true }).fill('invalid');
-  await page.getByRole('button', { name: 'Connect API key', exact: true }).click();
+  await page.getByRole('button', { name: 'Connect & verify', exact: true }).click();
   await expect(page.getByText('Groq rejected this API key.', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Groq API key', { exact: true })).toHaveValue('');
   await page.getByLabel('Groq API key', { exact: true }).fill('synthetic-fixture-key');
-  await page.getByRole('button', { name: 'Connect API key', exact: true }).click();
-  await expect(page.getByText('Connected · Session only', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: 'Retry connection', exact: true }).click();
+  await page.getByRole('button', { name: 'Cancel & use Offline AI', exact: true }).click();
+  await expect(
+    page.getByText('Session only — reconnect after restarting.', { exact: true }),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Disconnect API key', exact: true }).click();
   await expect(page.getByText('Not connected', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => Reflect.get(window, 'groqTest').connection.consent)).toBe(false);

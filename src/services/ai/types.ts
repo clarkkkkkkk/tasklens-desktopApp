@@ -124,7 +124,7 @@ export interface AIResponse {
 }
 
 export interface AIProcessingStatus {
-  stage: 'queued' | 'waiting' | 'sending';
+  stage: 'queued' | 'waiting' | 'sending' | 'processing';
   retryAt?: number | null;
 }
 

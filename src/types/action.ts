@@ -175,6 +175,7 @@ export const localAISettingsSchema = z.object({
  * credentials.
  */
 export const aiRoutingSettingsSchema = z.object({
+  modeChoiceCompleted: z.boolean().default(false),
   executionMode: z.enum(['local', 'groq']).catch('local').default('local'),
   mode: z.enum(aiModes).catch('automatic'),
   priority: z.enum(aiPriorities).catch('balanced'),

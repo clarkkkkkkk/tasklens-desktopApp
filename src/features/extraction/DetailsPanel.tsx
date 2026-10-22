@@ -1,5 +1,5 @@
 import { SourceTranscript } from '../voice/SourceTranscript';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useImperativeHandle, type Ref } from 'react';
 import {
   Bell,
   CalendarDays,
@@ -17,10 +17,11 @@ import { useApp } from '../../app/context';
 import { Button, ConfidenceBadge, ErrorState } from '../../components/ui';
 import { confirmAction } from '../../lib/actions';
 import { displayDate, displayTime } from '../../lib/dates';
+import { actionSchema } from '../../types/action';
 import type { ConfidenceLevel, ExtractedAction, ExtractionAmbiguity } from '../../types/action';
 import { buildReminders, rebaseReminders } from '../../services/reminders/ReminderScheduler';
 import { findTimes } from '../../services/extraction/validation/temporal';
-import { ActionEditor } from './ActionEditor';
+import { ActionEditor, type SaveIntent, type EditorHandle } from './ActionEditor';
 import { OpenQuestions } from './OpenQuestions';
 import { evidenceFor } from './evidence';
 import { SourceTrace, type TraceTarget } from './SourceTrace';
@@ -41,8 +42,13 @@ const FIELD_LABELS: Record<string, string> = {
   location: 'Location',
   requirements: 'Requirements',
 };
+export interface ReviewHandle {
+  prepare: (intent: SaveIntent) => ExtractedAction;
+  save: (item: ExtractedAction, intent: SaveIntent) => Promise<void>;
+}
 export function DetailsPanel({
   action: original,
+  reviewRef,
   onClose,
   onSaved,
   onCalendar,
@@ -50,16 +56,19 @@ export function DetailsPanel({
   floating = false,
   active = true,
   hideCalendar = false,
+  reviewBusy = false,
   onPendingChange,
 }: {
   action: ExtractedAction;
+  reviewRef?: Ref<ReviewHandle>;
   onClose: () => void;
-  onSaved: (a: ExtractedAction) => void;
+  onSaved: (a: ExtractedAction, intent: SaveIntent) => void;
   onCalendar: (a: ExtractedAction) => void;
   onDirtyChange: (dirty: boolean) => void;
   floating?: boolean;
   active?: boolean;
   hideCalendar?: boolean;
+  reviewBusy?: boolean;
   onPendingChange?: (pending: boolean) => void;
 }) {
   const { save, remove, complete, snapshot } = useApp();
@@ -93,7 +102,7 @@ export function DetailsPanel({
   }, [dirty, onDirtyChange]);
   const saved = snapshot.actions.some((a) => a.id === action.id);
   useEffect(() => {
-    if (action.title && active) panel.current?.focus();
+    if (action.title && active) panel.current?.focus({ preventScroll: true });
   }, [action.id, action.title, active]);
   useEffect(() => {
     if (floating || !active) return;
@@ -108,23 +117,43 @@ export function DetailsPanel({
     return () => window.removeEventListener('keydown', key);
   }, [dirty, pending, floating, active, onClose]);
   function dismiss() {
-    if (pending) return;
+    if (pending || reviewBusy || saving.current) return;
     if (dirty) setDiscard(true);
     else onClose();
   }
-  async function persist(item: ExtractedAction) {
-    await save(item);
-    setPatch(null);
-    setDirty(false);
-    setEditing(false);
-    onSaved(item);
+  const editor = useRef<EditorHandle>(null);
+  const saving = useRef(false);
+  function prepare(intent: SaveIntent) {
+    if (editing && editor.current) return editor.current.prepare(intent);
+    return actionSchema.parse(intent === 'confirm' ? confirmAction(action) : action);
   }
+  async function persist(item: ExtractedAction, intent: SaveIntent = 'draft') {
+    if (saving.current) throw new Error('A save is already in progress.');
+    saving.current = true;
+    setPending(true);
+    onPendingChange?.(true);
+    try {
+      const valid = actionSchema.parse(item);
+      await save(valid);
+      setPatch(null);
+      setDirty(false);
+      onDirtyChange(false);
+      setEditing(false);
+      onSaved(valid, intent);
+    } finally {
+      saving.current = false;
+      setPending(false);
+      onPendingChange?.(false);
+    }
+  }
+  useImperativeHandle(reviewRef, () => ({ prepare, save: persist }));
   function showSource(label: string, ids: string[]) {
     setTrace({ label, ids });
     if (traceRef.current) traceRef.current.open = true;
     requestAnimationFrame(() => traceRef.current?.scrollIntoView({ block: 'nearest' }));
   }
   function change(changes: Partial<ExtractedAction>) {
+    if (saving.current || reviewBusy) return;
     setPatch({
       id: action.id,
       changes: { ...(patch?.id === action.id ? patch.changes : {}), ...changes },
@@ -169,7 +198,10 @@ export function DetailsPanel({
     ) : null;
   };
   const badge = (level?: ConfidenceLevel) => level && <ConfidenceBadge level={level} />;
+  const operating = useRef(false);
   async function run(operation: () => Promise<void>) {
+    if (operating.current || saving.current || reviewBusy) return;
+    operating.current = true;
     setError('');
     setPending(true);
     try {
@@ -177,6 +209,7 @@ export function DetailsPanel({
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not update this item');
     } finally {
+      operating.current = false;
       setPending(false);
     }
   }
@@ -197,7 +230,7 @@ export function DetailsPanel({
         <button
           className="icon-button"
           aria-label="Close details"
-          disabled={pending}
+          disabled={pending || reviewBusy}
           onClick={dismiss}
         >
           <X size={18} />
@@ -208,6 +241,7 @@ export function DetailsPanel({
           <p>Discard your unsaved edits?</p>
           <Button
             onClick={() => {
+              if (saving.current || operating.current || reviewBusy) return;
               setDirty(false);
               onClose();
             }}
@@ -220,6 +254,9 @@ export function DetailsPanel({
       {editing ? (
         <ActionEditor
           action={action}
+          reviewRef={editor}
+          active={active}
+          externalPending={pending || reviewBusy}
           defaults={snapshot.settings.defaultReminders}
           onSave={persist}
           onDirty={() => setDirty(true)}
@@ -258,7 +295,7 @@ export function DetailsPanel({
             )}
             <OpenQuestions
               questions={action.ambiguities ?? []}
-              disabled={pending}
+              disabled={pending || reviewBusy}
               onAnswer={answer}
               onDismiss={(q) =>
                 change({ ambiguities: (action.ambiguities ?? []).filter((a) => a.id !== q.id) })
@@ -413,7 +450,7 @@ export function DetailsPanel({
                 <p>Delete “{action.title}” from this device?</p>
                 <Button
                   variant="danger"
-                  disabled={pending}
+                  disabled={pending || reviewBusy}
                   onClick={() =>
                     void run(async () => {
                       await remove(action.id);
@@ -432,8 +469,8 @@ export function DetailsPanel({
               <>
                 <Button
                   variant="primary"
-                  disabled={pending}
-                  onClick={() => void run(() => persist(confirmAction(action)))}
+                  disabled={pending || reviewBusy}
+                  onClick={() => void run(() => persist(prepare('confirm'), 'confirm'))}
                 >
                   <Check size={16} />
                   Confirm & save {action.type}
@@ -443,7 +480,10 @@ export function DetailsPanel({
                     <Pencil size={15} />
                     Edit details
                   </Button>
-                  <Button disabled={pending} onClick={() => void run(() => persist(action))}>
+                  <Button
+                    disabled={pending || reviewBusy}
+                    onClick={() => void run(() => persist(action))}
+                  >
                     Save draft
                   </Button>
                 </div>
@@ -453,14 +493,17 @@ export function DetailsPanel({
               <>
                 <Button
                   variant="primary"
-                  disabled={pending}
+                  disabled={pending || reviewBusy}
                   onClick={() =>
                     void run(async () => {
                       await complete(action);
-                      onSaved({
-                        ...action,
-                        status: action.status === 'completed' ? 'confirmed' : 'completed',
-                      });
+                      onSaved(
+                        {
+                          ...action,
+                          status: action.status === 'completed' ? 'confirmed' : 'completed',
+                        },
+                        'update',
+                      );
                     })
                   }
                 >
@@ -482,7 +525,12 @@ export function DetailsPanel({
               </>
             )}
             {saved && (
-              <Button variant="ghost" className="delete-action" onClick={() => setDeleting(true)}>
+              <Button
+                variant="ghost"
+                className="delete-action"
+                disabled={pending || reviewBusy}
+                onClick={() => setDeleting(true)}
+              >
                 <Trash2 size={14} />
                 Delete item
               </Button>

@@ -93,8 +93,10 @@ export function Inbox({
   onVoiceGuard: (cancel: (() => Promise<void>) | null) => void;
   onOpenSettings: () => void;
 }) {
-  const { services, snapshot } = useApp();
+  const { services, snapshot, processing, ensureProcessing } = useApp();
   const { status: intelligence } = useLocalIntelligence();
+  const intelligenceRef = useRef(intelligence);
+  intelligenceRef.current = intelligence;
   const [job, setJob] = useState<Job | null>(null),
     [step, setStep] = useState(-1),
     [busy, setBusy] = useState(false),
@@ -103,7 +105,9 @@ export function Inbox({
     [diagnostics, setDiagnostics] = useState<Partial<ExtractionDiagnostics> | null>(null),
     [route, setRoute] = useState<RouteNotice | null>(null);
   const source = job?.source ?? null;
-  const cloud = snapshot.settings.ai.executionMode === 'groq' && !job?.demo;
+  const cloud =
+    (route ? route.candidate.provider.kind === 'cloud' : processing.effectiveMode === 'groq') &&
+    !job?.demo;
   const [onlineStatus, setOnlineStatus] = useState('');
   const [phase, setPhase] = useState<ScreenshotPhase>('idle');
   const [checkpoint, setCheckpoint] = useState<OcrCheckpoint | null>(null);
@@ -158,7 +162,15 @@ export function Inbox({
     async (next: Job, prepared = false) => {
       if (locked || owner.current === 'voice' || (owner.current === 'image' && !prepared)) return;
       owner.current = 'image';
-      if (!next.demo && !componentsReady(intelligence, OCR_COMPONENTS)) {
+      if (!next.demo && !(await ensureProcessing())) {
+        owner.current = null;
+        busyRef.current = false;
+        setBusy(false);
+        setPhase('cancelled');
+        setError({ message: 'Setup closed. Your screenshot is retained.', code: 'CANCELLED' });
+        return;
+      }
+      if (!next.demo && !componentsReady(intelligenceRef.current, OCR_COMPONENTS)) {
         setError({ message: intelligence.message });
         setPhase('failed');
         setBusy(false);
@@ -208,7 +220,9 @@ export function Inbox({
                     ? 'Waiting for the active Groq extraction…'
                     : state.stage === 'waiting'
                       ? `Waiting for rate-limit reset${state.retryAt ? ` at ${new Date(state.retryAt).toLocaleTimeString()}` : ''}…`
-                      : 'Sending for online extraction…',
+                      : state.stage === 'processing'
+                        ? 'Processing online…'
+                        : 'Sending securely…',
                 );
             },
             onRoute: (r) => current() && setRoute(r),
@@ -263,7 +277,7 @@ export function Inbox({
         }
       }
     },
-    [intelligence, services, defaults, locked, preserveOcr],
+    [intelligence, services, defaults, locked, preserveOcr, ensureProcessing],
   );
   const accept = useCallback(
     async (file: File, origin: Origin) => {
@@ -382,7 +396,11 @@ export function Inbox({
       <div className="action-pair">
         {job && (
           <Button onClick={() => void process(job)} disabled={busy || locked || voiceActive}>
-            {checkpoint ? 'Retry understanding details' : 'Try again'}
+            {processing.preferredMode === 'groq' && processing.effectiveMode === 'local'
+              ? 'Retry locally'
+              : checkpoint
+                ? 'Retry understanding details'
+                : 'Try again'}
           </Button>
         )}
         {job && (
@@ -422,6 +440,17 @@ export function Inbox({
         <MotionHeading>Inbox</MotionHeading>
         <p>Turn screenshots and information into organized actions.</p>
       </div>
+      {processing.effectiveMode === 'local' &&
+        (processing.connection.connectivity !== 'online' ||
+          processing.connection.resumeRequired) && (
+          <p className="field-help" role="status">
+            {processing.connection.connectivity === 'offline'
+              ? 'Offline — using Local AI.'
+              : processing.connection.resumeRequired
+                ? 'Groq unavailable — using Local AI. Select Groq Cloud to resume.'
+                : 'Connectivity unavailable — using Local AI.'}
+          </p>
+        )}
       <VoiceCapture
         locked={locked || busy}
         onResult={onBundle}
@@ -474,7 +503,7 @@ export function Inbox({
           <div className="processing-area">
             <div className="processing-title">
               {busy ? (
-                <LoaderCircle size={17} className="spin" />
+                <LoaderCircle size={17} className="capture-spinner" />
               ) : phase === 'review-ready' ? (
                 <Check size={17} />
               ) : phase === 'failed' ? (
@@ -482,7 +511,7 @@ export function Inbox({
               ) : (
                 <FileImage size={17} />
               )}
-              <strong role="status">
+              <strong role="status" className={busy ? 'capture-running' : undefined}>
                 {busy
                   ? stageLabel(Math.max(0, Math.min(step, extractionSteps.length - 1)))
                   : phase === 'review-ready'
@@ -643,7 +672,7 @@ export function Inbox({
         <p>
           Your screenshots stay on this device.{' '}
           <span>
-            {cloud
+            {processing.effectiveMode === 'groq'
               ? 'Recognized text is sent to Groq.'
               : 'Local AI processes your text on this computer.'}
           </span>

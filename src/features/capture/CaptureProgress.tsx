@@ -1,31 +1,52 @@
-import { Check } from '../../components/icons';
-
+import { Check, LoaderCircle, AlertCircle, X } from '../../components/icons';
 export type CaptureMode = 'voice' | 'audio' | 'text';
+export type StageState = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 export interface CaptureProgressModel {
   steps: readonly string[];
   current: number;
   complete?: boolean;
+  outcome?: 'failed' | 'cancelled';
 }
-/** Real service milestones, not an estimated percentage. Only the stage label is live. */
-export function CaptureProgress({ steps, current, complete = false }: CaptureProgressModel) {
+/** Only actual service milestones mark previous stages complete. */
+export function CaptureProgress({
+  steps,
+  current,
+  complete = false,
+  outcome,
+}: CaptureProgressModel) {
   return (
     <ol className="capture-progress" aria-label="Processing stages">
       {steps.map((label, index) => {
-        const done = complete || index < current;
+        const state: StageState =
+          complete || index < current
+            ? 'completed'
+            : index === current
+              ? (outcome ?? 'running')
+              : 'pending';
         return (
           <li
             key={label}
-            data-state={done ? 'complete' : index === current ? 'current' : 'pending'}
-            aria-current={!complete && index === current ? 'step' : undefined}
+            data-state={
+              state === 'completed' ? 'complete' : state === 'running' ? 'current' : state
+            }
+            aria-current={state === 'running' ? 'step' : undefined}
           >
             <span className="capture-stage-marker" aria-hidden="true">
-              {done ? <Check size={12} /> : index + 1}
+              {state === 'completed' ? (
+                <Check size={12} />
+              ) : state === 'running' ? (
+                <LoaderCircle size={14} className="capture-spinner" />
+              ) : state === 'failed' ? (
+                <AlertCircle size={14} />
+              ) : state === 'cancelled' ? (
+                <X size={14} />
+              ) : (
+                index + 1
+              )}
             </span>
-            <span>
+            <span className={state === 'running' ? 'capture-running' : undefined}>
               {label}
-              <span className="sr-only">
-                {done ? ', complete' : index === current ? ', in progress' : ', pending'}
-              </span>
+              <span className="sr-only">, {state === 'running' ? 'in progress' : state}</span>
             </span>
           </li>
         );

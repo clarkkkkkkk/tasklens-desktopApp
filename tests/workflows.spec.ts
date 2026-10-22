@@ -26,8 +26,8 @@ test('sample → edit → confirm → today/upcoming/calendar → complete → r
   await page.getByLabel('Title', { exact: true }).fill('Class pictorial');
   await page.getByLabel('Location', { exact: true }).fill('North campus');
   await page.getByRole('button', { name: 'Confirm & save', exact: true }).click();
-  await expect(page.getByText('Saved on this device.', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Close details' }).click();
+  await expect(page.getByText('Task saved.', { exact: true })).toBeVisible();
+  await expect(page.locator('.inbox-result-dialog[open]')).toHaveCount(0);
   await page.getByRole('button', { name: /Today/ }).first().click();
   await expect(page.getByRole('button', { name: /Class pictorial Thu/ })).toBeVisible();
   await nav(page, 'Upcoming');
@@ -51,7 +51,7 @@ test('overdue confirmed items stay in Today until completed', async ({ page }) =
   await start(page);
   await demo(page);
   await page.getByRole('button', { name: 'Confirm & save event', exact: true }).click();
-  await expect(page.getByText('Saved on this device.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Task saved.', { exact: true })).toBeVisible();
   await page.clock.setFixedTime(new Date('2026-10-10T09:00:00+08:00'));
   await page.reload();
   const todayNav = page.getByRole('navigation').getByRole('button', { name: /^Today/ });
@@ -226,7 +226,7 @@ test('unsaved edits are protected, reminder changes persist, search ignores list
   await expect(page.getByText('Discard your unsaved edits?')).toBeVisible();
   await page.getByRole('button', { name: 'Keep editing' }).click();
   await page.getByRole('button', { name: 'Confirm & save', exact: true }).click();
-  await page.getByRole('button', { name: 'Close details' }).click();
+  await expect(page.locator('.inbox-result-dialog[open]')).toHaveCount(0);
   await page.getByRole('button', { name: /All Tasks/ }).click();
   await page.getByRole('button', { name: 'Tasks', exact: true }).click();
   await page.getByRole('button', { name: 'Search your workspace', exact: true }).click();

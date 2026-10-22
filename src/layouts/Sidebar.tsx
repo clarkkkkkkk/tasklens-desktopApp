@@ -81,7 +81,7 @@ export function Sidebar({
 
 /** Always describes the explicitly selected execution location. */
 function LocalStatus() {
-  const { services, snapshot } = useApp();
+  const { services, processing: processingMode } = useApp();
   const [processing, setProcessing] = useState(false);
   useEffect(() => {
     let dispose: (() => void) | undefined;
@@ -98,7 +98,7 @@ function LocalStatus() {
     <div className="local-status" role="status">
       <ShieldCheck size={16} />
       <span>
-        {snapshot.settings.ai.executionMode === 'groq'
+        {processingMode.effectiveMode === 'groq'
           ? 'Groq Cloud selected'
           : processing
             ? 'Processing locally'

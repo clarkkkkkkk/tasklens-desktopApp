@@ -66,7 +66,7 @@ export function SearchDialog({ actions, loading, error, onClose, onSelect }: Sea
     closingRef.current = true;
     dialog.current?.close();
     onClose();
-    if (action) requestAnimationFrame(() => onSelect(action));
+    if (action) window.setTimeout(() => onSelect(action), 0);
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLDialogElement>) {

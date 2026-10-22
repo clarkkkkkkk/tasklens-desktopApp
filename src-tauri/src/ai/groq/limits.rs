@@ -9,6 +9,7 @@ pub const CONSENT_VERSION: u32 = 1;
 #[serde(default, rename_all = "camelCase", deny_unknown_fields)]
 pub struct Config {
     pub credential_enabled: bool,
+    pub resume_required: bool,
     pub consent_version: u32,
     pub removal_incomplete: bool,
     pub day: String,

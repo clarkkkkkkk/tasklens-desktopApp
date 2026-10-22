@@ -1,5 +1,5 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useImperativeHandle, type Ref } from 'react';
 import { Save, Check, Bell } from '../../components/icons';
 import { actionSchema, type ExtractedAction, type Settings } from '../../types/action';
 import { confirmAction } from '../../lib/actions';
@@ -9,8 +9,15 @@ import {
   approveDisplayedReminders,
 } from '../../services/reminders/ReminderScheduler';
 import { Button, ErrorState } from '../../components/ui';
+export type SaveIntent = 'draft' | 'confirm' | 'update';
+export interface EditorHandle {
+  prepare: (intent: SaveIntent) => ExtractedAction;
+}
 export function ActionEditor({
   action,
+  reviewRef,
+  active = true,
+  externalPending = false,
   defaults,
   onSave,
   onCancel,
@@ -18,8 +25,11 @@ export function ActionEditor({
   onPendingChange,
 }: {
   action: ExtractedAction;
+  reviewRef?: Ref<EditorHandle>;
+  active?: boolean;
+  externalPending?: boolean;
   defaults: Settings['defaultReminders'];
-  onSave: (a: ExtractedAction) => Promise<void>;
+  onSave: (a: ExtractedAction, intent: SaveIntent) => Promise<void>;
   onCancel: () => void;
   onDirty: () => void;
   onPendingChange?: (pending: boolean) => void;
@@ -29,6 +39,7 @@ export function ActionEditor({
     [notes, setNotes] = useState(action.notes.join('\n')),
     [error, setError] = useState(''),
     [pending, setPending] = useState(false);
+  const locked = pending || externalPending;
   const [timeOptions, setTimeOptions] = useState<{
     kind: string;
     timezone: string;
@@ -92,14 +103,16 @@ export function ActionEditor({
       return next;
     });
   }
-  async function submit(confirm: boolean) {
+  function prepare(intent: SaveIntent): ExtractedAction {
     setError('');
     if (
       timeOptions?.kind === 'gap' &&
       draft.reminders.some((r) => r.enabled && (r.id === 'hour' || r.id === 'quarter'))
     ) {
-      setError('This local time does not exist because of daylight saving. Correct the time.');
-      return;
+      const message =
+        'This local time does not exist because of daylight saving. Correct the time.';
+      setError(message);
+      throw new Error(message);
     }
     if (
       timeOptions?.kind === 'fold' &&
@@ -110,10 +123,10 @@ export function ActionEditor({
           !timeOptions.instants.includes(r.approval?.anchorInstant || ''),
       )
     ) {
-      setError(
-        'Choose the first or second occurrence of this repeated local time before saving reminders.',
-      );
-      return;
+      const message =
+        'Choose the first or second occurrence of this repeated local time before saving reminders.';
+      setError(message);
+      throw new Error(message);
     }
     const lines = (text: string) =>
       text
@@ -126,18 +139,29 @@ export function ActionEditor({
       requirements: lines(requirements),
       notes: lines(notes),
     };
-    const validated = actionSchema.safeParse(confirm ? confirmAction(value) : value);
+    const validated = actionSchema.safeParse(intent === 'confirm' ? confirmAction(value) : value);
     if (!validated.success) {
-      setError(validated.error.issues.map((i) => `${i.path[0]}: ${i.message}`).join('. '));
-      return;
+      const message = validated.error.issues.map((i) => `${i.path[0]}: ${i.message}`).join('. ');
+      setError(message);
+      throw new Error(message);
     }
-    setPending(true);
-    onPendingChange?.(true);
+    return validated.data;
+  }
+  useImperativeHandle(reviewRef, () => ({ prepare }));
+  const saving = useRef(false);
+  async function submit(confirm: boolean) {
+    if (saving.current || externalPending) return;
+    saving.current = true;
+    const intent = confirm ? 'confirm' : action.status === 'needs_review' ? 'draft' : 'update';
     try {
-      await onSave(validated.data);
+      const value = prepare(intent);
+      setPending(true);
+      onPendingChange?.(true);
+      await onSave(value, intent);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save item');
     } finally {
+      saving.current = false;
       setPending(false);
       onPendingChange?.(false);
     }
@@ -156,7 +180,8 @@ export function ActionEditor({
         <label>
           Title
           <input
-            autoFocus
+            disabled={locked}
+            autoFocus={active}
             value={draft.title}
             onChange={(e) => update('title', e.target.value)}
             maxLength={180}
@@ -167,6 +192,7 @@ export function ActionEditor({
         <label>
           Type
           <select
+            disabled={locked}
             value={draft.type}
             onChange={(e) => update('type', e.target.value as ExtractedAction['type'])}
           >
@@ -178,6 +204,7 @@ export function ActionEditor({
         <label>
           Date
           <input
+            disabled={locked}
             type="date"
             value={draft.date || ''}
             onChange={(e) => update('date', e.target.value)}
@@ -187,6 +214,7 @@ export function ActionEditor({
           <label>
             Time
             <input
+              disabled={locked}
               type="time"
               value={draft.time || ''}
               onChange={(e) => update('time', e.target.value)}
@@ -195,6 +223,7 @@ export function ActionEditor({
           <label>
             Arrival time
             <input
+              disabled={locked}
               type="time"
               value={draft.arrivalTime || ''}
               onChange={(e) => update('arrivalTime', e.target.value)}
@@ -204,6 +233,7 @@ export function ActionEditor({
         <label>
           Location
           <input
+            disabled={locked}
             value={draft.location || ''}
             onChange={(e) => update('location', e.target.value)}
             placeholder="Add a place"
@@ -213,6 +243,7 @@ export function ActionEditor({
         <label>
           Requirements
           <textarea
+            disabled={locked}
             rows={3}
             value={requirements}
             onChange={(e) => {
@@ -225,6 +256,7 @@ export function ActionEditor({
         <label>
           Notes
           <textarea
+            disabled={locked}
             rows={3}
             value={notes}
             onChange={(e) => {
@@ -277,6 +309,7 @@ export function ActionEditor({
               {timeOptions.instants.map((instant, index) => (
                 <label key={instant}>
                   <input
+                    disabled={locked}
                     type="radio"
                     name="dst-occurrence"
                     checked={draft.reminders.some((r) => r.approval?.anchorInstant === instant)}
@@ -291,6 +324,7 @@ export function ActionEditor({
             draft.reminders.map((r) => (
               <label className="reminder-row" key={r.id}>
                 <input
+                  disabled={locked}
                   type="checkbox"
                   checked={r.enabled}
                   onChange={(e) =>
@@ -322,17 +356,17 @@ export function ActionEditor({
         {error && <ErrorState message={error} />}
       </div>
       <div className="detail-actions">
-        <Button type="submit" variant="primary" disabled={pending}>
+        <Button type="submit" variant="primary" disabled={locked}>
           <Save size={16} />
           {pending ? 'Saving…' : action.status === 'needs_review' ? 'Save draft' : 'Save item'}
         </Button>
         {action.status === 'needs_review' && (
-          <Button onClick={() => void submit(true)} disabled={pending}>
+          <Button onClick={() => void submit(true)} disabled={locked}>
             <Check size={16} />
             Confirm & save
           </Button>
         )}
-        <Button variant="ghost" onClick={onCancel} disabled={pending}>
+        <Button variant="ghost" onClick={onCancel} disabled={locked}>
           Cancel editing
         </Button>
       </div>

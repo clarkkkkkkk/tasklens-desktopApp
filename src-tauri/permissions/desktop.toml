@@ -6,7 +6,7 @@ commands.allow = ["local_diagnostics_session", "local_diagnostics_identity", "lo
 [[permission]]
 identifier = "groq-connection"
 description = "Main window groq-connection commands"
-commands.allow = ["groq_status", "groq_connect", "groq_verify", "groq_disconnect", "groq_configure"]
+commands.allow = ["groq_open_link", "groq_status", "groq_connect", "groq_verify", "groq_disconnect", "groq_configure"]
 
 [[permission]]
 identifier = "groq-extraction"

@@ -201,6 +201,15 @@ services.extraction = {
     return { actions: result.actions, ambiguities: result.ambiguities };
   },
 };
+let writes = 0;
+const realSave = services.repository.saveAction.bind(services.repository);
+services.repository.saveAction = async (action) => {
+  writes++;
+  if (query.has('save-second-fail') && writes === 2)
+    throw new Error('Second draft could not be saved.');
+  return realSave(action);
+};
+Reflect.set(window, 'reviewWrites', () => writes);
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <AppProvider services={services}>
     <App />

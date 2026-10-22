@@ -5,8 +5,8 @@ TaskLens defaults to Local AI. Groq is an explicitly selected online extraction 
 ## Connect a key
 
 1. Create a Groq account and a Free API key in [Groq Console](https://console.groq.com/keys). The account's available models and limits remain controlled by Groq. TaskLens does not select a paid tier, provision hosting, or manage Groq billing.
-2. In the desktop application, open **Settings → AI processing → Groq connection**, enter the key and select **Connect API key**. The native application verifies access by querying the fixed Groq model-list endpoint. Verification sends no captured source text. An invalid key or network failure produces an error instead of a successful connection.
-3. Select **Groq Cloud**, read the disclosure, and select **Agree and select Groq Cloud**. Connecting a key alone does not select Cloud mode or authorize sending source text.
+2. Choose **Online AI** at first capture, or open **Settings → AI Processing → Groq connection → Connect API key**. Follow the guided dialog and use **Connect & verify**. The native application verifies access by querying the fixed Groq model-list endpoint. Verification sends no captured source text. An invalid key or network failure produces an error instead of a successful connection.
+3. Read the privacy disclosure, explicitly agree, and select **Start using TaskLens**. Connecting a key alone does not select Cloud mode or authorize sending source text. Existing verified keys skip key entry.
 4. Capture a screenshot, type information, or record/import audio. Tesseract OCR and Whisper transcription run locally. Groq extracts from text, then TaskLens validates the response and opens Needs Review. Nothing is saved or confirmed automatically.
 5. Use **Verify connection** for an explicit connection check. Use **Disconnect API key** to cancel cloud work, clear consent, disable credential use and remove the stored credential. Selecting **Local AI** explicitly stops outstanding cloud work and restores local routing.
 
@@ -18,7 +18,7 @@ The original local model and Ollama integrations remain available. Cloud text ex
 
 ## Security and privacy
 
-- Only Rust constructs authenticated HTTPS requests. The base URL is fixed at `https://api.groq.com/openai/v1`; extraction uses `/chat/completions`, with `openai/gpt-oss-20b`. Verification uses `/models` and checks for that model ID. There is no configurable remote URL, redirect following, relaxed TLS validation, cloud transcription, web search, tool use or provider fallback.
+- Only Rust constructs authenticated HTTPS requests. The base URL is fixed at `https://api.groq.com/openai/v1`; extraction uses `/chat/completions`, with `openai/gpt-oss-20b`. Verification uses `/models` and checks for that model ID. There is no configurable remote URL, redirect following, relaxed TLS validation, cloud transcription, web search, tool use or automatic resubmission through another provider.
 - The webview CSP still permits IPC rather than direct Groq access. Tauri capabilities explicitly allow application commands only in the main window; every Groq command also checks the calling window.
 - The password input clears immediately on submission. The key crosses IPC once into native code. It is never returned to JavaScript, included in task settings/backups, or logged. Native key buffers use `Zeroizing<String>`; unavoidable submission-time JavaScript strings are transient, not persisted.
 - Windows uses Credential Manager via the `windows-native` keyring backend. Fedora uses the D-Bus Secret Service backend with encrypted secret transport. The OS may request credential-store unlocking.
@@ -33,7 +33,7 @@ The original local model and Ollama integrations remain available. Cloud text ex
 
 `AIProvider.kind` now includes `cloud`. `GroqProvider` implements the same contract as the existing adapters and uses optional extraction-session hooks to retain its native queue slot through validation and repair. Discovery reads local connection state and fixed metadata; it never probes Groq over the network.
 
-`ai.executionMode` is additive, defaults to `local`, and accepts `local` or `groq`. Existing automatic/manual local selection, priorities and Ollama preferences are preserved. Local mode excludes cloud candidates; Groq mode includes only Groq and excludes local/mock fallback. Mode changes cannot reroute a capture midway through preprocessing. Native authorization is checked again immediately before transmission. Cloud candidates are not assessed against local RAM/GPU requirements, and the UI labels cloud quality/speed as unmeasured.
+`ai.executionMode` is the saved preference, defaults to `local`, and accepts `local` or `groq`. A shared coordinator supplies the effective mode: offline/unknown connectivity starts Local, while a durable loss latch requires explicit Cloud reactivation after restoration. In-flight content is never automatically retried locally. `ai.modeChoiceCompleted` is separate from onboarding; fresh profiles choose at their first online capture and existing profiles retain their configured mode. Existing automatic/manual local selection, priorities and Ollama preferences are preserved. Local mode excludes cloud candidates; Groq mode includes only Groq and excludes local/mock fallback. Mode changes cannot reroute a capture midway through preprocessing. Native authorization is checked again immediately before transmission. Cloud candidates are not assessed against local RAM/GPU requirements, and the UI labels cloud quality/speed as unmeasured.
 
 The existing extraction prompt, schema builder, compact-field expansion, date/time interpretation, coverage checks, evidence validation, ambiguity handling and review components remain the extraction architecture. The Groq wire-schema projection removes size/pattern/numeric constraint keywords while keeping required fields, closed objects, nullable fields and source-ID enums. The existing local validator still enforces semantic and collection limits. Strict JSON is not evidence that the content is factually correct. All generated actions remain `needs_review`.
 
@@ -86,7 +86,7 @@ Credential acceptance writes an isolated synthetic credential, reads it in a sep
 
 For native Settings/IPC acceptance, build a disposable application with `node scripts/build-native-acceptance.mjs`, then pass its printed `acceptance-run.json` receipt to `npm run test:native:groq -- /absolute/path/to/acceptance-run.json`. Set `TASKLENS_TAURI_DRIVER` to the installed driver if necessary. This smoke checks actual native capabilities, Local-mode isolation, consent gating, no-key behavior and Settings controls without making a real Groq request.
 
-Verified results on this checkout are recorded below. Real Groq and Windows checks require separate test resources and are deliberately not represented by mock results.
+The table below records the original BYOK integration at `46a18e5`. Current Settings, first-use setup, connectivity, animation, and review verification is recorded in [the UX implementation report](SETTINGS_INBOX_UX.md). Real Groq and Windows checks require separate resources and are never represented by mocks.
 
 | Check | Result |
 | --- | --- |

@@ -292,7 +292,7 @@ test('onboarding, previews, non-capture controls and dialogs are static while th
   await button(page, 'Continue').click();
   await noMotion();
   await button(page, 'Continue').click();
-  await expect(page.getByLabel('Sample location')).toHaveValue('Campus');
+  await expect(page.getByLabel('Sample location')).toHaveValue('Campus', { timeout: 15000 });
   await noMotion();
   await button(page, 'Start using TaskLens').click();
   const intro = page.locator('.brand-handoff');

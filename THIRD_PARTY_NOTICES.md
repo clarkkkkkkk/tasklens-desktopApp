@@ -79,3 +79,7 @@ The optional Linux AppImage includes AppImageKit AppRun and the type-2 runtime. 
 ## Native reliability dependencies (Milestone A)
 
 Pinned direct dependencies: rusqlite 0.40.2 (MIT) with bundled SQLite (public domain), notify-rust 4.18.1 (MIT/Apache-2.0), chrono 0.4.45, chrono-tz 0.10.4 and iana-time-zone 0.1.65 (MIT/Apache-2.0), objc2 0.6.4 / objc2-foundation 0.3.2 / objc2-user-notifications 0.3.2 / block2 0.6.2 (MIT), and windows 0.62.2 (MIT/Apache-2.0). Tokio uses the version locked in Cargo.lock (MIT). Full upstream license texts are retained in `docs/third-party/native-reliability/` and mapped into packaged resources. These licenses do not change TaskLens's MIT licensing. Native platform acceptance remains separate from dependency inclusion.
+
+## Native browser link opening
+
+The Groq setup guide uses tauri-plugin-opener (Apache-2.0 OR MIT) and its locked native dependencies. `prepare:notices` includes their upstream license texts and version inventory in the existing bundled dependency-notices directory. Only fixed Groq setup/policy links are exposed through TaskLens's native command; generic opener JavaScript interception is disabled.

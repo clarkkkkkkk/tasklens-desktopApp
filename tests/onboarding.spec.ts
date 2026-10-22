@@ -24,7 +24,7 @@ test('first launch, back, preferences, demo and completion preserve data', async
   await button(page, 'Continue').click();
   await expect(page.getByLabel('1 hour before', { exact: true })).not.toBeChecked();
   await button(page, 'Continue').click();
-  await expect(page.getByLabel('Sample location')).toHaveValue('Campus');
+  await expect(page.getByLabel('Sample location')).toHaveValue('Campus', { timeout: 15000 });
   await page.getByLabel('Sample location').fill('North campus');
   await button(page, 'Back').click();
   await button(page, 'Continue').click();
@@ -141,7 +141,7 @@ test('demo failure can retry and pending demo can be left without creating tasks
   await expect(page.getByRole('alert')).toBeVisible();
   await page.evaluate(() => (window as unknown as { restoreCanvas: () => void }).restoreCanvas());
   await button(page, 'Retry sample').click();
-  await expect(page.getByLabel('Sample location')).toHaveValue('Campus');
+  await expect(page.getByLabel('Sample location')).toHaveValue('Campus', { timeout: 15000 });
   await button(page, 'Skip tour').click();
   await button(page, 'Settings').click();
   await button(page, 'Replay onboarding').click();

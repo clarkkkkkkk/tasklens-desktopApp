@@ -63,7 +63,7 @@
   svg {
     flex-shrink: 0;
   }
-  input:not([type='checkbox']):not([type='file']),
+  input:not([type='checkbox']):not([type='file']):not([type='radio']),
   select,
   textarea {
     width: 100%;
@@ -79,7 +79,8 @@
   textarea::placeholder {
     color: var(--text-secondary);
   }
-  input[type='checkbox'] {
+  input[type='checkbox'],
+  input[type='radio'] {
     width: 16px;
     height: 16px;
     accent-color: var(--accent);
@@ -353,6 +354,8 @@
     overflow: hidden;
   }
   .main-content {
+    position: relative;
+    overscroll-behavior-y: contain;
     padding: var(--space-10);
     flex: 1;
     min-width: 0;
@@ -1459,4 +1462,154 @@
   right: 24px;
   max-width: 352px;
   z-index: 60;
+}
+
+.main-content {
+  scrollbar-gutter: stable;
+}
+.ai-setup-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0;
+  box-shadow: var(--shadow-overlay);
+}
+.ai-setup-dialog::backdrop {
+  background: rgb(23 26 31 / 24%);
+}
+.ai-setup-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-5);
+  padding: var(--space-6);
+}
+.ai-setup-body h2 {
+  font-size: var(--text-title);
+  outline: none;
+}
+.ai-choice-options {
+  display: grid;
+  gap: var(--space-3);
+}
+.ai-choice-options .button {
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: var(--space-4);
+}
+.ai-choice-options span,
+.groq-disclosure,
+.setup-instructions {
+  font-size: var(--text-control);
+}
+.setup-instructions {
+  list-style: decimal;
+  padding-left: var(--space-5);
+}
+.groq-disclosure details {
+  margin-top: var(--space-3);
+}
+.groq-disclosure details p {
+  margin: var(--space-3) 0;
+}
+.consent-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.connection-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  margin-right: 8px;
+}
+.connection-indicator.connected {
+  background: var(--success);
+}
+.settings-advanced > summary {
+  cursor: pointer;
+  font-size: var(--text-heading);
+  font-weight: 600;
+}
+.settings-advanced .settings-section {
+  padding-bottom: var(--space-6);
+}
+.setting-row {
+  flex-wrap: wrap;
+}
+.setting-row > div {
+  min-width: 0;
+}
+.groq-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-top: var(--space-3);
+}
+.groq-feedback {
+  min-height: 24px;
+  margin-top: var(--space-2);
+}
+.toast[data-tone='warning'] > svg {
+  color: var(--warning);
+}
+.toast[data-tone='info'] > svg {
+  color: var(--text-secondary);
+}
+
+/* Inbox capture-only motion exception. No workspace or dialog animation. */
+.inbox-view .capture-spinner {
+  animation: capture-turn 1.2s linear infinite;
+  transform-origin: center;
+  flex-shrink: 0;
+}
+.inbox-view .capture-running {
+  animation: capture-breathe 2.4s ease-in-out infinite;
+}
+.capture-active-heading {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: center;
+}
+@keyframes capture-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes capture-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .inbox-view .capture-spinner,
+  .inbox-view .capture-running {
+    animation: none;
+  }
+}
+
+.settings-section > .setting-row + .setting-row {
+  margin-top: var(--space-4);
+}
+.ai-mode input[type='radio'] {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  padding: 0;
 }

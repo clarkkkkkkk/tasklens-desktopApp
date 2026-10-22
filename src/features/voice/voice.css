@@ -310,3 +310,10 @@
   border: 1px solid var(--border);
   border-radius: 16px;
 }
+.bundle-selector {
+  flex-wrap: wrap;
+}
+.bundle-selector select {
+  min-width: 0;
+  flex: 1;
+}

@@ -70,7 +70,20 @@ export function migrateSnapshot(
   steps: Migrations = snapshotMigrations,
 ): MigrationResult {
   const fromVersion = storedVersion(data);
-  const parsed = snapshotSchema.safeParse(runMigrations(data, SNAPSHOT_VERSION, steps));
+  const envelope = runMigrations(data, SNAPSHOT_VERSION, steps);
+  const settings = envelope.settings as Record<string, unknown> | undefined;
+  const ai = settings?.ai as Record<string, unknown> | undefined;
+  // Existing profiles had a mode before this first-use marker existed. Never replay setup.
+  const upgraded = settings
+    ? {
+        ...envelope,
+        settings: {
+          ...settings,
+          ai: { ...ai, modeChoiceCompleted: ai?.modeChoiceCompleted ?? true },
+        },
+      }
+    : envelope;
+  const parsed = snapshotSchema.safeParse(upgraded);
   if (!parsed.success)
     throw new SnapshotReadError(
       fromVersion === SNAPSHOT_VERSION ? 'corrupt' : 'unsupported',

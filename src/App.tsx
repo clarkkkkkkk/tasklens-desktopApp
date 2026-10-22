@@ -1,3 +1,4 @@
+import { useWorkspaceModalLock } from './components/useWorkspaceModalLock';
 import { ReminderHealth } from './components/ReminderHealth';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -25,7 +26,18 @@ import { newAction } from './lib/actions';
 import { downloadText } from './lib/images';
 import type { ExtractedAction, View } from './types/action';
 export default function App() {
-  const { snapshot, loading, loadError, reload, notice, services, announce } = useApp();
+  useWorkspaceModalLock();
+  const {
+    snapshot,
+    loading,
+    loadError,
+    reload,
+    notice,
+    noticeTone,
+    setupOpen,
+    services,
+    announce,
+  } = useApp();
   const [view, setView] = useState<View>('inbox'),
     [searchOpen, setSearchOpen] = useState(false),
     [selection, setSelection] = useState<ExtractedAction | null>(null),
@@ -102,7 +114,7 @@ export default function App() {
   const exitReplay = useCallback(() => {
     setReplay(false);
     setFinishingTour(false);
-    requestAnimationFrame(() => replayOpener.current?.focus());
+    window.setTimeout(() => replayOpener.current?.focus({ preventScroll: true }), 0);
   }, []);
   useEffect(() => {
     if (!captureHint) return;
@@ -110,7 +122,9 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [captureHint]);
   const opener = useRef<HTMLElement | null>(null);
+  const captureReview = useRef(false);
   const focusVersion = useRef(0);
+  const pendingCloseFocus = useRef<number | null>(null);
   const onOpen = useCallback(
     (a: ExtractedAction, floating = false) => {
       if (dirty) {
@@ -118,6 +132,8 @@ export default function App() {
         return;
       }
       focusVersion.current++;
+      pendingCloseFocus.current = null;
+      captureReview.current = floating;
       opener.current =
         document.activeElement instanceof HTMLElement ? document.activeElement : null;
       setSelection(a);
@@ -126,7 +142,7 @@ export default function App() {
     [dirty, announce],
   );
   useEffect(() => {
-    if (!isTauri() || loading || dirty || voiceBusy || bundle || touring) return;
+    if (!isTauri() || loading || dirty || voiceBusy || bundle || touring || setupOpen) return;
     let disposed = false;
     let cleanup = () => {};
     const consume = async () => {
@@ -153,20 +169,32 @@ export default function App() {
       disposed = true;
       cleanup();
     };
-  }, [loading, dirty, voiceBusy, bundle, touring, snapshot.actions, onOpen, announce]);
+  }, [loading, dirty, voiceBusy, bundle, touring, setupOpen, snapshot.actions, onOpen, announce]);
   const onClose = useCallback(() => {
-    const version = ++focusVersion.current;
+    pendingCloseFocus.current = ++focusVersion.current;
     setSelection(null);
     setDirty(false);
-    requestAnimationFrame(() => {
-      if (focusVersion.current !== version) return;
-      const target =
-        opener.current?.isConnected && opener.current !== document.body
-          ? opener.current
-          : document.querySelector<HTMLElement>('.inbox-view:not([hidden]) [data-open-result]');
-      target?.focus({ preventScroll: true });
-    });
   }, []);
+  useEffect(() => {
+    if (selection || pendingCloseFocus.current === null) return;
+    const version = pendingCloseFocus.current;
+    pendingCloseFocus.current = null;
+    // Run after the close commit. Inactive WebKit windows suspend animation frames,
+    // and a timer scheduled before the commit can still see an inert modal workspace.
+    const timer = window.setTimeout(() => {
+      if (focusVersion.current !== version || document.querySelector('dialog[open]')) return;
+      const captureTarget = captureReview.current
+        ? document.querySelector<HTMLElement>('.inbox-view:not([hidden]) [data-open-result]')
+        : null;
+      const target =
+        captureTarget ??
+        (opener.current?.isConnected && opener.current !== document.body
+          ? opener.current
+          : document.querySelector<HTMLElement>('.inbox-view:not([hidden]) [data-open-result]'));
+      target?.focus({ preventScroll: true });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [selection]);
   const selected = selection
     ? snapshot.actions.find((a) => a.id === selection.id) || selection
     : null;
@@ -177,12 +205,12 @@ export default function App() {
     const handler = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
-        if (!brandHandoff && !voiceBusy && !bundle) setSearchOpen(true);
+        if (!brandHandoff && !voiceBusy && !bundle && !setupOpen) setSearchOpen(true);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [touring, brandHandoff, voiceBusy, bundle, loading, loadError]);
+  }, [touring, brandHandoff, voiceBusy, bundle, setupOpen, loading, loadError]);
   async function backup() {
     try {
       downloadText(await services.repository.exportRaw(), 'tasklens-recovery.json');
@@ -213,7 +241,10 @@ export default function App() {
             setReplay(false);
             if (!showBrand) {
               if (!replay) setCaptureHint(true);
-              requestAnimationFrame(() => document.getElementById('main-content')?.focus());
+              window.setTimeout(
+                () => document.getElementById('main-content')?.focus({ preventScroll: true }),
+                0,
+              );
             }
           }}
         />
@@ -250,11 +281,11 @@ export default function App() {
         <div className="app-body">
           <TopBar
             onSearch={() => {
-              if (!voiceBusy) setSearchOpen(true);
+              if (!voiceBusy && !setupOpen) setSearchOpen(true);
             }}
             searchOpen={searchOpen}
             onNew={() => {
-              if (!voiceBusy) onOpen(newAction());
+              if (!voiceBusy && !setupOpen) onOpen(newAction());
             }}
           />
           <main
@@ -285,7 +316,12 @@ export default function App() {
                   <Inbox
                     active={showInbox && !touring}
                     suspendPaste={
-                      resultDialogOpen || searchOpen || !!brandHandoff || voiceBusy || !!bundle
+                      setupOpen ||
+                      resultDialogOpen ||
+                      searchOpen ||
+                      !!brandHandoff ||
+                      voiceBusy ||
+                      !!bundle
                     }
                     captureHint={captureHint}
                     onCaptureInteraction={() => setCaptureHint(false)}
@@ -332,7 +368,7 @@ export default function App() {
                         search=""
                         onOpen={onOpen}
                         onNew={() => {
-                          if (!voiceBusy) onOpen(newAction());
+                          if (!voiceBusy && !setupOpen) onOpen(newAction());
                         }}
                       />
                     ))}
@@ -345,7 +381,10 @@ export default function App() {
                 action={selected}
                 floating={resultDialogOpen}
                 onClose={onClose}
-                onSaved={setSelection}
+                onSaved={(action, intent) => {
+                  setSelection(action);
+                  if (floatingResult && intent === 'confirm') onClose();
+                }}
                 onDirtyChange={setDirty}
                 onCalendar={(a) => {
                   setCalendarDate(a.date);
@@ -387,7 +426,7 @@ export default function App() {
             <Button onClick={() => setPendingView(null)}>Keep capturing</Button>
           </div>
         )}
-        <MotionToast message={notice} />
+        <MotionToast message={notice} tone={noticeTone} />
       </div>
     </>
   );

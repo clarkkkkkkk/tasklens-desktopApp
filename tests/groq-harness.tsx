@@ -4,7 +4,7 @@ import '../src/components/motion/motion.css';
 import ReactDOM from 'react-dom/client';
 import App from '../src/App';
 import { AppProvider } from '../src/app/AppProvider';
-import { createServices } from '../src/app/services';
+import { createServices, withProcessingMode } from '../src/app/services';
 import { ProviderRegistry } from '../src/services/ai/registry';
 import { AIRouter } from '../src/services/ai/router';
 import {
@@ -22,33 +22,57 @@ import { rawBundle, rawItem } from './fixtures/extraction/raw';
 import pictorial from './fixtures/screenshots/ocr/pictorial.json';
 
 const query = new URLSearchParams(location.search);
-localStorage.setItem(
-  'tasklens:data:v1',
-  JSON.stringify({
-    version: 1,
-    actions: [],
-    settings: { ...defaultSettings, onboardingCompletedVersion: 1 },
-  }),
-);
+if (!localStorage.getItem('tasklens:data:v1'))
+  localStorage.setItem(
+    'tasklens:data:v1',
+    JSON.stringify({
+      version: 1,
+      actions: [],
+      settings: {
+        ...defaultSettings,
+        onboardingCompletedVersion: 1,
+        ai: { ...defaultSettings.ai, modeChoiceCompleted: !query.has('fresh') },
+      },
+    }),
+  );
 const services = createServices();
 const counts = { generated: 0, ocr: 0, local: 0, transcribed: 0, connected: 0 };
-let connection: GroqStatus = { ...disconnectedGroq };
+let connection: GroqStatus = {
+  ...disconnectedGroq,
+  connectivity: query.has('offline') ? 'offline' : query.has('unknown') ? 'unknown' : 'online',
+};
 Object.assign(groqConnection, {
   status: async () => ({ ...connection }),
   connect: async (key: string) => {
     if (key === 'invalid')
       throw new LocalAIError('GROQ_INVALID_KEY', 'Groq rejected this API key.');
+    if (query.has('connect-network'))
+      throw new LocalAIError('GROQ_NETWORK', 'Could not reach Groq. Retry connection.');
     counts.connected++;
-    connection = { ...connection, connected: true, storage: 'session' };
+    connection = {
+      ...connection,
+      connected: true,
+      verified: true,
+      providerReachable: true,
+      storage: 'session',
+    };
     return { ...connection };
   },
-  verify: async () => ({ ...connection }),
+  verify: async () => {
+    connection = { ...connection, verified: true, providerReachable: true };
+    return { ...connection };
+  },
   disconnect: async () => {
-    connection = { ...disconnectedGroq };
+    connection = { ...disconnectedGroq, connectivity: connection.connectivity };
     return { ...connection };
   },
-  configure: async (enabled: boolean, consent = false) => {
-    connection = { ...connection, enabled, consent: connection.consent || consent };
+  configure: async (enabled: boolean, consent = false, resume = false) => {
+    connection = {
+      ...connection,
+      enabled: enabled && (!connection.resumeRequired || resume),
+      resumeRequired: resume ? false : connection.resumeRequired,
+      consent: connection.consent || consent,
+    };
     return { ...connection };
   },
 });
@@ -65,6 +89,7 @@ const components = Object.fromEntries(
 // The flag is scoped to this fixture. Qwen intentionally remains unavailable.
 Reflect.set(globalThis, 'isTauri', true);
 let callbackId = 0;
+Reflect.set(window, '__TAURI_EVENT_PLUGIN_INTERNALS__', { unregisterListener: () => {} });
 Reflect.set(window, '__TAURI_INTERNALS__', {
   metadata: {
     currentWindow: { label: 'main' },
@@ -82,6 +107,19 @@ Reflect.set(window, '__TAURI_INTERNALS__', {
 });
 Reflect.set(window, 'groqTest', {
   counts,
+  async network(online: boolean) {
+    connection = {
+      ...connection,
+      connectivity: online ? 'online' : 'offline',
+      providerReachable: false,
+      enabled: false,
+      resumeRequired: true,
+    };
+    await services.processing.refresh();
+  },
+  async preferenceSave() {
+    await services.repository.saveSettings(services.settings.current);
+  },
   get connection() {
     return connection;
   },
@@ -132,18 +170,22 @@ const provider = new GroqProvider({
 const registry = new ProviderRegistry([provider]);
 const router = new AIRouter(registry, { profile: async () => lowEnd }, () => ({
   ...services.settings.current.ai,
+  executionMode: services.processing.getSnapshot().effectiveMode,
   allowMock: false,
 }));
 services.ai = { registry, router, device: { profile: async () => lowEnd } };
-services.extraction = new RoutedExtractionService(
-  {
-    recognize: async () => {
-      counts.ocr++;
-      return ocrDocumentSchema.parse(pictorial);
+services.extraction = withProcessingMode(
+  new RoutedExtractionService(
+    {
+      recognize: async () => {
+        counts.ocr++;
+        return ocrDocumentSchema.parse(pictorial);
+      },
     },
-  },
-  router,
-  () => services.settings.current,
+    router,
+    () => services.settings.current,
+  ),
+  services.processing,
 );
 services.models.list = async () => [];
 services.voice = {
@@ -159,6 +201,7 @@ services.speech = {
     signal.throwIfAborted();
     counts.transcribed++;
     progress('transcribing');
+    if (query.has('slow-transcription')) await new Promise((resolve) => setTimeout(resolve, 800));
     return {
       fullText: 'Pictorial at campus.',
       segments: [{ id: 's1', text: 'Pictorial at campus.', startMs: 0, endMs: 1000 }],
@@ -168,6 +211,24 @@ services.speech = {
     };
   },
 };
+if (query.has('reminder-warning'))
+  Object.defineProperty(services.repository, 'reminderWarning', {
+    get: () => 'Your task data was saved. Reminder delivery is paused because registration failed.',
+  });
+if (query.has('settings-fail'))
+  services.repository.saveSettings = async () => {
+    throw new Error('Fixture preference storage failure.');
+  };
+let writes = 0;
+const realSave = services.repository.saveAction.bind(services.repository);
+services.repository.saveAction = async (action) => {
+  writes++;
+  if (query.has('save-slow')) await new Promise((resolve) => setTimeout(resolve, 700));
+  if (query.has('save-fail-once') && writes === 1)
+    throw new Error('Fixture storage failure. Edits retained.');
+  return realSave(action);
+};
+Reflect.set(window, 'reviewWrites', () => writes);
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <AppProvider services={services}>
     <App />

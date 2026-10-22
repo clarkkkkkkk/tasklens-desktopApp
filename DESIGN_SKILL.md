@@ -111,3 +111,11 @@ Onboarding completion must not await visual animation completion. Save completio
 ## Native reminder recovery
 
 Reuse existing Settings rows, inline confirmation, error surfaces and native checkboxes. Show activation preview counts and schedules needing confirmation, generic notification privacy preference, device background preference and a real test action. A persistent recovery warning may use a compact fixed surface below the topbar, aligned to the existing 352px notice width; do not shift the shell. No motion or new colors. Status events update immediately. Backup/startup controls stay honestly unavailable until their milestones are implemented.
+
+## Inbox setup and confirmation contracts (2026-10-22)
+
+The Inbox capture-only exception also permits a fixed-size 1.2-second linear loading-icon rotation and gentle opacity breathing on active processing text. Scope these effects to active Inbox capture indicators; keep the workspace, Settings, setup dialogs and navigation static. Reduced motion stops both effects. Completed/error/cancelled indicators are stationary. Announce real stage changes, never animation or elapsed-time ticks; do not invent percentages or timed milestones.
+
+First-use AI selection follows onboarding and a meaningful capture intent. Keep the source in the mounted capture surface while a single native modal guides connection and explicit privacy permission. Cancel returns to Local AI without transmitting or discarding the source. Connectivity loss cancels cloud work without resubmitting it locally; returning connectivity requires intentional Cloud activation. Native modal lifetimes lock the workspace scroller without changing its offset; focus restoration uses preventScroll.
+
+Confirm & Save dismisses a single capture review only after successful persistence. A bundle advances through unconfirmed items and closes only after all required saves succeed and no unsaved edits remain. Save drafts & finish preserves remaining edited items in Needs Review, and failures retain the dialog and edits. Reminder registration warnings remain distinct from save success.

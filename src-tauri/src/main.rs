@@ -23,6 +23,11 @@ fn main() {
     };
     tauri::Builder::default()
         .plugin(instance.build())
+        .plugin(
+            tauri_plugin_opener::Builder::new()
+                .open_js_links_on_click(false)
+                .build(),
+        )
         .manage(reliability::Reliability::default())
         .manage(voice::VoiceState::default())
         .manage(jobs::Jobs::default())
@@ -32,6 +37,7 @@ fn main() {
             app.manage(ai::groq::Groq::new(
                 platform::app_data(app.handle())?.join("groq-usage.json"),
             )?);
+            ai::groq::watch_connectivity(app.handle().clone());
             reliability::initialize(app.handle());
             let _ = reliability::tray(app.handle());
             if let Err(message) = voice::initialize(app.handle()) {
@@ -87,6 +93,7 @@ fn main() {
             ai::ai_ollama_discover,
             ai::ai_ollama_chat,
             ai::groq::groq_status,
+            ai::groq::groq_open_link,
             ai::groq::groq_connect,
             ai::groq::groq_verify,
             ai::groq::groq_disconnect,

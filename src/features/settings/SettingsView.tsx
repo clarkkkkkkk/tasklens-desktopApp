@@ -1,10 +1,12 @@
+import { rebaseSettings } from './settingsPatch';
+import { GroqDisclosure } from '../ai-setup/AISetupDialog';
 import { GroqSettings } from './GroqSettings';
 import { NativeReminderSettings } from './NativeReminderSettings';
 import { VoiceSettings } from '../voice/VoiceSettings';
 import { LocalAISettings } from './LocalAISettings';
 import { AIRoutingPanel } from '../ai/AIRoutingPanel';
 import { MotionHeading } from '../../components/motion/MotionHeading';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Bell, Download, HardDrive, Monitor, ShieldCheck } from '../../components/icons';
 import { useApp } from '../../app/context';
 import { Button, ErrorState } from '../../components/ui';
@@ -17,14 +19,18 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
     [pending, setPending] = useState(false);
   const settings = snapshot.settings;
   const reminders = services.reminders.upcoming(snapshot.actions, settings).slice(0, 5);
+  const updating = useRef(false);
   async function update(next: Settings) {
+    if (updating.current) return;
+    updating.current = true;
     setError('');
     setPending(true);
     try {
-      await saveSettings(next);
+      await saveSettings((current) => rebaseSettings(settings, next, current));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save preferences');
     } finally {
+      updating.current = false;
       setPending(false);
     }
   }
@@ -38,12 +44,9 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
   return (
     <section className="settings-view">
       <div className="page-heading">
-        <div className="eyebrow">MAKE YOURSELF AT HOME</div>
         <MotionHeading>Settings</MotionHeading>
-        <p>A few preferences. A workspace that feels like yours.</p>
       </div>
       {error && <ErrorState message={error} />}
-      <VoiceSettings />
       <section className="settings-section">
         <h2>
           <Monitor size={18} />
@@ -61,11 +64,12 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
         <div className="setting-row">
           <div>
             <h3>Launch at startup</h3>
-            <p>Native startup registration is coming in a future phase.</p>
+            <p>Not available yet.</p>
           </div>
           <input type="checkbox" disabled aria-label="Launch at startup (not available yet)" />
         </div>
       </section>
+      <GroqSettings />
       <section className="settings-section">
         <h2>
           <Bell size={18} />
@@ -74,10 +78,7 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
         <div className="setting-row">
           <div>
             <h3>Enable reminders</h3>
-            <p>
-              Keep reminder selections active. Desktop notification delivery requires separate
-              explicit activation below.
-            </p>
+            <p>Allow reminders for your saved tasks.</p>
           </div>
           <input
             aria-label="Enable reminders"
@@ -112,6 +113,66 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
             ))}
           </div>
         </div>
+      </section>
+      <section className="settings-section">
+        <h2>
+          <Monitor size={18} />
+          Appearance
+        </h2>
+        <div className="setting-row">
+          <div>
+            <h3>Light theme</h3>
+            <p>Light appearance is active.</p>
+          </div>
+          <span className="badge">Active</span>
+        </div>
+      </section>
+      <section className="settings-section">
+        <h2>
+          <HardDrive size={18} />
+          Data &amp; Privacy
+        </h2>
+        <div className="setting-row">
+          <div>
+            <h3>Stored on this device</h3>
+            <p>
+              {snapshot.actions.length} saved items on this device. Backups contain private data.
+            </p>
+          </div>
+          <Button onClick={backup}>
+            <Download size={16} />
+            Export backup
+          </Button>
+        </div>
+        <p className="field-help">Keep exported backups somewhere safe.</p>
+        <details className="setting-subsection">
+          <summary>Online processing privacy</summary>
+          <GroqDisclosure />
+          <p className="field-help">
+            One active extraction, two waiting, two attempts per minute, ten per local day. Retries
+            and repairs count. Groq account limits also apply.
+          </p>
+        </details>
+      </section>
+      <p className="field-help">
+        Icons: Solar by{' '}
+        <a
+          href="https://www.figma.com/community/file/1166831539721848736"
+          target="_blank"
+          rel="noreferrer"
+        >
+          480 Design
+        </a>{' '}
+        ·{' '}
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">
+          CC BY 4.0
+        </a>
+      </p>
+      <details className="settings-advanced settings-section">
+        <summary>Advanced Settings</summary>
+        <AIRoutingPanel settings={settings} onUpdate={update} pending={pending} />
+        <LocalAISettings settings={settings} onUpdate={update} pending={pending} />
+        <VoiceSettings />
         <div className="setting-subsection">
           <h3>Upcoming reminder configurations</h3>
           {reminders.length ? (
@@ -141,59 +202,7 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
             </p>
           )}
         </div>
-      </section>
-      <section className="settings-section">
-        <h2>
-          <Monitor size={18} />
-          Appearance
-        </h2>
-        <div className="setting-row">
-          <div>
-            <h3>Light theme</h3>
-            <p>A calm, clear space for your plans.</p>
-          </div>
-          <span className="badge">Active</span>
-        </div>
-      </section>
-      <GroqSettings />
-      <AIRoutingPanel settings={settings} onUpdate={update} pending={pending} />
-      <LocalAISettings settings={settings} onUpdate={update} pending={pending} />
-      <section className="settings-section">
-        <h2>
-          <HardDrive size={18} />
-          Your data
-        </h2>
-        <div className="setting-row">
-          <div>
-            <h3>Stored on this device</h3>
-            <p>
-              LocalStorage · {snapshot.actions.length} saved items. Source previews are reduced in
-              size. Backups contain your private data.
-            </p>
-          </div>
-          <Button onClick={backup}>
-            <Download size={16} />
-            Export backup
-          </Button>
-        </div>
-        <p className="field-help">
-          Keep exports somewhere safe. Backup import and SQLite migration are future work.
-        </p>
-      </section>
-      <p className="field-help">
-        Icons: Solar by{' '}
-        <a
-          href="https://www.figma.com/community/file/1166831539721848736"
-          target="_blank"
-          rel="noreferrer"
-        >
-          480 Design
-        </a>{' '}
-        ·{' '}
-        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">
-          CC BY 4.0
-        </a>
-      </p>
+      </details>
       <div className="privacy-note">
         <ShieldCheck size={16} />
         <p>Turn information into action. Privately.</p>

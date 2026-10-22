@@ -1,8 +1,14 @@
 import { createContext, useContext } from 'react';
 import type { ExtractedAction, Settings, Snapshot } from '../types/action';
+import type { ProcessingState } from '../services/ai/ProcessingMode';
 import type { Services } from './services';
 export interface AppState {
   snapshot: Snapshot;
+  processing: ProcessingState;
+  ensureProcessing: () => Promise<boolean>;
+  openAISetup: () => void;
+  setupOpen: boolean;
+  noticeTone: 'success' | 'warning' | 'info';
   loading: boolean;
   loadError: string;
   notice: string;
@@ -11,7 +17,7 @@ export interface AppState {
   save: (a: ExtractedAction) => Promise<void>;
   remove: (id: string) => Promise<void>;
   complete: (a: ExtractedAction) => Promise<void>;
-  saveSettings: (s: Settings) => Promise<void>;
+  saveSettings: (s: Settings | ((current: Settings) => Settings)) => Promise<void>;
   announce: (message: string) => void;
 }
 export const AppContext = createContext<AppState | null>(null);

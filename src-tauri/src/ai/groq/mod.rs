@@ -1,4 +1,5 @@
 //! Optional BYOK extraction. All remote URLs and authentication are owned by Rust.
+mod connectivity;
 mod credentials;
 mod limits;
 
@@ -92,10 +93,14 @@ fn http_error(status: StatusCode) -> Failure {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Status {
     connected: bool,
+    verified: bool,
+    connectivity: &'static str,
+    resume_required: bool,
+    provider_reachable: bool,
     storage: &'static str,
     consent: bool,
     enabled: bool,
@@ -118,6 +123,9 @@ struct Inner {
     loaded: bool,
     storage: &'static str,
     enabled: bool,
+    verified: bool,
+    connectivity: &'static str,
+    provider_reachable: bool,
     sessions: HashMap<String, Session>,
     queue: VecDeque<String>,
     early: HashSet<String>,
@@ -162,6 +170,9 @@ impl Groq {
                 loaded: false,
                 storage: "none",
                 enabled: false,
+                verified: false,
+                connectivity: if cfg!(test) { "online" } else { "unknown" },
+                provider_reachable: false,
                 sessions: HashMap::new(),
                 queue: VecDeque::new(),
                 early: HashSet::new(),
@@ -203,6 +214,10 @@ impl Groq {
         let retry_at = inner.config.next_allowed(now).ok().filter(|at| *at > now);
         Status {
             connected: inner.key.is_some() && !inner.config_error,
+            verified: inner.verified,
+            connectivity: inner.connectivity,
+            resume_required: inner.config.resume_required,
+            provider_reachable: inner.provider_reachable,
             storage: inner.storage,
             consent: inner.config.consent_version == CONSENT_VERSION,
             enabled: inner.enabled,
@@ -361,6 +376,15 @@ fn invalid_output() -> Failure {
     Failure::new("GROQ_INVALID_OUTPUT", "Groq returned an invalid or incomplete extraction. Your source is retained; nothing was saved.")
 }
 fn check_enabled(inner: &Inner) -> Result<()> {
+    if inner.enabled
+        && (inner.config.resume_required
+            || (inner.connectivity != "online" && !inner.provider_reachable))
+    {
+        return Err(Failure::new(
+            "GROQ_NETWORK",
+            "Groq is temporarily unavailable. Your source is retained; retry locally.",
+        ));
+    }
     if inner.config_error {
         return Err(Failure::storage());
     }
@@ -437,11 +461,21 @@ pub async fn groq_status(window: tauri::Window, state: tauri::State<'_, Groq>) -
 #[tauri::command]
 pub async fn groq_connect(
     window: tauri::Window,
+    app: tauri::AppHandle,
     state: tauri::State<'_, Groq>,
     key: String,
 ) -> Result<Status> {
     check_window(&window)?;
-    state.connect_key(key).await
+    let result = state.connect_key(key).await;
+    if result
+        .as_ref()
+        .err()
+        .is_some_and(|e| e.code == "GROQ_NETWORK")
+    {
+        state.provider_unavailable().await;
+        let _ = app.emit("groq-connection", state.status().await);
+    }
+    result
 }
 impl Groq {
     async fn connect_key(&self, key: String) -> Result<Status> {
@@ -472,6 +506,8 @@ impl Groq {
             let persistent = matches!(stored, Ok(Ok(())));
             let mut inner = self.inner.lock().await;
             inner.key = Some(key);
+            inner.verified = true;
+            inner.provider_reachable = true;
             inner.loaded = true;
             inner.storage = if persistent { "persistent" } else { "session" };
             inner.config.credential_enabled = persistent;
@@ -485,7 +521,11 @@ impl Groq {
 }
 
 #[tauri::command]
-pub async fn groq_verify(window: tauri::Window, state: tauri::State<'_, Groq>) -> Result<Status> {
+pub async fn groq_verify(
+    window: tauri::Window,
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Groq>,
+) -> Result<Status> {
     check_window(&window)?;
     state.load_key().await;
     let _gate = state.credential_gate.lock().await;
@@ -496,7 +536,22 @@ pub async fn groq_verify(window: tauri::Window, state: tauri::State<'_, Groq>) -
         .key
         .clone()
         .ok_or_else(|| Failure::new("GROQ_INVALID_KEY", "Connect a Groq API key first."))?;
-    state.verify_key(&key).await?;
+    if let Err(error) = state.verify_key(&key).await {
+        if error.code == "GROQ_INVALID_KEY" {
+            state.inner.lock().await.verified = false;
+        }
+        if error.code == "GROQ_NETWORK" {
+            state.provider_unavailable().await;
+            drop(_gate);
+            let _ = app.emit("groq-connection", state.status().await);
+        }
+        return Err(error);
+    }
+    {
+        let mut inner = state.inner.lock().await;
+        inner.verified = true;
+        inner.provider_reachable = true;
+    }
     // Avoid recursively acquiring the credential lock in status().
     drop(_gate);
     Ok(state.status().await)
@@ -516,6 +571,8 @@ impl Groq {
         let disabled = {
             let mut inner = self.inner.lock().await;
             inner.key = None;
+            inner.verified = false;
+            inner.provider_reachable = false;
             inner.storage = "none";
             inner.loaded = true;
             inner.enabled = false;
@@ -545,6 +602,7 @@ pub async fn groq_configure(
     state: tauri::State<'_, Groq>,
     enabled: bool,
     consent: bool,
+    resume: Option<bool>,
 ) -> Result<Status> {
     check_window(&window)?;
     if !enabled {
@@ -555,6 +613,27 @@ pub async fn groq_configure(
         if consent {
             inner.config.consent_version = CONSENT_VERSION;
             state.save(&mut inner)?;
+        }
+        if enabled {
+            if resume.unwrap_or(false) {
+                if inner.connectivity != "online" && !inner.provider_reachable {
+                    return Err(Failure::new(
+                        "GROQ_NETWORK",
+                        "Groq is unavailable. Verify your connection or use Local AI.",
+                    ));
+                }
+                inner.config.resume_required = false;
+                state.save(&mut inner)?;
+            }
+            if inner.config.resume_required
+                || (inner.connectivity != "online" && !inner.provider_reachable)
+            {
+                inner.enabled = false;
+                return Err(Failure::new(
+                    "GROQ_NETWORK",
+                    "Using Local AI. Select Groq Cloud explicitly to resume online processing.",
+                ));
+            }
         }
         inner.enabled = enabled;
     }
@@ -747,6 +826,24 @@ impl Groq {
         })?;
         for attempt in 0..=2 {
             loop {
+                #[cfg(not(test))]
+                {
+                    let observed = tauri::async_runtime::spawn_blocking(connectivity::read)
+                        .await
+                        .unwrap_or("unknown");
+                    if observed != "online" {
+                        let mut inner = self.inner.lock().await;
+                        if observed == "offline" || !inner.provider_reachable {
+                            inner.enabled = false;
+                            inner.config.resume_required = true;
+                            self.save(&mut inner)?;
+                            return Err(Failure::new(
+                                "GROQ_NETWORK",
+                                "Connection unavailable. Source retained; retry locally.",
+                            ));
+                        }
+                    }
+                }
                 if cancel.load(Ordering::SeqCst) {
                     return Err(Failure::cancelled());
                 }
@@ -780,7 +877,11 @@ impl Groq {
                     .send()
                     .await
                     .map_err(network)?;
+                report("processing", None);
                 let status = response.status();
+                if status == StatusCode::UNAUTHORIZED {
+                    self.inner.lock().await.verified = false;
+                }
                 let retry_at = self
                     .headers(
                         response.headers(),
@@ -839,7 +940,22 @@ impl Groq {
                     report("waiting", error.retry_at);
                     // reserve() observes the persisted cooldown and application limits.
                 }
-                result => return result,
+                result => {
+                    if result
+                        .as_ref()
+                        .err()
+                        .is_some_and(|e| e.code == "GROQ_NETWORK")
+                    {
+                        let mut inner = self.inner.lock().await;
+                        inner.provider_reachable = false;
+                        inner.enabled = false;
+                        inner.config.resume_required = true;
+                        self.save(&mut inner)?;
+                        drop(inner);
+                        self.cancel_all().await;
+                    }
+                    return result;
+                }
             }
         }
         unreachable!()
@@ -917,3 +1033,151 @@ mod http_tests;
 
 #[cfg(test)]
 mod evaluation;
+
+pub fn watch_connectivity(app: tauri::AppHandle) {
+    connectivity::watch(app);
+}
+impl Groq {
+    async fn observe_connectivity(&self, observed: &'static str) -> bool {
+        let mut inner = self.inner.lock().await;
+        if inner.connectivity == observed {
+            return false;
+        }
+        let lost =
+            observed != "online" && (inner.connectivity == "online" || observed == "offline");
+        inner.connectivity = observed;
+        if lost {
+            inner.provider_reachable = false;
+            inner.enabled = false;
+            inner.config.resume_required = true;
+            let _ = self.save(&mut inner);
+        }
+        drop(inner);
+        if lost {
+            self.cancel_all().await;
+        }
+        true
+    }
+    async fn provider_unavailable(&self) {
+        let mut inner = self.inner.lock().await;
+        inner.provider_reachable = false;
+        inner.enabled = false;
+        inner.config.resume_required = true;
+        let _ = self.save(&mut inner);
+        drop(inner);
+        self.cancel_all().await;
+    }
+    async fn update_connectivity(&self, observed: &'static str, app: &tauri::AppHandle) {
+        if self.observe_connectivity(observed).await {
+            let _ = app.emit("groq-connection", self.status().await);
+        }
+    }
+}
+#[tauri::command]
+pub async fn groq_open_link(
+    window: tauri::Window,
+    app: tauri::AppHandle,
+    destination: String,
+) -> Result<()> {
+    check_window(&window)?;
+    let url = match destination.as_str() {
+        "keys" => "https://console.groq.com/keys",
+        "data-policy" => "https://console.groq.com/docs/your-data",
+        _ => {
+            return Err(Failure::new(
+                "GROQ_FORBIDDEN",
+                "This link is not permitted.",
+            ))
+        }
+    };
+    use tauri_plugin_opener::OpenerExt;
+    app.opener()
+        .open_url(url, None::<&str>)
+        .map_err(|_| Failure::new("GROQ_UNAVAILABLE", "Could not open your default browser."))
+}
+
+#[cfg(test)]
+mod connectivity_tests {
+    use super::*;
+    #[tokio::test]
+    async fn loss_is_durable_cancels_jobs_and_restoration_does_not_enable_cloud() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("usage.json");
+        let service = Groq::new(path.clone()).unwrap();
+        {
+            let mut inner = service.inner.lock().await;
+            inner.enabled = true;
+            inner.provider_reachable = true;
+            inner.config.consent_version = CONSENT_VERSION;
+            inner.key = Some(Zeroizing::new("synthetic-credential".into()));
+        }
+        service
+            .begin(
+                uuid::Uuid::new_v4().to_string(),
+                "test-source".into(),
+                |_, _| {},
+            )
+            .await
+            .unwrap();
+        service.observe_connectivity("offline").await;
+        let inner = service.inner.lock().await;
+        assert!(!inner.enabled);
+        assert!(inner.config.resume_required);
+        assert!(inner.sessions.is_empty());
+        drop(inner);
+        service.observe_connectivity("online").await;
+        assert!(!service.inner.lock().await.enabled);
+        assert!(Config::load(&path).unwrap().resume_required);
+        let reopened = Groq::new(path).unwrap();
+        assert!(reopened.inner.lock().await.config.resume_required);
+    }
+    #[tokio::test]
+    async fn loss_cancels_queued_sessions_without_reserving_an_attempt() {
+        let dir = tempfile::tempdir().unwrap();
+        let service = Arc::new(Groq::new(dir.path().join("usage.json")).unwrap());
+        {
+            let mut inner = service.inner.lock().await;
+            inner.enabled = true;
+            inner.config.consent_version = CONSENT_VERSION;
+            inner.key = Some(Zeroizing::new("synthetic-credential".into()));
+        }
+        service
+            .begin(uuid::Uuid::new_v4().to_string(), "active".into(), |_, _| {})
+            .await
+            .unwrap();
+        let queued_service = service.clone();
+        let queued = tokio::spawn(async move {
+            queued_service
+                .begin(uuid::Uuid::new_v4().to_string(), "queued".into(), |_, _| {})
+                .await
+        });
+        for _ in 0..100 {
+            if !service.inner.lock().await.queue.is_empty() {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+        assert_eq!(service.inner.lock().await.queue.len(), 1);
+        service.observe_connectivity("offline").await;
+        let failure = tokio::time::timeout(Duration::from_secs(1), queued)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap_err();
+        assert_eq!(failure.code, "CANCELLED");
+        let inner = service.inner.lock().await;
+        assert!(inner.sessions.is_empty());
+        assert_eq!(inner.config.daily, 0);
+    }
+    #[tokio::test]
+    async fn unknown_connectivity_never_becomes_network_permission() {
+        let dir = tempfile::tempdir().unwrap();
+        let service = Groq::new(dir.path().join("usage.json")).unwrap();
+        service.observe_connectivity("unknown").await;
+        let mut inner = service.inner.lock().await;
+        inner.enabled = true;
+        inner.config.resume_required = false;
+        assert_eq!(check_enabled(&inner).unwrap_err().code, "GROQ_NETWORK");
+        assert_eq!(inner.config.daily, 0);
+    }
+}

@@ -2,13 +2,21 @@ import { componentsReady, useLocalIntelligence } from '../../services/localai/us
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useApp } from '../../app/context';
 import { Button, ErrorState } from '../../components/ui';
-import { Microphone, FileImage, Pencil, ShieldCheck } from '../../components/icons';
+import {
+  Microphone,
+  FileImage,
+  Pencil,
+  ShieldCheck,
+  LoaderCircle,
+  AlertCircle,
+} from '../../components/icons';
 import type { ExtractedAction } from '../../types/action';
 import type { AudioSource, CaptureStatus } from '../../services/voice/types';
 import { CaptureProgress, type CaptureMode } from '../capture/CaptureProgress';
 import { VoiceWaveform, type WaveformHandle } from '../capture/VoiceWaveform';
 import { useCaptureMotion } from '../capture/useCaptureMotion';
 import { downloadText } from '../../lib/images';
+import { LocalAIError, toLocalAIError } from '../../services/localai/native';
 import './voice.css';
 const working = new Set<CaptureStatus>([
   'requesting_permission',
@@ -34,12 +42,21 @@ export function VoiceCapture({
   onGuardChange: (cancel: (() => Promise<void>) | null) => void;
 }) {
   const { status: intelligence } = useLocalIntelligence();
-  const { services, snapshot } = useApp();
-  const cloud = snapshot.settings.ai.executionMode === 'groq';
-  const textReady = cloud || componentsReady(intelligence, ['extraction', 'llama-server']);
+  const intelligenceRef = useRef(intelligence);
+  intelligenceRef.current = intelligence;
+  const { services, snapshot, processing: processingMode, ensureProcessing } = useApp();
+  const effectiveCloud = processingMode.effectiveMode === 'groq';
+  const [runCloud, setRunCloud] = useState<boolean | null>(null);
+  const executionMode = useRef(processingMode.effectiveMode);
+  const cloud = runCloud ?? effectiveCloud;
+  const canSetup =
+    !snapshot.settings.ai.modeChoiceCompleted || processingMode.preferredMode === 'groq';
+  const textReady = effectiveCloud || componentsReady(intelligence, ['extraction', 'llama-server']);
   const speechReady = componentsReady(
     intelligence,
-    cloud ? ['whisper', 'whisper-cli'] : ['extraction', 'llama-server', 'whisper', 'whisper-cli'],
+    effectiveCloud
+      ? ['whisper', 'whisper-cli']
+      : ['extraction', 'llama-server', 'whisper', 'whisper-cli'],
   );
   const [onlineStatus, setOnlineStatus] = useState('');
   const [status, setStatus] = useState<CaptureStatus>('idle'),
@@ -168,9 +185,24 @@ export function VoiceCapture({
       window.removeEventListener('beforeunload', unload);
     };
   }, [status, services]);
+  function readyFor(kind: 'text' | 'speech') {
+    const online = services.processing.getSnapshot().effectiveMode === 'groq';
+    return componentsReady(
+      intelligenceRef.current,
+      kind === 'speech'
+        ? online
+          ? ['whisper', 'whisper-cli']
+          : ['extraction', 'llama-server', 'whisper', 'whisper-cli']
+        : online
+          ? []
+          : ['extraction', 'llama-server'],
+    );
+  }
   function begin(keepResults = false) {
     if (busy.current || locked || poisoned.current || !acquire()) return null;
     busy.current = true;
+    executionMode.current = services.processing.getSnapshot().effectiveMode;
+    setRunCloud(executionMode.current === 'groq');
     generation.current++;
     controller.current = new AbortController();
     setError('');
@@ -182,6 +214,12 @@ export function VoiceCapture({
     return { version: generation.current, signal: controller.current.signal };
   }
   async function extract(input: ExtractedAction['source'], version: number, signal: AbortSignal) {
+    signal.throwIfAborted();
+    if (executionMode.current !== services.processing.getSnapshot().effectiveMode)
+      throw new LocalAIError(
+        'CANCELLED',
+        'AI mode changed. Your source is retained; choose Retry locally when local AI is ready.',
+      );
     setStatus('extracting');
     setExtractionStep(2);
     setOnlineStatus('');
@@ -194,7 +232,9 @@ export function VoiceCapture({
             ? 'Waiting for the active Groq extraction…'
             : state.stage === 'waiting'
               ? `Waiting for rate-limit reset${state.retryAt ? ` at ${new Date(state.retryAt).toLocaleTimeString()}` : ''}…`
-              : 'Sending for online extraction…',
+              : state.stage === 'processing'
+                ? 'Processing online…'
+                : 'Sending securely…',
         );
       },
       onProgress: (step) => {
@@ -226,8 +266,9 @@ export function VoiceCapture({
   }
   function failed(e: unknown, version: number) {
     if (version !== generation.current) return;
-    setError(e instanceof Error ? e.message : 'Local processing failed.');
-    setStatus('error');
+    const failure = toLocalAIError(e);
+    setError(failure.message);
+    setStatus(failure.code === 'CANCELLED' ? 'cancelled' : 'error');
     busy.current = false;
     release();
   }
@@ -258,7 +299,8 @@ export function VoiceCapture({
     }
   }
   async function record() {
-    if (!speechReady) {
+    if (busy.current || locked || !(await ensureProcessing())) return;
+    if (!readyFor('speech')) {
       setError(intelligence.message);
       return;
     }
@@ -355,7 +397,10 @@ export function VoiceCapture({
     if (elapsed >= 300 && status === 'recording') doneRef.current();
   }, [elapsed, status]);
   async function importAudio(selected: File) {
-    if (!speechReady) {
+    importedFile.current = selected;
+    setFileName(selected.name);
+    if (busy.current || locked || !(await ensureProcessing())) return;
+    if (!readyFor('speech')) {
       setError(intelligence.message);
       return;
     }
@@ -385,7 +430,8 @@ export function VoiceCapture({
     }
   }
   async function fromText() {
-    if (!textReady) {
+    if (busy.current || locked || !(await ensureProcessing())) return;
+    if (!readyFor('text')) {
       setError(intelligence.message);
       return;
     }
@@ -407,7 +453,7 @@ export function VoiceCapture({
     }
   }
   async function retry() {
-    if (!source) return;
+    if (!source || !(await ensureProcessing())) return;
     const job = begin(true);
     if (!job) return;
     const next = { ...source, recordingDate: recordingDate || undefined };
@@ -493,7 +539,7 @@ export function VoiceCapture({
         ref={file}
         aria-label="Import audio file"
         accept=".wav,.mp3,.m4a,.ogg"
-        disabled={!speechReady || disabled || isWorking}
+        disabled={(!speechReady && !canSetup) || disabled || isWorking}
         onChange={(e) => {
           const selected = e.target.files?.[0];
           e.target.value = '';
@@ -526,7 +572,13 @@ export function VoiceCapture({
         </div>
         <div ref={content} className="capture-card-content">
           <div className="capture-primary">
-            <h2 ref={heading} tabIndex={-1}>
+            <h2
+              ref={heading}
+              tabIndex={-1}
+              className={processing ? 'capture-running capture-active-heading' : undefined}
+            >
+              {processing && <LoaderCircle size={18} className="capture-spinner" />}
+              {status === 'error' && <AlertCircle size={18} />}
               {isWorking || status === 'error' || status === 'cancelled' ? labels[status] : title}
             </h2>
             <p className="capture-live sr-only" role="status">
@@ -553,7 +605,7 @@ export function VoiceCapture({
                 <p>Bring a recording into your local workspace.</p>
                 <Button
                   variant="primary"
-                  disabled={!speechReady || disabled}
+                  disabled={(!speechReady && !canSetup) || disabled}
                   onClick={() => file.current?.click()}
                 >
                   Choose audio file
@@ -596,12 +648,19 @@ export function VoiceCapture({
               </label>
               <Button
                 variant="primary"
-                disabled={!textReady || disabled || isWorking || text.trim().length < 3}
+                disabled={
+                  (!textReady && !canSetup) || disabled || isWorking || text.trim().length < 3
+                }
                 onClick={() => void fromText()}
               >
                 Extract actions
               </Button>
             </div>
+          )}
+          {!isWorking && importedFile.current && !source && (
+            <Button disabled={disabled} onClick={() => void importAudio(importedFile.current!)}>
+              Retry retained audio
+            </Button>
           )}
           {!isWorking && !(mode === 'text' ? textReady : speechReady) && (
             <p className="field-help" role="status">
@@ -657,7 +716,7 @@ export function VoiceCapture({
               <div className="capture-actions">
                 {!source && !importedFile.current && (
                   <Button
-                    disabled={!speechReady || disabled || isWorking}
+                    disabled={(!speechReady && !canSetup) || disabled || isWorking}
                     onClick={() => void record()}
                   >
                     Try recording again
@@ -665,7 +724,7 @@ export function VoiceCapture({
                 )}
                 {!source && importedFile.current && (
                   <Button
-                    disabled={!speechReady || disabled || isWorking}
+                    disabled={(!speechReady && !canSetup) || disabled || isWorking}
                     onClick={() => {
                       if (importedFile.current) void importAudio(importedFile.current);
                     }}
@@ -674,7 +733,7 @@ export function VoiceCapture({
                   </Button>
                 )}
                 <Button
-                  disabled={!speechReady || disabled || isWorking}
+                  disabled={(!speechReady && !canSetup) || disabled || isWorking}
                   onClick={() => file.current?.click()}
                 >
                   Use audio file instead
@@ -711,7 +770,7 @@ export function VoiceCapture({
             </label>
           )}
           {processing && !cleaning && waitSeconds >= notifyAfter && (
-            <p role="status">
+            <p aria-live="off">
               {cloud ? 'Still processing' : 'Still working on this device'} ({waitSeconds}s). This
               is taking longer than usual. Nothing is saved until you review it.
             </p>
@@ -752,7 +811,9 @@ export function VoiceCapture({
           )}
           {source && !isWorking && (
             <Button disabled={disabled || !textReady} onClick={() => void retry()}>
-              Retry extraction
+              {processingMode.preferredMode === 'groq' && processingMode.effectiveMode === 'local'
+                ? 'Retry locally'
+                : 'Retry extraction'}
             </Button>
           )}
           {!isWorking && (source || importedFile.current || results.length > 0) && (
@@ -779,7 +840,7 @@ export function VoiceCapture({
               aria-label="Record a voice note"
               title="Record a voice note"
               variant="primary"
-              disabled={!speechReady || disabled}
+              disabled={(!speechReady && !canSetup) || disabled}
               onClick={() => void record()}
             >
               <Microphone size={22} />

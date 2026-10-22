@@ -17,7 +17,7 @@ export function policyFrom(ai: AIRoutingSettings, allowMock: boolean): RoutingPo
 
 /** Live device/provider snapshot and the router's decision for a sample task. */
 export function useAIRouting(signals: TaskSignals) {
-  const { services, snapshot: data } = useApp();
+  const { services, snapshot: data, processing } = useApp();
   const { router } = services.ai;
   const [snapshot, setSnapshot] = useState<RoutingSnapshot | null>(null),
     [loading, setLoading] = useState(true),
@@ -51,7 +51,10 @@ export function useAIRouting(signals: TaskSignals) {
   }, [refresh]);
 
   const allowMock = router.currentPolicy().allowMock;
-  const policy = useMemo(() => policyFrom(ai, allowMock), [ai, allowMock]);
+  const policy = useMemo(
+    () => policyFrom({ ...ai, executionMode: processing.effectiveMode }, allowMock),
+    [ai, allowMock, processing.effectiveMode],
+  );
   const decision: RouteDecision | null = useMemo(
     () => (snapshot ? recommend(deriveRequirements(signals), snapshot, policy) : null),
     [snapshot, policy, signals],

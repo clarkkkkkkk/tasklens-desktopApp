@@ -12,6 +12,10 @@ import {
 export const GROQ_MODEL = 'openai/gpt-oss-20b';
 export interface GroqStatus {
   connected: boolean;
+  verified?: boolean;
+  providerReachable?: boolean;
+  connectivity?: 'online' | 'offline' | 'unknown';
+  resumeRequired?: boolean;
   storage: 'persistent' | 'session' | 'none';
   consent: boolean;
   enabled: boolean;
@@ -23,6 +27,10 @@ export interface GroqStatus {
 }
 export const disconnectedGroq: GroqStatus = {
   connected: false,
+  verified: false,
+  providerReachable: false,
+  connectivity: 'unknown',
+  resumeRequired: false,
   storage: 'none',
   consent: false,
   enabled: false,
@@ -36,9 +44,11 @@ export const groqConnection = {
   connect: (key: string) => nativeInvoke<GroqStatus>('groq_connect', { key }),
   verify: () => nativeInvoke<GroqStatus>('groq_verify'),
   disconnect: () => nativeInvoke<GroqStatus>('groq_disconnect'),
-  configure: (enabled: boolean, consent = false) =>
+  openLink: (destination: 'keys' | 'data-policy') =>
+    nativeInvoke<void>('groq_open_link', { destination }),
+  configure: (enabled: boolean, consent = false, resume = false) =>
     nativeAvailable()
-      ? nativeInvoke<GroqStatus>('groq_configure', { enabled, consent })
+      ? nativeInvoke<GroqStatus>('groq_configure', { enabled, consent, resume })
       : Promise.resolve(disconnectedGroq),
 };
 
@@ -102,6 +112,7 @@ const nativeGroq: GroqNative = {
     listeners.get(id)?.();
     listeners.delete(id);
     await nativeInvoke('groq_finish', { id });
+    window.dispatchEvent(new Event('tasklens-groq-change'));
   },
   async generate(id, request, signal) {
     signal.throwIfAborted();

@@ -1,3 +1,4 @@
+import { ProcessingMode } from '../services/ai/ProcessingMode';
 import {
   NativeVoiceCapture,
   NativeSpeechToText,
@@ -25,7 +26,7 @@ import {
   watchLocalIntelligence,
   type IntelligenceStatus,
 } from '../services/localai/LocalIntelligence';
-import { nativeAvailable } from '../services/localai/native';
+import { nativeAvailable, LocalAIError } from '../services/localai/native';
 import { NativeOcrService } from '../services/ocr/NativeOcrService';
 import { ConfigurationReminderScheduler } from '../services/reminders/ReminderScheduler';
 import type { ReminderScheduler } from '../services/reminders/ReminderScheduler';
@@ -48,6 +49,7 @@ export interface AIServices {
   device: DeviceProfiler;
 }
 export interface Services {
+  processing: ProcessingMode;
   audioPreprocessor: AudioPreprocessor;
   voice: VoiceCaptureService;
   speech: SpeechToTextService;
@@ -68,6 +70,7 @@ export interface Services {
 }
 export function createServices(): Services {
   const settings = { current: defaultSettings };
+  const processing = new ProcessingMode();
   const localAI = new NativeLocalModelManager();
   const demo = new MockExtractionService();
   const useMock = !nativeAvailable() || import.meta.env.VITE_TASKLENS_EXTRACTION === 'mock';
@@ -91,7 +94,7 @@ export function createServices(): Services {
     }).catch(() => {});
   const policy = (): RoutingPolicy => ({
     mode: settings.current.ai.mode,
-    executionMode: settings.current.ai.executionMode,
+    executionMode: processing.getSnapshot().effectiveMode,
     priority: settings.current.ai.priority,
     manualModel: settings.current.ai.manualModel,
     allowMock: useMock,
@@ -106,7 +109,8 @@ export function createServices(): Services {
     setItem: (key, value) => window.localStorage.setItem(key, value),
     removeItem: (key) => window.localStorage.removeItem(key),
   });
-  return {
+  const services: Services = {
+    processing,
     audioPreprocessor,
     voice: new NativeVoiceCapture(audioPreprocessor),
     speech: new NativeSpeechToText(),
@@ -119,12 +123,13 @@ export function createServices(): Services {
     extraction: useMock
       ? {
           get mode() {
-            return settings.current.ai.executionMode === 'groq'
+            return processing.getSnapshot().effectiveMode === 'groq'
               ? ('routed' as const)
               : ('mock' as const);
           },
           extract(input, options) {
-            if (settings.current.ai.executionMode !== 'groq') return demo.extract(input, options);
+            if (processing.getSnapshot().effectiveMode !== 'groq')
+              return demo.extract(input, options);
             return new RoutedExtractionService(
               new NativeOcrService(),
               router,
@@ -139,5 +144,45 @@ export function createServices(): Services {
     reminders: new ConfigurationReminderScheduler(),
     ai: { router, registry, device },
     settings,
+  };
+  services.extraction = withProcessingMode(services.extraction, processing);
+  return services;
+}
+
+export function withProcessingMode(
+  extraction: ExtractionService,
+  processing: ProcessingMode,
+): ExtractionService {
+  return {
+    get mode() {
+      return extraction.mode;
+    },
+    async extract(input, options) {
+      const selectedMode = processing.getSnapshot().effectiveMode;
+      const controller = new AbortController();
+      const cancel = () => controller.abort(options.signal.reason);
+      options.signal.addEventListener('abort', cancel, { once: true });
+      if (options.signal.aborted) cancel();
+      const unsubscribe = processing.subscribe(() => {
+        if (processing.getSnapshot().effectiveMode !== selectedMode)
+          controller.abort(
+            new LocalAIError(
+              'CANCELLED',
+              'AI mode changed. Your source is retained; choose Retry locally.',
+            ),
+          );
+      });
+      try {
+        const result = await extraction.extract(input, { ...options, signal: controller.signal });
+        controller.signal.throwIfAborted();
+        return result;
+      } catch (error) {
+        if (controller.signal.aborted) throw controller.signal.reason;
+        throw error;
+      } finally {
+        unsubscribe();
+        options.signal.removeEventListener('abort', cancel);
+      }
+    },
   };
 }
