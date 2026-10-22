@@ -73,6 +73,54 @@ const vision = (outputs?: (string | Error)[]) =>
   provider('vision', localModel('vision-7b', { params: 7, vision: true }), outputs);
 
 describe('RoutedExtractionService', () => {
+  it('reuses OCR only for the same image after a failed inference', async () => {
+    let checkpoint: import('./ExtractionService').OcrCheckpoint | undefined;
+    const failing = setup({ mode: 'automatic' }, [local([new Error('Local process stopped')])]);
+    await expect(
+      failing.service.extract(input, {
+        ...options(),
+        onOcr: (value) => {
+          checkpoint = value;
+        },
+      }),
+    ).rejects.toThrow();
+    expect(checkpoint?.document).toEqual(doc);
+    const retry = setup({ mode: 'automatic' }, [local()]);
+    const result = await retry.service.extract(input, { ...options(), ocrCheckpoint: checkpoint });
+    expect(result.actions).toHaveLength(1);
+    expect(retry.ocr.recognize).not.toHaveBeenCalled();
+    await expect(
+      retry.service.extract(
+        { ...input, image: new Blob(['different']) },
+        { ...options(), ocrCheckpoint: checkpoint },
+      ),
+    ).rejects.toThrow(/different screenshot/);
+  });
+  it('cancels and joins warm-up when OCR fails', async () => {
+    let cancelled = false;
+    const backend = {
+      ...local(),
+      prepare: vi.fn(
+        (_id: string, _system: string, signal: AbortSignal) =>
+          new Promise<void>((_resolve, reject) => {
+            signal.addEventListener(
+              'abort',
+              () => {
+                cancelled = true;
+                reject(new DOMException('Aborted', 'AbortError'));
+              },
+              { once: true },
+            );
+          }),
+      ),
+    };
+    const fixture = setup({ mode: 'automatic' }, [backend]);
+    fixture.ocr.recognize.mockRejectedValue(new Error('OCR failed'));
+    await expect(fixture.service.extract(input, options())).rejects.toThrow('OCR failed');
+    expect(cancelled).toBe(true);
+    expect(backend.generate).not.toHaveBeenCalled();
+  });
+
   it('runs the selected local model and records where the draft came from', async () => {
     const l = local();
     const { service } = setup({ mode: 'automatic' }, [l]);
@@ -153,14 +201,14 @@ describe('RoutedExtractionService', () => {
     expect(bundle.actions[0].title).toBe('Pictorial');
   });
 
-  it('fails fast before OCR when no AI can run, with the reason', async () => {
+  it('preserves OCR when no AI can run, with the reason', async () => {
     const down = provider('local', localModel('local-4b', { params: 4 }), [valid], false);
     const { service, ocr } = setup({ mode: 'automatic' }, [down]);
     await expect(service.extract(input, options())).rejects.toMatchObject({
       code: 'NO_AI_AVAILABLE',
       message: expect.stringMatching(/local is not running/),
     });
-    expect(ocr.recognize).not.toHaveBeenCalled();
+    expect(ocr.recognize).toHaveBeenCalledOnce();
   });
 
   it('cancellation stops without falling back to another model', async () => {

@@ -10,6 +10,8 @@ export interface SourceUnit {
   id: string;
   text: string;
   lowConfidence?: boolean;
+  /** A standalone chat timestamp is context for relative dates, never an activity clock. */
+  messageTimestamp?: boolean;
   /** Underlying OCR line IDs when one unit spans a wrapped paragraph. */
   members?: string[];
 }
@@ -33,13 +35,19 @@ export interface PromptContext {
 const LOW_OCR_CONFIDENCE = 0.6;
 
 const LABEL_LINE = /^[\p{L}][\p{L}\s]{0,25}:(\s|$)/u;
+// A completed schedule/venue label must not absorb the next attendance. Keep general
+// prose such as "Paalala:" eligible for wrapped-sentence joining.
+const FIELD_LABEL_LINE = /^(venue|location|lugar|time|oras|date|petsa)\s*:/i;
+const ACTIVITY_HEADING_LINE = /^[A-Z][A-Z /]{2,40}\s[-–—]\s/;
 const LIST_LINE = /^\s*([-•*–]|\d{1,2}[.)])\s/;
-const TIME_IN_LINE = /\b\d{1,2}[:.]\d{2}\b|\b\d{1,2}\s*[ap]\.?m\b/i;
-const DATE_IN_LINE =
-  /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}\b|\b\d{1,2}\/\d{1,2}\//i;
-/** Chat timestamps such as "Mon, Oct 5, 2026 at 9:14 AM" stand alone as their own unit. */
-const isTimestamp = (text: string) =>
-  DATE_IN_LINE.test(text) && TIME_IN_LINE.test(text) && text.split(/\s+/).length <= 8;
+/** Deliberately narrow: a standalone named calendar date plus clock, without prose. */
+export const isMessageTimestamp = (text: string): boolean =>
+  /^(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)(?:day)?[,]?\s+)?(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+\d{1,2},?\s+\d{4}(?:,|\s+at)?\s+\d{1,2}[:.]\d{2}\s*(?:AM|PM)?$/i.test(
+    text.trim(),
+  );
+
+const completesSentence = (text: string) =>
+  /[.!?]$/.test(text.trim()) && !/\b(?:Mr|Mrs|Ms|Dr|Engr|Prof|Sr|Jr)\.$/i.test(text.trim());
 
 type Region = OcrDocument['regions'][number];
 /**
@@ -56,10 +64,14 @@ function continues(previous: Region, line: Region): boolean {
     Math.abs(line.box.x - previous.box.x) <= height / 2 &&
     previous.box.width >= 0.6 * Math.max(previous.box.width, line.box.width) &&
     !previous.text.trim().endsWith(':') &&
+    !completesSentence(previous.text) &&
+    !FIELD_LABEL_LINE.test(previous.text.trim()) &&
+    !ACTIVITY_HEADING_LINE.test(previous.text.trim()) &&
+    !ACTIVITY_HEADING_LINE.test(line.text.trim()) &&
     !LABEL_LINE.test(line.text) &&
     !LIST_LINE.test(line.text) &&
-    !isTimestamp(previous.text) &&
-    !isTimestamp(line.text)
+    !isMessageTimestamp(previous.text) &&
+    !isMessageTimestamp(line.text)
   );
 }
 
@@ -90,6 +102,7 @@ export function unitsFromOcr(doc: OcrDocument): SourceUnit[] {
     id,
     text,
     members,
+    messageTimestamp: isMessageTimestamp(text),
     lowConfidence: minConfidence < LOW_OCR_CONFIDENCE,
   }));
 }
@@ -162,7 +175,7 @@ export function buildUserMessage(context: PromptContext): string {
   lines.push('', 'SOURCE_UNITS');
   for (const unit of context.units)
     lines.push(
-      `[${unit.id}]${unit.lowConfidence ? ' (low OCR confidence)' : ''} ${sanitizeUnitText(unit.text)}`,
+      `[${unit.id}]${unit.messageTimestamp ? ' (message timestamp; context only)' : ''}${unit.lowConfidence ? ' (low OCR confidence)' : ''} ${sanitizeUnitText(unit.text)}`,
     );
   return lines.join('\n');
 }

@@ -14,20 +14,22 @@ ITEMS
 - event: something people attend: exams, quizzes, classes, meetings, consultations, seminars, pictorials, practices, orientations. A request to be reminded does not turn an exam into a task.
 - deadline: something to hand in or finish by a time: submit, pass, pasa, ipasa, due, "before 5".
 - task: anything else to do without a fixed attendance time.
-- One screenshot may contain multiple unrelated events. Never combine them unless the source clearly connects them.
+- Keep distinct attendances and submissions separate, using specific titles. "Submit the report Friday before 5 PM. Consultation Monday at 2 PM" means a report deadline and a Consultation event, not one task. "Consultation moved to 3 PM; submit the draft before 5 PM" also means two items.
 - Do not assume visible sections belong to the same item. If it is unclear whether a section belongs to an item, keep it out of that item and add an ambiguity.
 - Requirements are things to bring, wear, prepare or comply with, including dress codes, recommended attire and prohibitions such as "No jeans". Watch for bring/dala/magdala/dalhin, wear/mag (clothing)/magsuot and prepare/andam/ihanda. Keep each requirement separate and write it as a short instruction. Never output empty or placeholder requirements. Notes are other useful context. Keep requirements out of notes.
 - A cancelled activity is not something to attend. Do not create an event for it; mention it in an ambiguity or in the notes of a related item.
-- Never create items for group names, sender names or timestamps.
+- Never create items for group names, sender names or timestamps. A message timestamp anchors relative dates; its clock is never an activity time.
 - Preserve course names, event names, locations and instructions as written.
 
 FIELDS
 - Never invent details. If information is missing, use null. Unknown time is null, never 00:00. Write the whole date, time, end_time, arrival_time or location field as null when the source does not mention it at all. Date words such as ugma or bukas are not clock times.
-- time is when an event starts or when a deadline is due. arrival_time is when people must already be present ("be there by", "naa na", "kinahanglan naa", "dapat nandoon"). Never assume an arrival time is the event start time: if only an arrival time is stated, time is null.
+- time is when an event starts or when a deadline is due. "meeting inig udto" means time 12:00, not arrival. "Remind me at eight because the exam starts at nine" means exam time 09:00 and a separate reminder, never an 08:00 exam. arrival_time is when people must already be present ("be there by", "naa na", "kinahanglan naa", "dapat nandoon"). Never assume an arrival time is the event start time: if only an arrival time is stated, time is null.
 - Never assume a deadline is an event time. Distinguish event start time, required arrival time, deadline, reminder and preparation task.
-- end_time only when an end or range is stated, such as "8:00 AM - 1:00 PM".
+- Date and clock time are independent. A missing event date does not erase an explicitly written start, end or arrival time. Keep those times and ask for the missing date.
+- end_time only when an end or range is stated, such as "8:00 AM - 1:00 PM"; keep both endpoints as time and end_time.
 - location is the named venue or required arrival place, including a place stated in the arrival instruction (at/in/sa a place). Keep that place even when the event start is unknown. Arrival times belong in arrival_time, not requirements.
 - Dates use YYYY-MM-DD. For every time field, text copies the time exactly as written in the source (for example "1:30PM", "before 5", "alas 3") and value is the same time in 24-hour HH:MM.
+- When no date words support an item, use date:null. Never invent "ugma", "bukas" or an "unknown" expression to represent an absent date.
 - date.expression copies the original date words, for example "ugma", "karong Friday", "Huwebes", "October 11, 2026".
 - date.basis: "explicit" when a calendar date is written; "message_timestamp" when a relative date is resolved from a sending date visible in the source, such as a chat timestamp; "capture_time" when resolved from the recording or capture date that SOURCE_METADATA says relative dates refer to; "unknown" otherwise.
 - Treat relative dates carefully (today, tomorrow, ugma, bukas, karong Friday, sa Lunes, next week, weekday names). Resolve them only when the source timing supports it. Never assume "today" is the date a message was sent. If the sending date is not known, date.value is null, basis is "unknown", and add an ambiguity for the date.

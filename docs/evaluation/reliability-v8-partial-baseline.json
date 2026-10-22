@@ -1,0 +1,267 @@
+[
+  {
+    "id": "graduation-english",
+    "languages": "english",
+    "seconds": 386.704607415,
+    "attempts": 2,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "2 (expected 2)"
+      },
+      {
+        "name": "holy mass|misa: found",
+        "ok": true,
+        "detail": "Holy Mass"
+      },
+      {
+        "name": "holy mass|misa: type",
+        "ok": true,
+        "detail": "\"event\" (expected \"event\")"
+      },
+      {
+        "name": "holy mass|misa: date",
+        "ok": true,
+        "detail": "empty (expected empty)"
+      },
+      {
+        "name": "holy mass|misa: time",
+        "ok": true,
+        "detail": "\"10:00\" (expected \"10:00\")"
+      },
+      {
+        "name": "holy mass|misa: end time",
+        "ok": true,
+        "detail": "\"11:00\" (expected \"11:00\")"
+      },
+      {
+        "name": "holy mass|misa: location",
+        "ok": true,
+        "detail": "\"San Narciso Parish\""
+      },
+      {
+        "name": "holy mass|misa: requirement uniform",
+        "ok": true,
+        "detail": "[\"Required outfit for Holy Mass: OJT/Pinning uniform; black trousers or slacks\"]"
+      },
+      {
+        "name": "holy mass|misa: requirement trousers|slacks",
+        "ok": true,
+        "detail": "[\"Required outfit for Holy Mass: OJT/Pinning uniform; black trousers or slacks\"]"
+      },
+      {
+        "name": "lunch|paniudto|tanghalian: found",
+        "ok": true,
+        "detail": "Lunch"
+      },
+      {
+        "name": "lunch|paniudto|tanghalian: type",
+        "ok": true,
+        "detail": "\"event\" (expected \"event\")"
+      },
+      {
+        "name": "lunch|paniudto|tanghalian: date",
+        "ok": true,
+        "detail": "empty (expected empty)"
+      },
+      {
+        "name": "lunch|paniudto|tanghalian: time",
+        "ok": true,
+        "detail": "\"12:00\" (expected \"12:00\")"
+      },
+      {
+        "name": "lunch|paniudto|tanghalian: location",
+        "ok": true,
+        "detail": "\"RTC Gym\""
+      },
+      {
+        "name": "ambiguity on date",
+        "ok": true,
+        "detail": "[\"date: Which date does this activity refer to?\",\"date: Which date does this activity refer to?\"]"
+      },
+      {
+        "name": "no invented date",
+        "ok": true
+      },
+      {
+        "name": "no lost source evidence",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "event",
+        "title": "Holy Mass",
+        "time": "10:00",
+        "endTime": "11:00",
+        "location": "San Narciso Parish",
+        "requirements": [
+          "Required outfit for Holy Mass: OJT/Pinning uniform; black trousers or slacks"
+        ],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "needs_review",
+          "time": "confirmed",
+          "endTime": "confirmed",
+          "location": "confirmed",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "type": "event",
+        "title": "Lunch",
+        "time": "12:00",
+        "location": "RTC Gym",
+        "requirements": [],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "needs_review",
+          "time": "confirmed",
+          "location": "confirmed"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: Which date does this activity refer to? []",
+          "date: Which date does this activity refer to? []"
+        ]
+      }
+    ],
+    "issues": [
+      "item 1: date expression “unknown” is not in the source; ignored",
+      "item 2: date expression “unknown” is not in the source; ignored"
+    ],
+    "timings": {
+      "cache_n": 1756,
+      "prompt_n": 61,
+      "prompt_ms": 19010.389,
+      "prompt_per_token_ms": 311.64572131147537,
+      "prompt_per_second": 3.208771793149525,
+      "predicted_n": 338,
+      "predicted_ms": 203907.329,
+      "predicted_per_token_ms": 605.0662581602373,
+      "predicted_per_second": 1.6527115609463945
+    }
+  },
+  {
+    "id": "graduation-cebuano",
+    "languages": "cebuano",
+    "seconds": 193.786550671,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": false,
+        "detail": "1 (expected 2)"
+      },
+      {
+        "name": "holy mass|misa: found",
+        "ok": true,
+        "detail": "Holy Mass"
+      },
+      {
+        "name": "holy mass|misa: type",
+        "ok": true,
+        "detail": "\"event\" (expected \"event\")"
+      },
+      {
+        "name": "holy mass|misa: date",
+        "ok": true,
+        "detail": "empty (expected empty)"
+      },
+      {
+        "name": "holy mass|misa: time",
+        "ok": true,
+        "detail": "\"10:00\" (expected \"10:00\")"
+      },
+      {
+        "name": "holy mass|misa: end time",
+        "ok": true,
+        "detail": "\"11:00\" (expected \"11:00\")"
+      },
+      {
+        "name": "holy mass|misa: location",
+        "ok": true,
+        "detail": "\"San Narciso Parish\""
+      },
+      {
+        "name": "holy mass|misa: requirement uniform",
+        "ok": true,
+        "detail": "[\"OJT/Pinning uniform\",\"Black trousers or slacks\"]"
+      },
+      {
+        "name": "holy mass|misa: requirement trousers|slacks",
+        "ok": true,
+        "detail": "[\"OJT/Pinning uniform\",\"Black trousers or slacks\"]"
+      },
+      {
+        "name": "lunch|paniudto|tanghalian: found",
+        "ok": false,
+        "detail": "missing"
+      },
+      {
+        "name": "ambiguity on date",
+        "ok": true,
+        "detail": "[\"date: Which date does this activity refer to?\"]"
+      },
+      {
+        "name": "no invented date",
+        "ok": true
+      },
+      {
+        "name": "no lost source evidence",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "event",
+        "title": "Holy Mass",
+        "time": "10:00",
+        "endTime": "11:00",
+        "location": "San Narciso Parish",
+        "requirements": [
+          "OJT/Pinning uniform",
+          "Black trousers or slacks"
+        ],
+        "notes": [
+          "Graduation activities",
+          "LUNCH - paniudto sa RTC Gym sa 12 PM"
+        ],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "needs_review",
+          "time": "confirmed",
+          "endTime": "confirmed",
+          "location": "confirmed",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: Which date does this activity refer to? []"
+        ]
+      }
+    ],
+    "issues": [
+      "item 1: date expression “unknown” is not in the source; ignored"
+    ],
+    "timings": {
+      "cache_n": 1678,
+      "prompt_n": 109,
+      "prompt_ms": 25080.91,
+      "prompt_per_token_ms": 230.10009174311926,
+      "prompt_per_second": 4.345934816559686,
+      "predicted_n": 251,
+      "predicted_ms": 168604.043,
+      "predicted_per_token_ms": 674.4161720000001,
+      "predicted_per_second": 1.4827639690704213
+    }
+  }
+]

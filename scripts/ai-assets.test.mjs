@@ -43,3 +43,44 @@ test('format validation rejects an HTML response even when its size and digest m
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test('Windows audit rejects missing runtime DLLs and incompatible architecture', async () => {
+  const { auditWindowsBinary, peImports } = await import('./pe-dependencies.mjs');
+  const dir = await mkdtemp(path.join(tmpdir(), 'tasklens-pe-'));
+  // Minimal synthetic PE32+ import table. Never executed.
+  const pe = (name) => {
+    const bytes = Buffer.alloc(2048);
+    bytes.writeUInt32LE(128, 0x3c);
+    bytes.write('PE\0\0', 128, 'ascii');
+    bytes.writeUInt16LE(0x8664, 132);
+    bytes.writeUInt16LE(1, 134);
+    bytes.writeUInt16LE(240, 148);
+    bytes.writeUInt16LE(0x20b, 152);
+    bytes.writeUInt32LE(0x1000, 152 + 112 + 8);
+    const section = 152 + 240;
+    bytes.writeUInt32LE(1024, section + 8);
+    bytes.writeUInt32LE(0x1000, section + 12);
+    bytes.writeUInt32LE(1024, section + 16);
+    bytes.writeUInt32LE(512, section + 20);
+    bytes.writeUInt32LE(0x1100, 512 + 12);
+    bytes.write(name + '\0', 768, 'ascii');
+    return bytes;
+  };
+  try {
+    const file = path.join(dir, 'synthetic.exe');
+    await writeFile(file, pe('KERNEL32.dll'));
+    assert.deepEqual(auditWindowsBinary(file), ['kernel32.dll']);
+    await writeFile(file, pe('VCRUNTIME140.dll'));
+    assert.throws(() => auditWindowsBinary(file), /Unbundled/);
+    await writeFile(path.join(dir, 'vcruntime140.dll'), pe('KERNEL32.dll'));
+    assert.deepEqual(auditWindowsBinary(file), ['vcruntime140.dll']);
+    const wrong = pe('KERNEL32.dll');
+    wrong.writeUInt16LE(0x14c, 132);
+    await writeFile(file, wrong);
+    assert.throws(() => peImports(file), /x86_64/);
+    await writeFile(file, pe('../private.dll'));
+    assert.throws(() => peImports(file), /Unsafe import/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

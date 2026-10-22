@@ -53,14 +53,14 @@ export interface LocalModelManager {
   importOcrLanguages(): Promise<OcrStatus>;
   setConfig(config: RuntimeConfig): void;
   complete(
-    request: { jobId: string; prompt: string; schema: object; maxTokens: number },
+    request: { jobId: string; traceId?: string; prompt: string; schema: object; maxTokens: number },
     signal: AbortSignal,
   ): Promise<CompletionResult>;
   /**
    * Loads the model and puts the fixed prompt prefix in llama.cpp's cache (restored from
    * disk when saved earlier), so the next completion evaluates only the source text.
    */
-  prewarm(prefix: string, signal: AbortSignal): Promise<void>;
+  prewarm(prefix: string, signal: AbortSignal, traceId?: string): Promise<void>;
   diagnostics(): Promise<{ runtimeLog: string[] }>;
   onRuntimeStatus(listener: (status: RuntimeStatus) => void): Promise<() => void>;
 }
@@ -98,7 +98,7 @@ export class NativeLocalModelManager implements LocalModelManager {
     return nativeInvoke<{ runtimeLog: string[] }>('local_ai_diagnostics');
   }
   async complete(
-    request: { jobId: string; prompt: string; schema: object; maxTokens: number },
+    request: { jobId: string; traceId?: string; prompt: string; schema: object; maxTokens: number },
     signal: AbortSignal,
   ) {
     signal.throwIfAborted();
@@ -107,8 +107,10 @@ export class NativeLocalModelManager implements LocalModelManager {
     try {
       const result = await nativeInvoke<CompletionResult>('local_ai_complete', {
         id: request.jobId,
+        traceId: request.traceId ?? null,
         prompt: request.prompt,
         schema: request.schema,
+        schemaJson: JSON.stringify(request.schema),
         maxTokens: request.maxTokens,
         config: this.config,
       });
@@ -118,13 +120,18 @@ export class NativeLocalModelManager implements LocalModelManager {
       signal.removeEventListener('abort', cancel);
     }
   }
-  async prewarm(prefix: string, signal: AbortSignal) {
+  async prewarm(prefix: string, signal: AbortSignal, traceId?: string) {
     signal.throwIfAborted();
     const id = crypto.randomUUID();
     const cancel = () => void cancelNativeJob(id);
     signal.addEventListener('abort', cancel, { once: true });
     try {
-      await nativeInvoke('local_ai_prewarm', { id, prefix, config: this.config });
+      await nativeInvoke('local_ai_prewarm', {
+        id,
+        prefix,
+        config: this.config,
+        traceId: traceId ?? null,
+      });
     } finally {
       signal.removeEventListener('abort', cancel);
     }

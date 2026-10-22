@@ -1,0 +1,164 @@
+{
+  "model": "Qwen3-4B-Q4_K_M.gguf",
+  "sampling": {
+    "temperature": 0,
+    "top_k": 1,
+    "top_p": 1,
+    "seed": 7
+  },
+  "args": [],
+  "runtime": {
+    "loadSeconds": 4.058,
+    "prewarmSeconds": 84.852803829,
+    "peakRssKiB": 5505720
+  },
+  "results": [
+    {
+      "id": "graduation-cebuano",
+      "languages": "cebuano",
+      "seconds": 215.33249779599998,
+      "attempts": 2,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "2 (expected 2)"
+        },
+        {
+          "name": "holy mass|misa: found",
+          "ok": true,
+          "detail": "Holy Mass"
+        },
+        {
+          "name": "holy mass|misa: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "holy mass|misa: date",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "holy mass|misa: time",
+          "ok": true,
+          "detail": "\"10:00\" (expected \"10:00\")"
+        },
+        {
+          "name": "holy mass|misa: end time",
+          "ok": true,
+          "detail": "\"11:00\" (expected \"11:00\")"
+        },
+        {
+          "name": "holy mass|misa: location",
+          "ok": true,
+          "detail": "\"San Narciso Parish\""
+        },
+        {
+          "name": "holy mass|misa: requirement uniform",
+          "ok": true,
+          "detail": "[\"OJT/Pinning uniform\",\"black trousers or slacks\"]"
+        },
+        {
+          "name": "holy mass|misa: requirement trousers|slacks",
+          "ok": true,
+          "detail": "[\"OJT/Pinning uniform\",\"black trousers or slacks\"]"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: found",
+          "ok": true,
+          "detail": "Lunch"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: date",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: time",
+          "ok": true,
+          "detail": "\"12:00\" (expected \"12:00\")"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: location",
+          "ok": true,
+          "detail": "\"RTC Gym\""
+        },
+        {
+          "name": "ambiguity on date",
+          "ok": true,
+          "detail": "[\"date: Which date does this activity refer to?\",\"date: Which date does this activity refer to?\"]"
+        },
+        {
+          "name": "no invented date",
+          "ok": true
+        },
+        {
+          "name": "no lost source evidence",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "Holy Mass",
+          "time": "10:00",
+          "endTime": "11:00",
+          "location": "San Narciso Parish",
+          "requirements": [
+            "OJT/Pinning uniform",
+            "black trousers or slacks"
+          ],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "time": "confirmed",
+            "endTime": "confirmed",
+            "location": "confirmed",
+            "requirements": "confirmed"
+          }
+        },
+        {
+          "type": "event",
+          "title": "Lunch",
+          "time": "12:00",
+          "location": "RTC Gym",
+          "requirements": [],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "time": "confirmed",
+            "location": "confirmed"
+          }
+        },
+        {
+          "ambiguities": [
+            "date: Which date does this activity refer to? []",
+            "date: Which date does this activity refer to? []"
+          ]
+        }
+      ],
+      "issues": [],
+      "timings": {
+        "cache_n": 1820,
+        "prompt_n": 169,
+        "prompt_ms": 8910.17,
+        "prompt_per_token_ms": 52.72289940828402,
+        "prompt_per_second": 18.967090414661,
+        "predicted_n": 325,
+        "predicted_ms": 126421.39,
+        "predicted_per_token_ms": 390.189475308642,
+        "predicted_per_second": 2.562857440501168
+      }
+    }
+  ]
+}

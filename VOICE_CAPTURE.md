@@ -71,3 +71,7 @@ Invalid/silent audio is now checked before the reusable text server is stopped. 
 ### Audio performance follow-up (2026-10-21)
 
 The recording waveform is centered within the secondary capture card. Native extraction cancellation now terminates buffered HTTP reads instead of returning the automatically retried `Interrupted` error; already-cancelled requests are rejected before connection. This prevents cancelled work from unnecessarily occupying the shared inference gate. Model/prompt/runtime tuning remains unchanged: the cache experiment did not show a reliable benefit. Real-model measurements, the existing text-fixture omission, and native acceptance limits are recorded in `docs/evaluation/audio-performance-2026-10-21.md`.
+
+## Shared runtime reliability checkpoint
+
+The managed extraction runtime now rejects incomplete streams and retires active generation on cancellation. Voice/text errors remain in their own capture surface, separate from screenshot recovery. No microphone, transcript format, Whisper model or voice service interface was changed for this investigation. Current native verification covers screenshot/text runtime work and cancellation; this checkpoint does not claim a new end-to-end microphone recognition acceptance. See [reliability evidence](docs/LOCAL_AI_RELIABILITY.md).

@@ -46,7 +46,67 @@ const NOW = '2026-10-12T11:00:00+08:00';
 const find = (bundle: ExtractionBundle, title: RegExp) =>
   bundle.actions.find((a) => title.test(a.title));
 
+const graduationCases: ExtractionCase[] = ['english', 'cebuano', 'tagalog'].map((language) => ({
+  id: `graduation-${language}`,
+  languages: language,
+  kind: 'screenshot',
+  now: NOW,
+  expect: {
+    actionCount: 2,
+    ambiguity: 'date',
+    actions: [
+      {
+        title: /holy mass|misa/i,
+        type: 'event',
+        date: null,
+        time: '10:00',
+        endTime: '11:00',
+        location: /San Narciso Parish/i,
+        requirements: [/uniform/i, /trousers|slacks/i],
+      },
+      {
+        title: /lunch|paniudto|tanghalian/i,
+        type: 'event',
+        date: null,
+        time: '12:00',
+        location: /RTC Gym/i,
+      },
+    ],
+  },
+  forbidden: [
+    {
+      description: 'invented date',
+      violated: (bundle: ExtractionBundle) => bundle.actions.some((a) => !!a.date),
+    },
+    {
+      description: 'lost source evidence',
+      violated: (bundle: ExtractionBundle) => bundle.actions.some((a) => !a.evidence?.length),
+    },
+  ],
+}));
+
 export const extractionCases: ExtractionCase[] = [
+  ...graduationCases,
+  {
+    id: 'pencil-and-paper',
+    languages: 'English',
+    kind: 'text',
+    now: NOW,
+    text: 'Meeting on October 23, 2026 at 10:30 PM. Bring a pencil and paper.',
+    expect: {
+      actionCount: 1,
+      actions: [
+        {
+          title: /meeting/i,
+          type: 'event',
+          date: '2026-10-23',
+          time: '22:30',
+          requirements: [/pencil/i, /paper/i],
+        },
+      ],
+    },
+    forbidden: [],
+  },
   {
     id: 'pictorial',
     languages: 'Cebuano + English',

@@ -6,6 +6,7 @@ export function nativeAvailable(): boolean {
 }
 
 export type LocalAIErrorCode =
+  | 'OCR_FAILED'
   | 'OCR_NOT_INSTALLED'
   | 'RUNTIME_MISSING'
   | 'MODEL_NOT_INSTALLED'
@@ -24,6 +25,8 @@ export class LocalAIError extends Error {
   constructor(
     readonly code: LocalAIErrorCode,
     message: string,
+    readonly detailCode?: string,
+    readonly stage?: string,
   ) {
     super(message);
     this.name = 'LocalAIError';
@@ -31,6 +34,8 @@ export class LocalAIError extends Error {
 }
 
 const codes = new Set<string>([
+  'OCR_FAILED',
+  'CANCELLED',
   'OCR_NOT_INSTALLED',
   'RUNTIME_MISSING',
   'MODEL_NOT_INSTALLED',
@@ -47,6 +52,19 @@ export function toLocalAIError(error: unknown): LocalAIError {
       : error instanceof Error
         ? error.message
         : 'Local processing could not complete. Please try again.';
+  try {
+    const failure =
+      typeof error === 'object' && error !== null && 'code' in error ? error : JSON.parse(text);
+    if (failure && codes.has(failure.code) && typeof failure.message === 'string')
+      return new LocalAIError(
+        failure.code as LocalAIErrorCode,
+        failure.message,
+        typeof failure.detailCode === 'string' ? failure.detailCode : undefined,
+        typeof failure.stage === 'string' ? failure.stage : undefined,
+      );
+  } catch {
+    /* Legacy native string errors remain supported. */
+  }
   const match = /^([A-Z_]+): (.*)$/s.exec(text);
   if (match && codes.has(match[1])) return new LocalAIError(match[1] as LocalAIErrorCode, match[2]);
   if (/cancelled/i.test(text)) return new LocalAIError('CANCELLED', 'Processing was cancelled.');

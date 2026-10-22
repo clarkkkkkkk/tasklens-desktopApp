@@ -1,0 +1,1314 @@
+{
+  "model": "Qwen3-4B-Q4_K_M.gguf",
+  "sampling": {
+    "temperature": 0,
+    "top_k": 1,
+    "top_p": 1,
+    "seed": 7
+  },
+  "args": [],
+  "runtime": {
+    "loadSeconds": 3.817,
+    "prewarmSeconds": 0.25664991100000045,
+    "peakRssKiB": 5454348
+  },
+  "results": [
+    {
+      "id": "graduation-english",
+      "languages": "english",
+      "seconds": 198.43060387600002,
+      "attempts": 2,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "2 (expected 2)"
+        },
+        {
+          "name": "holy mass|misa: found",
+          "ok": true,
+          "detail": "Holy Mass"
+        },
+        {
+          "name": "holy mass|misa: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "holy mass|misa: date",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "holy mass|misa: time",
+          "ok": true,
+          "detail": "\"10:00\" (expected \"10:00\")"
+        },
+        {
+          "name": "holy mass|misa: end time",
+          "ok": true,
+          "detail": "\"11:00\" (expected \"11:00\")"
+        },
+        {
+          "name": "holy mass|misa: location",
+          "ok": true,
+          "detail": "\"San Narciso Parish\""
+        },
+        {
+          "name": "holy mass|misa: requirement uniform",
+          "ok": true,
+          "detail": "[\"Reguired outfit for Holy Mass: OJT/Pinning uniform; black trousers or slacks\"]"
+        },
+        {
+          "name": "holy mass|misa: requirement trousers|slacks",
+          "ok": true,
+          "detail": "[\"Reguired outfit for Holy Mass: OJT/Pinning uniform; black trousers or slacks\"]"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: found",
+          "ok": true,
+          "detail": "LUNCH"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: date",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: time",
+          "ok": true,
+          "detail": "\"12:00\" (expected \"12:00\")"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: location",
+          "ok": true,
+          "detail": "\"RTC Gym\""
+        },
+        {
+          "name": "ambiguity on date",
+          "ok": true,
+          "detail": "[\"date: Which date does this activity refer to?\",\"date: Which date does this activity refer to?\"]"
+        },
+        {
+          "name": "no invented date",
+          "ok": true
+        },
+        {
+          "name": "no lost source evidence",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "Holy Mass",
+          "time": "10:00",
+          "endTime": "11:00",
+          "location": "San Narciso Parish",
+          "requirements": [
+            "Reguired outfit for Holy Mass: OJT/Pinning uniform; black trousers or slacks"
+          ],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "time": "confirmed",
+            "endTime": "confirmed",
+            "location": "confirmed",
+            "requirements": "confirmed"
+          }
+        },
+        {
+          "type": "event",
+          "title": "LUNCH",
+          "time": "12:00",
+          "location": "RTC Gym",
+          "requirements": [],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "time": "confirmed",
+            "location": "confirmed"
+          }
+        },
+        {
+          "ambiguities": [
+            "date: Which date does this activity refer to? []",
+            "date: Which date does this activity refer to? []"
+          ]
+        }
+      ],
+      "issues": [],
+      "timings": {
+        "cache_n": 1796,
+        "prompt_n": 169,
+        "prompt_ms": 8616.304,
+        "prompt_per_token_ms": 50.984047337278106,
+        "prompt_per_second": 19.613978336883193,
+        "predicted_n": 318,
+        "predicted_ms": 111388.551,
+        "predicted_per_token_ms": 351.3834416403786,
+        "predicted_per_second": 2.845893919564498
+      }
+    },
+    {
+      "id": "graduation-cebuano",
+      "languages": "cebuano",
+      "seconds": 205.67680103299998,
+      "attempts": 2,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "2 (expected 2)"
+        },
+        {
+          "name": "holy mass|misa: found",
+          "ok": true,
+          "detail": "Holy Mass"
+        },
+        {
+          "name": "holy mass|misa: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "holy mass|misa: date",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "holy mass|misa: time",
+          "ok": true,
+          "detail": "\"10:00\" (expected \"10:00\")"
+        },
+        {
+          "name": "holy mass|misa: end time",
+          "ok": true,
+          "detail": "\"11:00\" (expected \"11:00\")"
+        },
+        {
+          "name": "holy mass|misa: location",
+          "ok": true,
+          "detail": "\"San Narciso Parish\""
+        },
+        {
+          "name": "holy mass|misa: requirement uniform",
+          "ok": true,
+          "detail": "[\"OJT/Pinning uniform\",\"black trousers or slacks\"]"
+        },
+        {
+          "name": "holy mass|misa: requirement trousers|slacks",
+          "ok": true,
+          "detail": "[\"OJT/Pinning uniform\",\"black trousers or slacks\"]"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: found",
+          "ok": true,
+          "detail": "Lunch"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: date",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: time",
+          "ok": true,
+          "detail": "\"12:00\" (expected \"12:00\")"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: location",
+          "ok": true,
+          "detail": "\"RTC Gym\""
+        },
+        {
+          "name": "ambiguity on date",
+          "ok": true,
+          "detail": "[\"date: Which date does this activity refer to?\",\"date: Which date does this activity refer to?\"]"
+        },
+        {
+          "name": "no invented date",
+          "ok": true
+        },
+        {
+          "name": "no lost source evidence",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "Holy Mass",
+          "time": "10:00",
+          "endTime": "11:00",
+          "location": "San Narciso Parish",
+          "requirements": [
+            "OJT/Pinning uniform",
+            "black trousers or slacks"
+          ],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "time": "confirmed",
+            "endTime": "confirmed",
+            "location": "confirmed",
+            "requirements": "confirmed"
+          }
+        },
+        {
+          "type": "event",
+          "title": "Lunch",
+          "time": "12:00",
+          "location": "RTC Gym",
+          "requirements": [],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "time": "confirmed",
+            "location": "confirmed"
+          }
+        },
+        {
+          "ambiguities": [
+            "date: Which date does this activity refer to? []",
+            "date: Which date does this activity refer to? []"
+          ]
+        }
+      ],
+      "issues": [],
+      "timings": {
+        "cache_n": 1820,
+        "prompt_n": 169,
+        "prompt_ms": 9174.164,
+        "prompt_per_token_ms": 54.28499408284024,
+        "prompt_per_second": 18.42129702499323,
+        "predicted_n": 325,
+        "predicted_ms": 112305.291,
+        "predicted_per_token_ms": 346.6212685185185,
+        "predicted_per_second": 2.8849931923510175
+      }
+    },
+    {
+      "id": "graduation-tagalog",
+      "languages": "tagalog",
+      "seconds": 251.78281996700005,
+      "attempts": 2,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "2 (expected 2)"
+        },
+        {
+          "name": "holy mass|misa: found",
+          "ok": true,
+          "detail": "Holy Mass"
+        },
+        {
+          "name": "holy mass|misa: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "holy mass|misa: date",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "holy mass|misa: time",
+          "ok": true,
+          "detail": "\"10:00\" (expected \"10:00\")"
+        },
+        {
+          "name": "holy mass|misa: end time",
+          "ok": true,
+          "detail": "\"11:00\" (expected \"11:00\")"
+        },
+        {
+          "name": "holy mass|misa: location",
+          "ok": true,
+          "detail": "\"San Narciso Parish\""
+        },
+        {
+          "name": "holy mass|misa: requirement uniform",
+          "ok": true,
+          "detail": "[\"OJT/Pinning uniform\",\"black trousers or slacks\"]"
+        },
+        {
+          "name": "holy mass|misa: requirement trousers|slacks",
+          "ok": true,
+          "detail": "[\"OJT/Pinning uniform\",\"black trousers or slacks\"]"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: found",
+          "ok": true,
+          "detail": "Lunch"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: date",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: time",
+          "ok": true,
+          "detail": "\"12:00\" (expected \"12:00\")"
+        },
+        {
+          "name": "lunch|paniudto|tanghalian: location",
+          "ok": true,
+          "detail": "\"RTC Gym\""
+        },
+        {
+          "name": "ambiguity on date",
+          "ok": true,
+          "detail": "[\"date: Which date does this activity refer to?\",\"date: Which date does this activity refer to?\"]"
+        },
+        {
+          "name": "no invented date",
+          "ok": true
+        },
+        {
+          "name": "no lost source evidence",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "Holy Mass",
+          "time": "10:00",
+          "endTime": "11:00",
+          "location": "San Narciso Parish",
+          "requirements": [
+            "OJT/Pinning uniform",
+            "black trousers or slacks"
+          ],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "time": "confirmed",
+            "endTime": "confirmed",
+            "location": "confirmed",
+            "requirements": "confirmed"
+          }
+        },
+        {
+          "type": "event",
+          "title": "Lunch",
+          "time": "12:00",
+          "location": "RTC Gym",
+          "requirements": [],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "time": "confirmed",
+            "location": "confirmed"
+          }
+        },
+        {
+          "ambiguities": [
+            "date: Which date does this activity refer to? []",
+            "date: Which date does this activity refer to? []"
+          ]
+        }
+      ],
+      "issues": [],
+      "timings": {
+        "cache_n": 1809,
+        "prompt_n": 169,
+        "prompt_ms": 10010.258,
+        "prompt_per_token_ms": 59.23229585798816,
+        "prompt_per_second": 16.882681745065913,
+        "predicted_n": 327,
+        "predicted_ms": 124996.148,
+        "predicted_per_token_ms": 383.42376687116564,
+        "predicted_per_second": 2.6080803706047004
+      }
+    },
+    {
+      "id": "pencil-and-paper",
+      "languages": "English",
+      "seconds": 119.71646859900001,
+      "attempts": 2,
+      "checks": [
+        {
+          "name": "valid output",
+          "ok": false,
+          "detail": "The explicit calendar date in [t1] was omitted. Preserve the written date; capture metadata does not make an explicit date ambiguous."
+        }
+      ],
+      "issues": [],
+      "error": "actions: The explicit calendar date in [t1] was omitted. Preserve the written date; capture metadata does not make an explicit date ambiguous.",
+      "timings": {
+        "cache_n": 1714,
+        "prompt_n": 138,
+        "prompt_ms": 9989.315,
+        "prompt_per_token_ms": 72.38634057971015,
+        "prompt_per_second": 13.814761072205652,
+        "predicted_n": 164,
+        "predicted_ms": 61814.354,
+        "predicted_per_token_ms": 379.22916564417176,
+        "predicted_per_second": 2.636927986014381
+      }
+    },
+    {
+      "id": "pictorial",
+      "languages": "Cebuano + English",
+      "seconds": 60.766154512000035,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "1 (expected 1)"
+        },
+        {
+          "name": "pictorial: found",
+          "ok": true,
+          "detail": "Pictorial"
+        },
+        {
+          "name": "pictorial: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "pictorial: date",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "pictorial: time",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "pictorial: arrival time",
+          "ok": true,
+          "detail": "\"13:30\" (expected \"13:30\")"
+        },
+        {
+          "name": "pictorial: location",
+          "ok": true,
+          "detail": "\"Campus\""
+        },
+        {
+          "name": "pictorial: requirement black pants",
+          "ok": true,
+          "detail": "[\"Wear black pants\",\"No jeans\"]"
+        },
+        {
+          "name": "pictorial: requirement jeans",
+          "ok": true,
+          "detail": "[\"Wear black pants\",\"No jeans\"]"
+        },
+        {
+          "name": "pictorial: confidence.arrivalTime",
+          "ok": true,
+          "detail": "\"confirmed\" (expected \"confirmed\")"
+        },
+        {
+          "name": "pictorial: confidence.time",
+          "ok": true,
+          "detail": "\"needs_review\" (expected \"needs_review\")"
+        },
+        {
+          "name": "pictorial: confidence.date",
+          "ok": true,
+          "detail": "\"needs_review\" (expected \"needs_review\")"
+        },
+        {
+          "name": "ambiguity on date",
+          "ok": true,
+          "detail": "[\"date: The source says “Tomorrow”, but when it was originally sent is unclear. Which date did it refer to?\"]"
+        },
+        {
+          "name": "no 1:30 PM interpreted as the event start time",
+          "ok": true
+        },
+        {
+          "name": "no “tomorrow/ugma” resolved without a known sending date",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "Pictorial",
+          "arrivalTime": "13:30",
+          "location": "Campus",
+          "requirements": [
+            "Wear black pants",
+            "No jeans"
+          ],
+          "notes": [
+            "The exact time of the pictorial is not yet finalized and will be announced later."
+          ],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "time": "needs_review",
+            "arrivalTime": "confirmed",
+            "location": "confirmed",
+            "requirements": "confirmed"
+          }
+        },
+        {
+          "ambiguities": [
+            "date: The source says “Tomorrow”, but when it was originally sent is unclear. Which date did it refer to? [\"2026-10-13\"]"
+          ]
+        }
+      ],
+      "issues": [
+        "item 1: relative date “Tomorrow” left for review"
+      ],
+      "timings": {
+        "cache_n": 1639,
+        "prompt_n": 193,
+        "prompt_ms": 10996.176,
+        "prompt_per_token_ms": 56.97500518134715,
+        "prompt_per_second": 17.55155610459491,
+        "predicted_n": 164,
+        "predicted_ms": 49737.476,
+        "predicted_per_token_ms": 305.13788957055215,
+        "predicted_per_second": 3.2772069093333163
+      }
+    },
+    {
+      "id": "midterm",
+      "languages": "English",
+      "seconds": 78.35788594499999,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "1 (expected 1–2)"
+        },
+        {
+          "name": "midterm|exam|cecc483: found",
+          "ok": true,
+          "detail": "MIDTERM EXAMINATION - CECC483"
+        },
+        {
+          "name": "midterm|exam|cecc483: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: date",
+          "ok": true,
+          "detail": "\"2026-10-11\" (expected \"2026-10-11\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: time",
+          "ok": true,
+          "detail": "\"08:00\" (expected \"08:00\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: end time",
+          "ok": true,
+          "detail": "\"13:00\" (expected \"13:00\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: location",
+          "ok": true,
+          "detail": "\"CIT-U Gymnasium\""
+        },
+        {
+          "name": "midterm|exam|cecc483: confidence.date",
+          "ok": true,
+          "detail": "\"confirmed\" (expected \"confirmed\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: confidence.time",
+          "ok": true,
+          "detail": "\"confirmed\" (expected \"confirmed\")"
+        },
+        {
+          "name": "midterm|exam|cecc483: confidence.location",
+          "ok": true,
+          "detail": "\"confirmed\" (expected \"confirmed\")"
+        },
+        {
+          "name": "no unrelated coverage section merged into the CECC483 exam without an open question",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "MIDTERM EXAMINATION - CECC483",
+          "date": "2026-10-11",
+          "time": "08:00",
+          "endTime": "13:00",
+          "location": "CIT-U Gymnasium",
+          "requirements": [],
+          "notes": [
+            "Coverage includes Statics of Rigid Bodies, Mechanics of Deformable Bodies, Algebra, Trigonometry, Geometry, and Calculus."
+          ],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "confirmed",
+            "time": "confirmed",
+            "endTime": "confirmed",
+            "location": "confirmed"
+          }
+        },
+        {
+          "ambiguities": [
+            "notes: This screenshot has more than one “Coverage” section. Do they all belong to “MIDTERM EXAMINATION - CECC483”? []"
+          ]
+        }
+      ],
+      "issues": [
+        "item 1: combines 2 separate “Coverage” sections"
+      ],
+      "timings": {
+        "cache_n": 1703,
+        "prompt_n": 154,
+        "prompt_ms": 8620.191,
+        "prompt_per_token_ms": 55.97526623376624,
+        "prompt_per_second": 17.865033384991122,
+        "predicted_n": 221,
+        "predicted_ms": 69711.35,
+        "predicted_per_token_ms": 316.86977272727273,
+        "predicted_per_second": 3.155870600698451
+      }
+    },
+    {
+      "id": "bundle-english",
+      "languages": "English",
+      "seconds": 53.816351524999945,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": false,
+          "detail": "1 (expected 2)"
+        },
+        {
+          "name": "chapter 3: found",
+          "ok": true,
+          "detail": "Submit Chapter 3 Friday before 5 PM. Consultation is Monday at 2 PM. Bring the revised questionnaire"
+        },
+        {
+          "name": "chapter 3: type",
+          "ok": false,
+          "detail": "\"task\" (expected \"deadline\")"
+        },
+        {
+          "name": "chapter 3: date",
+          "ok": false,
+          "detail": "\"2026-10-05\" (expected \"2026-10-09\")"
+        },
+        {
+          "name": "chapter 3: time",
+          "ok": false,
+          "detail": "\"09:14\" (expected \"17:00\")"
+        },
+        {
+          "name": "consultation: found",
+          "ok": false,
+          "detail": "missing"
+        },
+        {
+          "name": "no deadline and consultation merged into one item",
+          "ok": false
+        },
+        {
+          "name": "no deadline time used as consultation time",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "task",
+          "title": "Submit Chapter 3 Friday before 5 PM. Consultation is Monday at 2 PM. Bring the revised questionnaire",
+          "date": "2026-10-05",
+          "time": "09:14",
+          "requirements": [
+            "Bring the revised questionnaire"
+          ],
+          "notes": [],
+          "confidence": {
+            "overall": "inferred",
+            "title": "inferred",
+            "date": "confirmed",
+            "time": "confirmed",
+            "requirements": "confirmed"
+          }
+        },
+        {
+          "ambiguities": []
+        }
+      ],
+      "issues": [],
+      "timings": {
+        "cache_n": 1703,
+        "prompt_n": 73,
+        "prompt_ms": 4292.611,
+        "prompt_per_token_ms": 58.8028904109589,
+        "prompt_per_second": 17.00596676474994,
+        "predicted_n": 164,
+        "predicted_ms": 49500.292,
+        "predicted_per_token_ms": 303.682773006135,
+        "predicted_per_second": 3.292909868087243
+      }
+    },
+    {
+      "id": "cebuano-mixed",
+      "languages": "Cebuano + English",
+      "seconds": 84.23892212499993,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": false,
+          "detail": "2 (expected 1)"
+        },
+        {
+          "name": "reflection: found",
+          "ok": true,
+          "detail": "Submit reflection paper"
+        },
+        {
+          "name": "reflection: type",
+          "ok": false,
+          "detail": "\"task\" (expected \"deadline\")"
+        },
+        {
+          "name": "reflection: date",
+          "ok": true,
+          "detail": "\"2026-10-09\" (expected \"2026-10-09\")"
+        },
+        {
+          "name": "reflection: time",
+          "ok": false,
+          "detail": "empty (expected \"17:00\")"
+        },
+        {
+          "name": "no cancelled seminar created as an event to attend",
+          "ok": false
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "Seminar",
+          "date": "2026-10-09",
+          "requirements": [],
+          "notes": [
+            "The seminar has been cancelled."
+          ],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "time": "needs_review"
+          }
+        },
+        {
+          "type": "task",
+          "title": "Submit reflection paper",
+          "date": "2026-10-09",
+          "requirements": [],
+          "notes": [
+            "The seminar has been cancelled."
+          ],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review"
+          }
+        },
+        {
+          "ambiguities": [
+            "date: Which Friday is 'karong Friday'? The sending date is not visible. []"
+          ]
+        }
+      ],
+      "issues": [
+        "item 1: resolved “karong Friday” to 2026-10-09",
+        "item 2: resolved “karong Friday” to 2026-10-09"
+      ],
+      "timings": {
+        "cache_n": 1703,
+        "prompt_n": 90,
+        "prompt_ms": 5426.065,
+        "prompt_per_token_ms": 60.28961111111111,
+        "prompt_per_second": 16.58660557881264,
+        "predicted_n": 240,
+        "predicted_ms": 78776.339,
+        "predicted_per_token_ms": 329.6081129707113,
+        "predicted_per_second": 3.033905904157338
+      }
+    },
+    {
+      "id": "tagalog-mixed",
+      "languages": "Tagalog + English",
+      "seconds": 234.50147443400022,
+      "attempts": 2,
+      "checks": [
+        {
+          "name": "valid output",
+          "ok": false,
+          "detail": "The explicit clock time in [r4] was omitted. A missing date does not make a directly stated clock time unknown; keep the time and ask for the date."
+        }
+      ],
+      "issues": [
+        "item 1: resolved “Huwebes” to 2026-10-08"
+      ],
+      "error": "actions: The explicit clock time in [r4] was omitted. A missing date does not make a directly stated clock time unknown; keep the time and ask for the date.",
+      "timings": {
+        "cache_n": 1770,
+        "prompt_n": 135,
+        "prompt_ms": 8399.87,
+        "prompt_per_token_ms": 62.22125925925926,
+        "prompt_per_second": 16.071677299767735,
+        "predicted_n": 378,
+        "predicted_ms": 147187.716,
+        "predicted_per_token_ms": 390.41834482758617,
+        "predicted_per_second": 2.561355052211015
+      }
+    },
+    {
+      "id": "tagalog",
+      "languages": "Tagalog",
+      "seconds": 55.6524517229998,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "1 (expected 1)"
+        },
+        {
+          "name": "orientation: found",
+          "ok": true,
+          "detail": "orientation"
+        },
+        {
+          "name": "orientation: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "orientation: date",
+          "ok": true,
+          "detail": "empty (expected empty)"
+        },
+        {
+          "name": "orientation: time",
+          "ok": true,
+          "detail": "\"15:00\" (expected \"15:00\")"
+        },
+        {
+          "name": "orientation: location",
+          "ok": true,
+          "detail": "\"Room 204\""
+        },
+        {
+          "name": "orientation: requirement ballpen",
+          "ok": true,
+          "detail": "[\"Bring ballpen\"]"
+        },
+        {
+          "name": "ambiguity on date",
+          "ok": true,
+          "detail": "[\"date: The source says “Bukas”, but when it was originally sent is unclear. Which date did it refer to?\"]"
+        },
+        {
+          "name": "no “bukas” resolved without a known sending date",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "orientation",
+          "time": "15:00",
+          "location": "Room 204",
+          "requirements": [
+            "Bring ballpen"
+          ],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "inferred",
+            "date": "needs_review",
+            "time": "confirmed",
+            "location": "confirmed",
+            "requirements": "confirmed"
+          }
+        },
+        {
+          "ambiguities": [
+            "date: The source says “Bukas”, but when it was originally sent is unclear. Which date did it refer to? [\"2026-10-13\"]"
+          ]
+        }
+      ],
+      "issues": [
+        "item 1: relative date “Bukas” left for review"
+      ],
+      "timings": {
+        "cache_n": 1703,
+        "prompt_n": 50,
+        "prompt_ms": 8898.69,
+        "prompt_per_token_ms": 177.9738,
+        "prompt_per_second": 5.618804565615838,
+        "predicted_n": 149,
+        "predicted_ms": 46711.656,
+        "predicted_per_token_ms": 315.6192972972973,
+        "predicted_per_second": 3.168374077767656
+      }
+    },
+    {
+      "id": "voice-exam-reminder",
+      "languages": "English",
+      "seconds": 62.34548551999987,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "1 (expected 1–2)"
+        },
+        {
+          "name": "exam: found",
+          "ok": true,
+          "detail": "Remind me tomorrow at eight to bring my calculator and ID because our exam starts at nine"
+        },
+        {
+          "name": "exam: type",
+          "ok": false,
+          "detail": "\"task\" (expected \"event\")"
+        },
+        {
+          "name": "exam: date",
+          "ok": true,
+          "detail": "\"2026-10-12\" (expected \"2026-10-12\")"
+        },
+        {
+          "name": "exam: time",
+          "ok": false,
+          "detail": "empty (expected \"09:00\")"
+        },
+        {
+          "name": "exam: requirement calculator",
+          "ok": true,
+          "detail": "[\"bring my calculator\",\"bring my ID\"]"
+        },
+        {
+          "name": "exam: requirement \\bID\\b",
+          "ok": true,
+          "detail": "[\"bring my calculator\",\"bring my ID\"]"
+        },
+        {
+          "name": "no reminder time used as the exam start",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "task",
+          "title": "Remind me tomorrow at eight to bring my calculator and ID because our exam starts at nine",
+          "date": "2026-10-12",
+          "requirements": [
+            "bring my calculator",
+            "bring my ID"
+          ],
+          "notes": [],
+          "confidence": {
+            "overall": "inferred",
+            "title": "inferred",
+            "date": "inferred",
+            "requirements": "confirmed"
+          }
+        },
+        {
+          "ambiguities": []
+        }
+      ],
+      "issues": [
+        "item 1: resolved “tomorrow” to 2026-10-12"
+      ],
+      "timings": {
+        "cache_n": 1639,
+        "prompt_n": 97,
+        "prompt_ms": 5411.042,
+        "prompt_per_token_ms": 55.7839381443299,
+        "prompt_per_second": 17.92630698486539,
+        "predicted_n": 156,
+        "predicted_ms": 56914.381,
+        "predicted_per_token_ms": 367.1895548387097,
+        "predicted_per_second": 2.72338901480805
+      }
+    },
+    {
+      "id": "cebuano-inig-udto",
+      "languages": "Cebuano",
+      "seconds": 96.16961512099998,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "1 (expected 1)"
+        },
+        {
+          "name": "meeting: found",
+          "ok": true,
+          "detail": "meeting sa library"
+        },
+        {
+          "name": "meeting: type",
+          "ok": true,
+          "detail": "\"event\" (expected \"event\")"
+        },
+        {
+          "name": "meeting: date",
+          "ok": true,
+          "detail": "\"2026-10-13\" (expected \"2026-10-13\")"
+        },
+        {
+          "name": "meeting: time",
+          "ok": false,
+          "detail": "empty (expected \"12:00\")"
+        },
+        {
+          "name": "meeting: location",
+          "ok": true,
+          "detail": "\"library\""
+        },
+        {
+          "name": "meeting: requirement \\bID\\b",
+          "ok": true,
+          "detail": "[\"Bring ID\"]"
+        }
+      ],
+      "output": [
+        {
+          "type": "event",
+          "title": "meeting sa library",
+          "date": "2026-10-13",
+          "arrivalTime": "12:00",
+          "location": "library",
+          "requirements": [
+            "Bring ID"
+          ],
+          "notes": [],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "inferred",
+            "time": "needs_review",
+            "arrivalTime": "needs_review",
+            "location": "confirmed",
+            "requirements": "inferred"
+          }
+        },
+        {
+          "ambiguities": [
+            "arrivalTime: What time is 'udto'? []"
+          ]
+        }
+      ],
+      "issues": [
+        "item 1 arrival time: “udto” converted to 12:00",
+        "item 1: resolved “Ugma” to 2026-10-13"
+      ],
+      "timings": {
+        "cache_n": 1639,
+        "prompt_n": 113,
+        "prompt_ms": 8563.642,
+        "prompt_per_token_ms": 75.7844424778761,
+        "prompt_per_second": 13.195320402230733,
+        "predicted_n": 161,
+        "predicted_ms": 87576.367,
+        "predicted_per_token_ms": 547.35229375,
+        "predicted_per_second": 1.826976905767283
+      }
+    },
+    {
+      "id": "mixed-moved-to",
+      "languages": "Cebuano + English",
+      "seconds": 85.92882285899995,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "2 (expected 2)"
+        },
+        {
+          "name": "consultation: found",
+          "ok": true,
+          "detail": "Consultation moved to Thursday 3 PM"
+        },
+        {
+          "name": "consultation: type",
+          "ok": false,
+          "detail": "\"task\" (expected \"event\")"
+        },
+        {
+          "name": "consultation: date",
+          "ok": true,
+          "detail": "\"2026-10-15\" (expected \"2026-10-15\")"
+        },
+        {
+          "name": "consultation: time",
+          "ok": false,
+          "detail": "empty (expected \"15:00\")"
+        },
+        {
+          "name": "draft: found",
+          "ok": true,
+          "detail": "Submit draft before 5"
+        },
+        {
+          "name": "draft: type",
+          "ok": true,
+          "detail": "\"deadline\" (expected \"deadline\")"
+        },
+        {
+          "name": "draft: date",
+          "ok": true,
+          "detail": "\"2026-10-14\" (expected \"2026-10-14\")"
+        },
+        {
+          "name": "draft: time",
+          "ok": false,
+          "detail": "empty (expected \"17:00\")"
+        }
+      ],
+      "output": [
+        {
+          "type": "task",
+          "title": "Consultation moved to Thursday 3 PM",
+          "date": "2026-10-15",
+          "requirements": [],
+          "notes": [
+            "The consultation has been moved to Thursday at 3 PM."
+          ],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review"
+          }
+        },
+        {
+          "type": "deadline",
+          "title": "Submit draft before 5",
+          "date": "2026-10-14",
+          "requirements": [],
+          "notes": [
+            "The deadline is to submit the draft before 5 on Wednesday."
+          ],
+          "confidence": {
+            "overall": "needs_review",
+            "title": "confirmed",
+            "date": "needs_review",
+            "time": "needs_review"
+          }
+        },
+        {
+          "ambiguities": [
+            "date: Which day is 'Thursday'? The capturing date is not visible. []"
+          ]
+        }
+      ],
+      "issues": [
+        "item 1: resolved “Thursday” to 2026-10-15",
+        "item 2: resolved “karong Wednesday” to 2026-10-14"
+      ],
+      "timings": {
+        "cache_n": 1712,
+        "prompt_n": 43,
+        "prompt_ms": 7122.422,
+        "prompt_per_token_ms": 165.63772093023255,
+        "prompt_per_second": 6.037272152646952,
+        "predicted_n": 230,
+        "predicted_ms": 78740.994,
+        "predicted_per_token_ms": 343.8471353711791,
+        "predicted_per_second": 2.908269103130702
+      }
+    },
+    {
+      "id": "contextless-correction",
+      "languages": "English",
+      "seconds": 29.84168076600018,
+      "attempts": 1,
+      "checks": [
+        {
+          "name": "action count",
+          "ok": true,
+          "detail": "1 (expected 0–1)"
+        },
+        {
+          "name": "no invented a date for an unidentified meeting",
+          "ok": true
+        }
+      ],
+      "output": [
+        {
+          "type": "task",
+          "title": "Move meeting from two to three PM",
+          "requirements": [],
+          "notes": [
+            "Meeting time has been updated to 3:00 PM."
+          ],
+          "confidence": {
+            "overall": "confirmed",
+            "title": "confirmed"
+          }
+        },
+        {
+          "ambiguities": []
+        }
+      ],
+      "issues": [],
+      "timings": {
+        "cache_n": 1712,
+        "prompt_n": 22,
+        "prompt_ms": 3706.448,
+        "prompt_per_token_ms": 168.47490909090908,
+        "prompt_per_second": 5.935601956374405,
+        "predicted_n": 82,
+        "predicted_ms": 26113.808,
+        "predicted_per_token_ms": 322.3926913580247,
+        "predicted_per_second": 3.101807289078636
+      }
+    }
+  ]
+}

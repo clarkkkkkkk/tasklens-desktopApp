@@ -4,6 +4,7 @@ import { MotionHeading } from '../../components/motion/MotionHeading';
 import { createDemoScreenshot } from '../../services/extraction/demoSource';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  AlertCircle,
   ArrowRight,
   Check,
   FileImage,
@@ -19,6 +20,9 @@ import {
 import { useApp } from '../../app/context';
 import { Button, ErrorState } from '../../components/ui';
 import { Dropzone } from './Dropzone';
+import { newAction } from '../../lib/actions';
+import type { OcrCheckpoint } from '../../services/extraction/ExtractionService';
+import { diagnosticStage } from '../../services/localai/diagnostics';
 import { readScreenshot } from '../../lib/images';
 import type { ExtractedAction } from '../../types/action';
 import {
@@ -35,7 +39,17 @@ import { routeBadge } from '../ai/routeLabels';
 type Origin = 'file' | 'paste' | 'sample';
 /** After this long, on-device processing offers Keep waiting / Cancel. Nothing is saved. */
 export const EXTRACTION_SAFETY_SECONDS = 60;
+type ScreenshotPhase =
+  | 'idle'
+  | 'preparing'
+  | 'ocr'
+  | 'inference'
+  | 'validation'
+  | 'review-ready'
+  | 'failed'
+  | 'cancelled';
 interface Job {
+  id: string;
   source: ExtractedAction['source'];
   image: Blob;
   demo: boolean;
@@ -58,6 +72,7 @@ export function Inbox({
   onCaptureInteraction,
   locked,
   onResult,
+  onManual,
   onRemove,
   onBundle,
   onVoiceGuard,
@@ -69,6 +84,7 @@ export function Inbox({
   onCaptureInteraction?: () => void;
   locked: boolean;
   onResult: (a: ExtractedAction) => void;
+  onManual?: (a: ExtractedAction) => void;
   onRemove: () => void;
   onBundle: (actions: ExtractedAction[]) => void;
   onVoiceGuard: (cancel: (() => Promise<void>) | null) => void;
@@ -84,6 +100,13 @@ export function Inbox({
     [diagnostics, setDiagnostics] = useState<Partial<ExtractionDiagnostics> | null>(null),
     [route, setRoute] = useState<RouteNotice | null>(null);
   const source = job?.source ?? null;
+  const [phase, setPhase] = useState<ScreenshotPhase>('idle');
+  const [checkpoint, setCheckpoint] = useState<OcrCheckpoint | null>(null);
+  const checkpointRef = useRef<OcrCheckpoint | null>(null);
+  const preserveOcr = useCallback((next: OcrCheckpoint | null) => {
+    checkpointRef.current = next;
+    setCheckpoint(next);
+  }, []);
   const owner = useRef<'voice' | 'image' | null>(null);
   const [voiceActive, setVoiceActive] = useState(false);
   const [selectedName, setSelectedName] = useState('');
@@ -132,6 +155,7 @@ export function Inbox({
       owner.current = 'image';
       if (!next.demo && !componentsReady(intelligence, OCR_COMPONENTS)) {
         setError({ message: intelligence.message });
+        setPhase('failed');
         setBusy(false);
         busyRef.current = false;
         owner.current = null;
@@ -149,14 +173,28 @@ export function Inbox({
       setResults([]);
       setDiagnostics(null);
       setRoute(null);
-      setStep(-1);
+      setStep(checkpointRef.current?.image === next.image ? 1 : -1);
+      setPhase(checkpointRef.current?.image === next.image ? 'inference' : 'preparing');
       const service = next.demo ? services.demoExtraction : services.extraction;
       try {
         const extraction = service.extract(
           { ...next.source, image: next.image },
           {
+            traceId: next.id,
             signal: abort.signal,
-            onProgress: (s) => current() && setStep(s),
+            ocrCheckpoint:
+              checkpointRef.current?.image === next.image ? checkpointRef.current : undefined,
+            onOcr: (value) => {
+              if (current()) preserveOcr(value);
+            },
+            onProgress: (s) => {
+              if (current()) {
+                setStep(s);
+                setPhase(
+                  (['preparing', 'ocr', 'inference', 'validation'] as const)[s] ?? 'validation',
+                );
+              }
+            },
             onRoute: (r) => current() && setRoute(r),
           },
         );
@@ -165,6 +203,7 @@ export function Inbox({
         if (!current()) return;
         setDiagnostics(bundle.diagnostics ?? null);
         if (!bundle.actions.length) {
+          setPhase('failed');
           setError({
             message: bundle.ambiguities.length
               ? `No action could be confirmed: ${bundle.ambiguities[0].question}`
@@ -180,6 +219,7 @@ export function Inbox({
               : r,
           ),
         }));
+        setPhase('review-ready');
         setResults(actions);
         setStep(extractionSteps.length);
         if (actions.length === 1) callback.current.onResult(actions[0]);
@@ -187,6 +227,7 @@ export function Inbox({
       } catch (e) {
         if (!current()) return;
         const failure = toLocalAIError(e);
+        setPhase(failure.code === 'CANCELLED' ? 'cancelled' : 'failed');
         const extra = e as {
           ocr?: ExtractionDiagnostics['ocr'];
           diagnostics?: ExtractionDiagnostics;
@@ -201,13 +242,17 @@ export function Inbox({
         }
       }
     },
-    [intelligence, services, defaults, locked],
+    [intelligence, services, defaults, locked, preserveOcr],
   );
   const accept = useCallback(
     async (file: File, origin: Origin) => {
       if (owner.current || busyRef.current || locked) return;
       owner.current = 'image';
+      const captureId = crypto.randomUUID();
+      diagnosticStage(captureId, 'selection', 'start');
       setSelectedName(file.name);
+      preserveOcr(null);
+      setPhase('preparing');
       pendingImage.current = null;
       setJob(null);
       setResults([]);
@@ -218,9 +263,12 @@ export function Inbox({
       setError(null);
       setStep(-1);
       try {
-        const previewUrl = await readScreenshot(file);
+        const preparing = readScreenshot(file);
+        pendingImage.current = preparing;
+        const previewUrl = await preparing;
         if (version !== generation.current) return;
         const next: Job = {
+          id: captureId,
           image: file,
           demo: origin === 'sample',
           source: {
@@ -235,18 +283,20 @@ export function Inbox({
               : {}),
           },
         };
+        diagnosticStage(next.id, 'selection', 'end');
         setJob(next);
         await process(next, true);
       } catch (e) {
         if (version === generation.current) {
           setError({ message: e instanceof Error ? e.message : 'Unable to load image' });
+          setPhase('failed');
           setBusy(false);
           busyRef.current = false;
           owner.current = null;
         }
       }
     },
-    [process, locked, onCaptureInteraction],
+    [process, locked, onCaptureInteraction, preserveOcr],
   );
   useEffect(() => {
     if (!active || suspendPaste) return;
@@ -275,7 +325,7 @@ export function Inbox({
     owner.current = null;
     busyRef.current = false;
     setBusy(false);
-    setStep(-1);
+    setPhase('cancelled');
     setError({ message: 'Processing was cancelled.', code: 'CANCELLED' });
   }
   async function remove() {
@@ -286,6 +336,8 @@ export function Inbox({
     setBusy(false);
     setJob(null);
     setSelectedName('');
+    setPhase('idle');
+    preserveOcr(null);
     setResults([]);
     setDiagnostics(null);
     setRoute(null);
@@ -304,6 +356,28 @@ export function Inbox({
   }
   const demo = !!job?.demo || services.extraction.mode === 'mock';
   const latest = results.map((r) => snapshot.actions.find((a) => a.id === r.id) || r);
+  const recovery = error && (
+    <ErrorState message={`Screenshot: ${error.message}`}>
+      <div className="action-pair">
+        {job && (
+          <Button onClick={() => void process(job)} disabled={busy || locked || voiceActive}>
+            {checkpoint ? 'Retry understanding details' : 'Try again'}
+          </Button>
+        )}
+        {job && (
+          <Button onClick={() => void remove()} disabled={locked || voiceActive}>
+            Choose another image
+          </Button>
+        )}
+        {error.code && SETUP_ERRORS.has(error.code) && (
+          <Button onClick={onOpenSettings}>
+            <Settings size={16} />
+            Open AI Settings
+          </Button>
+        )}
+      </div>
+    </ErrorState>
+  );
   const stageLabel = (index: number) => extractionSteps[index];
   return (
     <section
@@ -340,28 +414,7 @@ export function Inbox({
           <strong>Preparing image…</strong>
         </div>
       )}
-      {error && (
-        <ErrorState message={error.message}>
-          <div className="action-pair">
-            {job && (
-              <Button onClick={() => void process(job)} disabled={busy || locked || voiceActive}>
-                Try again
-              </Button>
-            )}
-            {job && (
-              <Button onClick={() => void remove()} disabled={locked || voiceActive}>
-                Choose another image
-              </Button>
-            )}
-            {error.code && SETUP_ERRORS.has(error.code) && (
-              <Button onClick={onOpenSettings}>
-                <Settings size={16} />
-                Open AI Settings
-              </Button>
-            )}
-          </div>
-        </ErrorState>
-      )}
+      {!source && recovery}
       {!source ? (
         <Dropzone
           onFile={(file) => void accept(file, 'file')}
@@ -369,7 +422,11 @@ export function Inbox({
           onError={(message) => setError({ message })}
         />
       ) : (
-        <div className="upload-card capture-region">
+        <div
+          className="upload-card capture-region"
+          aria-label="Screenshot capture"
+          data-state={phase}
+        >
           <div className="upload-header">
             <FileImage size={17} />
             <span>{source.fileName}</span>
@@ -384,18 +441,31 @@ export function Inbox({
               <Trash2 size={16} />
             </button>
           </div>
+          {recovery && <div className="processing-area">{recovery}</div>}
           <div className="preview-image">
             <img src={source.previewUrl} alt={`Preview of ${source.fileName}`} />
           </div>
           <div className="processing-area">
             <div className="processing-title">
-              {busy ? <LoaderCircle size={17} className="spin" /> : <Check size={17} />}
+              {busy ? (
+                <LoaderCircle size={17} className="spin" />
+              ) : phase === 'review-ready' ? (
+                <Check size={17} />
+              ) : phase === 'failed' ? (
+                <AlertCircle size={17} />
+              ) : (
+                <FileImage size={17} />
+              )}
               <strong role="status">
                 {busy
                   ? stageLabel(Math.max(0, Math.min(step, extractionSteps.length - 1)))
                   : results.length
                     ? 'Ready for review'
-                    : 'Not processed'}
+                    : phase === 'failed'
+                      ? 'Screenshot processing needs attention'
+                      : phase === 'cancelled'
+                        ? 'Screenshot processing cancelled'
+                        : 'Not processed'}
               </strong>
               <span className="badge">
                 {demo ? 'Mock extraction' : routeBadge(route?.candidate)}
@@ -403,7 +473,10 @@ export function Inbox({
             </div>
             <div className="progress-track">
               {extractionSteps.map((label, index) => (
-                <span key={label} className={step >= index ? 'done' : ''} />
+                <span
+                  key={label}
+                  className={phase === 'review-ready' || step > index ? 'done' : ''}
+                />
               ))}
             </div>
             {busy ? (
@@ -453,6 +526,35 @@ export function Inbox({
             )}
             {route && !demo && <RouteWhy route={route} />}
           </div>
+          {checkpoint && (
+            <details className="processing-area">
+              <summary>Recognized text</summary>
+              <div className="capture-source">
+                <p style={{ whiteSpace: 'pre-wrap', userSelect: 'text' }}>
+                  {checkpoint.document.fullText}
+                </p>
+              </div>
+            </details>
+          )}
+          {(phase === 'failed' || phase === 'cancelled') && onManual && (
+            <div className="processing-area">
+              <Button
+                disabled={busy || locked || voiceActive}
+                onClick={() => {
+                  const manual = newAction();
+                  manual.source = {
+                    ...source,
+                    ...(checkpoint ? { ocr: checkpoint.document } : {}),
+                    extractionMode: undefined,
+                    extractedBy: undefined,
+                  };
+                  onManual(manual);
+                }}
+              >
+                Create task manually
+              </Button>
+            </div>
+          )}
           {developer && diagnostics && <ExtractionDebug diagnostics={diagnostics} />}
         </div>
       )}

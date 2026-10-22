@@ -164,15 +164,23 @@ pub struct SseParser {
 }
 
 impl SseParser {
+    pub fn complete(&self) -> bool {
+        self.pending.iter().all(u8::is_ascii_whitespace)
+    }
     pub fn push(
         &mut self,
         bytes: &[u8],
         mut on_data: impl FnMut(&str) -> io::Result<()>,
     ) -> io::Result<()> {
+        if self.pending.len() + bytes.len() > 1024 * 1024 {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "event limit"));
+        }
         self.pending.extend_from_slice(bytes);
         while let Some(end) = self.pending.iter().position(|b| *b == b'\n') {
             let line: Vec<u8> = self.pending.drain(..=end).collect();
-            let text = String::from_utf8_lossy(&line);
+            let text = std::str::from_utf8(&line).map_err(|_| {
+                io::Error::new(io::ErrorKind::InvalidData, "invalid event encoding")
+            })?;
             if let Some(data) = text.trim_end().strip_prefix("data:") {
                 on_data(data.trim_start())?;
             }

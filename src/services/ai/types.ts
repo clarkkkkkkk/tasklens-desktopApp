@@ -96,6 +96,7 @@ export interface AIImage {
 /** One structured-output request. Never contains credentials. */
 export interface AIRequest {
   jobId: string;
+  traceId?: string;
   modelId: string;
   /** Fixed system prompt (cacheable). */
   system: string;
@@ -128,7 +129,7 @@ export interface AIProvider {
   getModels(): Promise<AIModel[]>;
   generate(request: AIRequest): Promise<AIResponse>;
   /** Optional warm-up while OCR runs (load weights, cache the fixed prompt prefix). */
-  prepare?(modelId: string, system: string, signal: AbortSignal): Promise<void>;
+  prepare?(modelId: string, system: string, signal: AbortSignal, traceId?: string): Promise<void>;
 }
 
 export type ProviderErrorKind = 'unavailable' | 'rejected' | 'failed' | 'cancelled';

@@ -3,7 +3,8 @@ import { deriveRequirements, type TaskInputKind, type TaskRequirements } from '.
 import type { RouteDecision, ScoredCandidate } from '../ai/router';
 import { AIProviderError, type AIImage, type AIProvider } from '../ai/types';
 import { LocalAIError, toLocalAIError } from '../localai/native';
-import type { OcrDocument, OcrService } from '../ocr/types';
+import { ocrDocumentSchema, type OcrDocument, type OcrService } from '../ocr/types';
+import { diagnosticStage, type DiagnosticStage } from '../localai/diagnostics';
 import type {
   ExtractionAttempt,
   ExtractionBundle,
@@ -22,6 +23,7 @@ import {
 import { TASKLENS_EXTRACTION_PROMPT_VERSION } from './prompts/extraction-prompt-version';
 import { buildOutputJsonSchema } from './prompts/extraction-schema';
 import { TASKLENS_SYSTEM_PROMPT } from './prompts/tasklens-system-prompt';
+import { coverageIssue, repairInstruction } from './validation/coverage';
 import { validateExtraction, type ValidationContext } from './validation/validate-extraction';
 
 const MAX_OUTPUT_TOKENS = 2048;
@@ -81,150 +83,207 @@ export class RoutedExtractionService implements ExtractionService {
     private readonly options: RoutedExtractionOptions = {},
   ) {}
 
-  async extract(input: ExtractionInput, { signal, onProgress, onRoute }: ExtractionOptions) {
-    const image = input.image;
-    const source = { ...input };
-    delete source.image;
-    signal.throwIfAborted();
-    const timezone = source.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const kind: TaskInputKind =
-      source.type === 'image'
-        ? 'screenshot'
-        : source.type === 'voice' && source.transcript
-          ? 'voice'
-          : 'text';
-
-    // Route on what is known before OCR: fail fast when nothing can run, and warm the winner
-    // while OCR runs. Warm-up failures surface (if at all) when the completion runs.
-    const early = await this.routing.decide(
-      deriveRequirements({
-        kind,
-        texts:
-          kind === 'text'
-            ? unitsFromText(source.text || '').map((u) => u.text)
-            : kind === 'voice'
-              ? unitsFromTranscript(source.transcript!).map((u) => u.text)
-              : undefined,
-      }),
-    );
-    if (!early.selected) throw noCandidate(early);
-    void this.routing
-      .provider(early.selected.provider.id)
-      ?.prepare?.(early.selected.model.id, TASKLENS_SYSTEM_PROMPT, signal)
-      .catch(() => {});
-
-    let ocr: OcrDocument | undefined;
-    let context: PromptContext;
-    if (source.type === 'image') {
-      if (!image) throw new LocalAIError('UNKNOWN', 'The screenshot is no longer available.');
-      onProgress(0);
-      ocr = await this.ocr.recognize(image, {
-        jobId: crypto.randomUUID(),
-        signal,
-        onStage: (stage) => onProgress(stage === 'preparing_image' ? 0 : 1),
-      });
-      signal.throwIfAborted();
-      const readable = ocr.regions
-        .map((r) => r.text)
-        .join('')
-        .replace(/\W/g, '');
-      if (readable.length < MIN_OCR_CHARACTERS)
-        throw withContext(
-          new LocalAIError(
-            'OCR_EMPTY',
-            'TaskLens could not read enough text in this image. Try a sharper or larger screenshot.',
-          ),
-          { ocr },
-        );
-      context = { kind: 'screenshot', units: unitsFromOcr(ocr), now: new Date(), timezone };
-      context.capturedAt = source.capturedAt ?? null;
-    } else if (source.type === 'voice' && source.transcript) {
-      context = {
-        kind: 'voice',
-        units: unitsFromTranscript(source.transcript),
-        now: new Date(),
-        timezone,
-        capturedAt: source.capturedAt ?? null,
-        recordingDate: source.recordingDate ?? null,
-      };
-    } else {
-      const units = unitsFromText(source.text || '');
-      if (
-        units
-          .map((u) => u.text)
-          .join('')
-          .trim().length < 3
-      )
-        throw new LocalAIError('OCR_EMPTY', 'Enter a little more information before extracting.');
-      context = {
-        kind: 'text',
-        units,
-        now: new Date(),
-        timezone,
-        capturedAt: source.capturedAt ?? null,
-        recordingDate: source.recordingDate ?? null,
-      };
-    }
-
-    onProgress(2);
-    const persistedSource = { ...source, timezone, ...(ocr ? { ocr } : {}) };
-    const validationContext: ValidationContext = {
-      ...context,
-      source: persistedSource,
-      defaultReminders: this.settings().defaultReminders,
-    };
-    const decision = await this.routing.decide(
-      deriveRequirements({
-        kind,
-        texts: context.units.map((u) => u.text),
-        ocrConfidences: ocr?.regions.map((r) => r.confidence),
-        imagePixels: ocr ? ocr.imageWidth * ocr.imageHeight : undefined,
-      }),
-    );
-    if (!decision.selected) throw withContext(noCandidate(decision), { ocr });
-    let candidate = decision.selected;
-    const failed: string[] = [];
-    let fallbackFrom: ScoredCandidate | undefined;
-    for (;;) {
-      onRoute?.({ decision, candidate, fallbackFrom });
-      try {
-        const bundle = await this.run(
-          candidate,
-          decision,
-          context,
-          validationContext,
-          image,
-          signal,
-          onProgress,
-          ocr,
-        );
-        this.routing.recordSuccess(candidate.key);
-        return bundle;
-      } catch (error) {
-        if (signal.aborted || isCancellation(error)) throw withContext(error, { ocr, decision });
-        // Invalid output after the repair attempt is not a provider failure: the user retries.
-        if (error instanceof LocalAIError && error.code === 'VALIDATION_FAILED') throw error;
-        this.routing.recordFailure(candidate.key);
-        failed.push(candidate.provider.id);
-        const alternative = this.routing.fallbackFor(decision, failed);
-        const failure =
-          error instanceof Error
-            ? error.message.replace(/^[A-Z_]+: /, '')
-            : `${candidate.provider.name} failed.`;
-        if (!alternative)
-          throw withContext(
-            error instanceof AIProviderError
-              ? new LocalAIError(
-                  'MODEL_FAILED',
-                  `${candidate.model.name} could not complete this: ${failure}`,
-                )
-              : toLocalAIError(error),
-            { ocr, decision },
-          );
-        fallbackFrom = candidate;
-        candidate = alternative;
-        onProgress(2);
+  async extract(
+    input: ExtractionInput,
+    {
+      signal,
+      onProgress,
+      onRoute,
+      traceId = crypto.randomUUID(),
+      ocrCheckpoint,
+      onOcr,
+    }: ExtractionOptions,
+  ) {
+    const warmController = new AbortController();
+    const abortWarm = () => warmController.abort();
+    signal.addEventListener('abort', abortWarm, { once: true });
+    let warming: Promise<void> | undefined;
+    let completed = false;
+    let stage: DiagnosticStage = 'routing';
+    diagnosticStage(traceId, stage, 'start');
+    const progress = (index: number) => {
+      const next: DiagnosticStage =
+        (['preparing_image', 'reading_text', 'inference', 'validation'][
+          index
+        ] as DiagnosticStage) ?? 'review';
+      if (next !== stage) {
+        diagnosticStage(traceId, stage, 'end');
+        stage = next;
+        diagnosticStage(traceId, stage, 'start');
       }
+      onProgress(index);
+    };
+    try {
+      const image = input.image;
+      const source = { ...input };
+      delete source.image;
+      signal.throwIfAborted();
+      const timezone = source.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const kind: TaskInputKind =
+        source.type === 'image'
+          ? 'screenshot'
+          : source.type === 'voice' && source.transcript
+            ? 'voice'
+            : 'text';
+
+      // Route on what is known before OCR: fail fast when nothing can run, and warm the winner
+      // while OCR runs. Warm-up failures surface (if at all) when the completion runs.
+      const early = await this.routing.decide(
+        deriveRequirements({
+          kind,
+          texts:
+            kind === 'text'
+              ? unitsFromText(source.text || '').map((u) => u.text)
+              : kind === 'voice'
+                ? unitsFromTranscript(source.transcript!).map((u) => u.text)
+                : undefined,
+        }),
+      );
+      if (!early.selected && source.type !== 'image') throw noCandidate(early);
+      if (early.selected)
+        warming = this.routing
+          .provider(early.selected.provider.id)
+          ?.prepare?.(
+            early.selected.model.id,
+            TASKLENS_SYSTEM_PROMPT,
+            warmController.signal,
+            traceId,
+          )
+          .catch(() => {});
+
+      let ocr: OcrDocument | undefined;
+      let context: PromptContext;
+      if (source.type === 'image') {
+        if (!image) throw new LocalAIError('UNKNOWN', 'The screenshot is no longer available.');
+        progress(0);
+        if (ocrCheckpoint && ocrCheckpoint.image !== image)
+          throw new LocalAIError(
+            'UNKNOWN',
+            'The recognized text belongs to a different screenshot. Read this image again.',
+          );
+        ocr = ocrCheckpoint
+          ? ocrDocumentSchema.parse(ocrCheckpoint.document)
+          : await this.ocr.recognize(image, {
+              jobId: crypto.randomUUID(),
+              traceId,
+              signal,
+              onStage: (stage) => progress(stage === 'preparing_image' ? 0 : 1),
+            });
+        signal.throwIfAborted();
+        const readable = ocr.regions
+          .map((r) => r.text)
+          .join('')
+          .replace(/\W/g, '');
+        if (readable.length < MIN_OCR_CHARACTERS)
+          throw withContext(
+            new LocalAIError(
+              'OCR_EMPTY',
+              'TaskLens could not read enough text in this image. Try a sharper or larger screenshot.',
+            ),
+            { ocr },
+          );
+        onOcr?.({ image, document: ocr });
+        context = { kind: 'screenshot', units: unitsFromOcr(ocr), now: new Date(), timezone };
+        context.capturedAt = source.capturedAt ?? null;
+      } else if (source.type === 'voice' && source.transcript) {
+        context = {
+          kind: 'voice',
+          units: unitsFromTranscript(source.transcript),
+          now: new Date(),
+          timezone,
+          capturedAt: source.capturedAt ?? null,
+          recordingDate: source.recordingDate ?? null,
+        };
+      } else {
+        const units = unitsFromText(source.text || '');
+        if (
+          units
+            .map((u) => u.text)
+            .join('')
+            .trim().length < 3
+        )
+          throw new LocalAIError('OCR_EMPTY', 'Enter a little more information before extracting.');
+        context = {
+          kind: 'text',
+          units,
+          now: new Date(),
+          timezone,
+          capturedAt: source.capturedAt ?? null,
+          recordingDate: source.recordingDate ?? null,
+        };
+      }
+
+      progress(2);
+      const persistedSource = { ...source, timezone, ...(ocr ? { ocr } : {}) };
+      const validationContext: ValidationContext = {
+        ...context,
+        source: persistedSource,
+        defaultReminders: this.settings().defaultReminders,
+      };
+      const decision = await this.routing.decide(
+        deriveRequirements({
+          kind,
+          texts: context.units.map((u) => u.text),
+          ocrConfidences: ocr?.regions.map((r) => r.confidence),
+          imagePixels: ocr ? ocr.imageWidth * ocr.imageHeight : undefined,
+        }),
+      );
+      if (!decision.selected) throw withContext(noCandidate(decision), { ocr });
+      await warming;
+      signal.throwIfAborted();
+      let candidate = decision.selected;
+      const failed: string[] = [];
+      let fallbackFrom: ScoredCandidate | undefined;
+      for (;;) {
+        onRoute?.({ decision, candidate, fallbackFrom });
+        try {
+          const bundle = await this.run(
+            candidate,
+            decision,
+            context,
+            validationContext,
+            image,
+            signal,
+            progress,
+            ocr,
+            traceId,
+          );
+          this.routing.recordSuccess(candidate.key);
+          completed = true;
+          diagnosticStage(traceId, stage, 'end');
+          diagnosticStage(traceId, 'review', 'end');
+          return bundle;
+        } catch (error) {
+          if (signal.aborted || isCancellation(error)) throw withContext(error, { ocr, decision });
+          // Invalid output after the repair attempt is not a provider failure: the user retries.
+          if (error instanceof LocalAIError && error.code === 'VALIDATION_FAILED') throw error;
+          this.routing.recordFailure(candidate.key);
+          failed.push(candidate.provider.id);
+          const alternative = this.routing.fallbackFor(decision, failed);
+          const failure =
+            error instanceof Error
+              ? error.message.replace(/^[A-Z_]+: /, '')
+              : `${candidate.provider.name} failed.`;
+          if (!alternative)
+            throw withContext(
+              error instanceof AIProviderError
+                ? new LocalAIError(
+                    'MODEL_FAILED',
+                    `${candidate.model.name} could not complete this: ${failure}`,
+                  )
+                : toLocalAIError(error),
+              { ocr, decision },
+            );
+          fallbackFrom = candidate;
+          candidate = alternative;
+          progress(2);
+        }
+      }
+    } finally {
+      if (!completed) diagnosticStage(traceId, stage, signal.aborted ? 'cancelled' : 'failed');
+      warmController.abort();
+      signal.removeEventListener('abort', abortWarm);
+      await warming;
     }
   }
 
@@ -237,6 +296,7 @@ export class RoutedExtractionService implements ExtractionService {
     signal: AbortSignal,
     onProgress: (step: number) => void,
     ocr: OcrDocument | undefined,
+    traceId: string,
   ): Promise<ExtractionBundle> {
     const provider = this.routing.provider(candidate.provider.id);
     if (!provider)
@@ -269,6 +329,7 @@ export class RoutedExtractionService implements ExtractionService {
     for (let attempt = 0; attempt < 2; attempt++) {
       const response = await provider.generate({
         jobId: crypto.randomUUID(),
+        traceId,
         modelId: candidate.model.id,
         system: TASKLENS_SYSTEM_PROMPT,
         user,
@@ -280,7 +341,12 @@ export class RoutedExtractionService implements ExtractionService {
       });
       signal.throwIfAborted();
       onProgress(3);
-      const result = validateExtraction(response.content, validationContext);
+      let result = validateExtraction(response.content, validationContext);
+      if (result.ok) {
+        const omitted = coverageIssue(validationContext, result.actions);
+        if (omitted)
+          result = { ok: false, stage: 'actions', error: omitted, issues: result.issues };
+      }
       attempts.push({
         rawOutput: response.content,
         elapsedMs: response.elapsedMs,
@@ -310,9 +376,7 @@ export class RoutedExtractionService implements ExtractionService {
             route,
           },
         };
-      repair = response.truncated
-        ? 'Your previous answer was cut off. Return fewer, shorter items and keep notes brief.'
-        : `Your previous answer was invalid (${result.error}). Return only a valid JSON object for the schema.`;
+      repair = repairInstruction(validationContext, result.error, response.truncated);
       onProgress(2);
     }
     throw withContext(

@@ -36,6 +36,7 @@ function html(fixture) {
     section { border: 1px solid #ddd; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
     h2 { font-size: 16px; margin: 0 0 8px; }
     section p { margin: 4px 0; font-size: 14px; }
+    ${fixture.theme === 'dark' ? 'body {background:#211c42;color:#f6f7f9} section {border-color:#625b80;background:#191c3d}' : ''}
   </style><main>${body}</main>`;
 }
 
@@ -46,7 +47,8 @@ try {
     viewport: { width: 432, height: 400 },
   });
   mkdirSync(folder, { recursive: true });
-  for (const fixture of fixtures) {
+  const only = process.argv.find((a) => a.startsWith('--only='))?.slice(7);
+  for (const fixture of fixtures.filter((f) => !only || f.id.startsWith(only))) {
     await page.setContent(html(fixture));
     await page.locator('main').screenshot({ path: path.join(folder, `${fixture.id}.png`) });
     console.info(`Rendered ${fixture.id}.png`);

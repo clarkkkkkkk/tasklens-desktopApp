@@ -53,3 +53,7 @@ Speech import validation, audio conversion and signal checks now precede the sha
 Pinned rusqlite 0.40.2 includes bundled SQLite and backup support, used only for the delivery journal at this checkpoint. Notification submission: notify-rust 4.18.1 on Linux/Windows; UserNotifications through objc2-user-notifications 0.3.2 on macOS. chrono 0.4.45, chrono-tz 0.10.4 and iana-time-zone 0.1.65 validate timezone/DST choices. Tokio bounds Linux notification interaction listeners. Native Windows/macOS builds and interaction acceptance remain pending. No SQL/notification/autostart plugin capabilities are granted to the renderer.
 
 Task persistence remains localStorage. Backup restore, autostart and canonical SQLite migration are gated future milestones in this branch, not implemented features. See [native reliability](docs/NATIVE_RELIABILITY.md).
+
+## Reliability tooling (2026-10-22)
+
+Existing serde_json enables `raw_value` only for ordered schema IPC; global JSON ordering is unchanged. The existing sha2 dependency is optimized in development builds for streaming asset verification. No new inference library or runtime model is introduced. Native OCR, PE dependency auditing and isolated WebView acceptance scripts are documented in [LOCAL_AI_RELIABILITY](docs/LOCAL_AI_RELIABILITY.md). Windows memory/process instrumentation remains natively unverified.

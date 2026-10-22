@@ -1,0 +1,113 @@
+{
+  "engine": "tesseract 5.5.1",
+  "fullText": "Graduation activities\nHOLY MASS - kinahanglan motambong ang graduating\nstudents, gawas sa giingong religious exemption.\nOras: 10:00 AM - 11:00 AM.\nLugar: San Narciso Parish.\nLUNCH - paniudto sa RTC Gym sa 12 PM.\n\nSa Holy Mass, kinahanglan OJT/Pinning uniform sa\nibabaw ug black trousers o slacks sa ubos.",
+  "imageHeight": 464,
+  "imageWidth": 864,
+  "languages": ["eng", "ceb", "tgl"],
+  "regions": [
+    {
+      "block": 1,
+      "box": {
+        "height": 24,
+        "width": 314,
+        "x": 67,
+        "y": 61
+      },
+      "confidence": 0.899,
+      "id": "r1",
+      "paragraph": 1,
+      "text": "Graduation activities"
+    },
+    {
+      "block": 1,
+      "box": {
+        "height": 27,
+        "width": 683,
+        "x": 68,
+        "y": 116
+      },
+      "confidence": 0.919,
+      "id": "r2",
+      "paragraph": 2,
+      "text": "HOLY MASS - kinahanglan motambong ang graduating"
+    },
+    {
+      "block": 1,
+      "box": {
+        "height": 27,
+        "width": 607,
+        "x": 67,
+        "y": 148
+      },
+      "confidence": 0.915,
+      "id": "r3",
+      "paragraph": 2,
+      "text": "students, gawas sa giingong religious exemption."
+    },
+    {
+      "block": 1,
+      "box": {
+        "height": 20,
+        "width": 340,
+        "x": 67,
+        "y": 189
+      },
+      "confidence": 0.912,
+      "id": "r4",
+      "paragraph": 3,
+      "text": "Oras: 10:00 AM - 11:00 AM."
+    },
+    {
+      "block": 1,
+      "box": {
+        "height": 27,
+        "width": 330,
+        "x": 68,
+        "y": 228
+      },
+      "confidence": 0.917,
+      "id": "r5",
+      "paragraph": 4,
+      "text": "Lugar: San Narciso Parish."
+    },
+    {
+      "block": 1,
+      "box": {
+        "height": 27,
+        "width": 528,
+        "x": 68,
+        "y": 268
+      },
+      "confidence": 0.927,
+      "id": "r6",
+      "paragraph": 5,
+      "text": "LUNCH - paniudto sa RTC Gym sa 12 PM."
+    },
+    {
+      "block": 2,
+      "box": {
+        "height": 27,
+        "width": 639,
+        "x": 68,
+        "y": 308
+      },
+      "confidence": 0.915,
+      "id": "r7",
+      "paragraph": 1,
+      "text": "Sa Holy Mass, kinahanglan OJT/Pinning uniform sa"
+    },
+    {
+      "block": 2,
+      "box": {
+        "height": 27,
+        "width": 528,
+        "x": 68,
+        "y": 340
+      },
+      "confidence": 0.914,
+      "id": "r8",
+      "paragraph": 1,
+      "text": "ibabaw ug black trousers o slacks sa ubos."
+    }
+  ]
+}

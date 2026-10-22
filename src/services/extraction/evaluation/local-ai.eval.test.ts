@@ -1,4 +1,5 @@
 import assets from '../../../../src-tauri/resources/models.json';
+import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 /**
  * Local model evaluation. Opt-in and slow; never part of `npm test`:
@@ -11,7 +12,7 @@ import { execFileSync } from 'node:child_process';
  * regression signal, not a production accuracy claim.
  */
 import { spawn, type ChildProcess } from 'node:child_process';
-import { mkdirSync, openSync, closeSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, openSync, closeSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { request as httpRequest } from 'node:http';
 import { StringDecoder } from 'node:string_decoder';
@@ -23,6 +24,7 @@ import { contextForCase } from '../../../../tests/fixtures/extraction/context';
 import { scoreCase, type Check } from '../../../../tests/fixtures/extraction/score';
 import { buildExtractionPrompt } from '../prompts/build-prompt';
 import { TASKLENS_EXTRACTION_PROMPT_VERSION } from '../prompts/extraction-prompt-version';
+import { coverageIssue, repairInstruction } from '../validation/coverage';
 import { validateExtraction } from '../validation/validate-extraction';
 
 const enabled = !!process.env.TASKLENS_EVAL;
@@ -49,6 +51,10 @@ let server: ChildProcess | undefined;
 let port = 0;
 /** Benchmark-only extra llama-server arguments, e.g. "--threads 4 --batch-size 512". */
 const extraArgs = process.env.TASKLENS_EVAL_SERVER_ARGS?.split(/\s+/).filter(Boolean) ?? [];
+const prefixCacheDirectory = process.env.TASKLENS_EVAL_PREFIX_CACHE_DIR
+  ? path.resolve(process.env.TASKLENS_EVAL_PREFIX_CACHE_DIR)
+  : null;
+const diagnosticRunId = Date.now();
 const runtime = { loadSeconds: 0, prewarmSeconds: null as number | null, peakRssKiB: 0 };
 /** Peak resident memory of the llama-server process, from /proc (Linux only). */
 function peakRss(): number {
@@ -194,6 +200,7 @@ beforeAll(async () => {
       '--n-gpu-layers',
       '0',
       '--no-webui',
+      ...(prefixCacheDirectory ? ['--slot-save-path', prefixCacheDirectory] : []),
       ...extraArgs,
       ...(speculative
         ? [
@@ -263,12 +270,14 @@ it.skipIf(!enabled)(
       // Mirrors production pre-warming: evaluate the fixed system prefix before the first case.
       const prewarmStarted = performance.now();
       const prefix = buildExtractionPrompt(contextForCase(selectedCases[0])).cachePrefix;
-      const warm = await request('/completion', {
-        prompt: prefix,
-        n_predict: 0,
-        cache_prompt: true,
-      });
+      const file = `benchmark-${createHash('sha256').update(assets.extraction.sha256).update(prefix).digest('hex').slice(0, 24)}.bin`;
+      const restored = prefixCacheDirectory && existsSync(path.join(prefixCacheDirectory, file));
+      const warm = restored
+        ? await request('/slots/0?action=restore', { filename: file })
+        : await request('/completion', { prompt: prefix, n_predict: 0, cache_prompt: true });
       if (!warm.ok) throw new Error(`Prewarm failed: HTTP ${warm.status}`);
+      if (prefixCacheDirectory && !restored)
+        await request('/slots/0?action=save', { filename: file });
       runtime.prewarmSeconds = (performance.now() - prewarmStarted) / 1000;
     }
     for (const testCase of selectedCases) {
@@ -298,7 +307,26 @@ it.skipIf(!enabled)(
           stopped_limit?: boolean;
           timings?: Record<string, number>;
         };
-        const result = data.stopped_limit
+        // Explicit synthetic-fixture diagnosis only; never application diagnostics or user inputs.
+        if (process.env.TASKLENS_EVAL_CAPTURE_ATTEMPTS) {
+          const folder = path.resolve('.local-ai/evaluation-attempts', String(diagnosticRunId));
+          mkdirSync(folder, { recursive: true });
+          writeFileSync(
+            path.join(folder, `${testCase.id}-${attempt}.json`),
+            JSON.stringify(
+              {
+                promptVersion: TASKLENS_EXTRACTION_PROMPT_VERSION,
+                units: context.units,
+                content: data.content,
+                timings: data.timings,
+                stoppedLimit: data.stopped_limit,
+              },
+              null,
+              2,
+            ),
+          );
+        }
+        let result = data.stopped_limit
           ? {
               ok: false as const,
               stage: 'generation',
@@ -306,6 +334,11 @@ it.skipIf(!enabled)(
               issues: [] as string[],
             }
           : validateExtraction(data.content, context);
+        if (result.ok) {
+          const omitted = coverageIssue(context, result.actions);
+          if (omitted)
+            result = { ok: false, stage: 'actions', error: omitted, issues: result.issues };
+        }
         const seconds = (performance.now() - started) / 1000;
         if (result.ok) {
           const bundle = { actions: result.actions, ambiguities: result.ambiguities };
@@ -335,7 +368,7 @@ it.skipIf(!enabled)(
             ),
           });
         } else {
-          repair = `Your previous answer was invalid (${result.error}). Return only a valid JSON object for the schema.`;
+          repair = repairInstruction(context, result.error, !!data.stopped_limit);
           record = {
             id: testCase.id,
             languages: testCase.languages,

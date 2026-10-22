@@ -8,6 +8,8 @@ import '../src/components/motion/motion.css';
 import ReactDOM from 'react-dom/client';
 import App from '../src/App';
 import { AppProvider } from '../src/app/AppProvider';
+import { newAction } from '../src/lib/actions';
+import midtermOcr from './fixtures/screenshots/ocr/midterm.json';
 import { createServices } from '../src/app/services';
 import {
   unitsFromText,
@@ -28,6 +30,7 @@ if (!localStorage.getItem('tasklens:data:v1'))
     }),
   );
 const services = createServices();
+let ocrReads = 0;
 let recordingTimer: ReturnType<typeof setInterval> | undefined;
 const amplitudeSamples = [0, 0.02, 0.12, 0.32, 0.55, 0.2, 0.04, 0];
 let starts = 0,
@@ -43,6 +46,9 @@ Object.assign(window, {
       closeRequest?.(async () => {
         closed++;
       });
+    },
+    get ocrReads() {
+      return ocrReads;
     },
     get starts() {
       return starts;
@@ -114,7 +120,22 @@ services.speech = {
 };
 services.extraction = {
   mode: 'local',
-  async extract(input, { signal, onProgress }) {
+  async extract(input, { signal, onProgress, ocrCheckpoint, onOcr }) {
+    if (input.type === 'image' && input.image && query.has('screenshot-recovery')) {
+      attempts++;
+      const doc = ocrCheckpoint?.document ?? midtermOcr;
+      if (!ocrCheckpoint) ocrReads++;
+      onOcr?.({ image: input.image, document: doc });
+      onProgress(2);
+      if (attempts === 1) throw new Error('The local model did not respond.');
+      onProgress(3);
+      const source = { ...input, ocr: doc };
+      delete source.image;
+      return {
+        actions: [{ ...newAction(), title: 'Midterm examination', status: 'needs_review', source }],
+        ambiguities: [],
+      };
+    }
     attempts++;
     onProgress(2);
     if (query.has('staged')) await new Promise((resolve) => setTimeout(resolve, 1500));

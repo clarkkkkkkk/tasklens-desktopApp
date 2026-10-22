@@ -1,0 +1,191 @@
+[
+  {
+    "id": "graduation-english",
+    "languages": "english",
+    "seconds": 211.546996069,
+    "attempts": 2,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": true,
+        "detail": "2 (expected 2)"
+      },
+      {
+        "name": "holy mass|misa: found",
+        "ok": false,
+        "detail": "missing"
+      },
+      {
+        "name": "lunch|paniudto|tanghalian: found",
+        "ok": true,
+        "detail": "Lunch"
+      },
+      {
+        "name": "lunch|paniudto|tanghalian: type",
+        "ok": true,
+        "detail": "\"event\" (expected \"event\")"
+      },
+      {
+        "name": "lunch|paniudto|tanghalian: date",
+        "ok": true,
+        "detail": "empty (expected empty)"
+      },
+      {
+        "name": "lunch|paniudto|tanghalian: time",
+        "ok": false,
+        "detail": "empty (expected \"12:00\")"
+      },
+      {
+        "name": "lunch|paniudto|tanghalian: location",
+        "ok": true,
+        "detail": "\"RTC Gym\""
+      },
+      {
+        "name": "ambiguity on date",
+        "ok": true,
+        "detail": "[\"date: Which date does this activity refer to?\",\"date: Which date does this activity refer to?\"]"
+      },
+      {
+        "name": "no invented date",
+        "ok": true
+      },
+      {
+        "name": "no lost source evidence",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "event",
+        "title": "Graduation activities",
+        "location": "San Narciso Parish",
+        "requirements": [
+          "Required outfit for Holy Mass: OJT/Pinning uniform; black trousers or slacks"
+        ],
+        "notes": [
+          "Graduation activities include Holy Mass and lunch."
+        ],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "needs_review",
+          "time": "needs_review",
+          "location": "confirmed",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "type": "event",
+        "title": "Lunch",
+        "location": "RTC Gym",
+        "requirements": [],
+        "notes": [],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "needs_review",
+          "time": "needs_review",
+          "location": "confirmed"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: Which date does this activity refer to? []",
+          "date: Which date does this activity refer to? []"
+        ]
+      }
+    ],
+    "issues": [],
+    "timings": {
+      "cache_n": 1696,
+      "prompt_n": 61,
+      "prompt_ms": 12692.185,
+      "prompt_per_token_ms": 208.06860655737705,
+      "prompt_per_second": 4.806107065095569,
+      "predicted_n": 268,
+      "predicted_ms": 102408.207,
+      "predicted_per_token_ms": 383.55133707865167,
+      "predicted_per_second": 2.6072129160507616
+    }
+  },
+  {
+    "id": "graduation-cebuano",
+    "languages": "cebuano",
+    "seconds": 95.738399504,
+    "attempts": 1,
+    "checks": [
+      {
+        "name": "action count",
+        "ok": false,
+        "detail": "1 (expected 2)"
+      },
+      {
+        "name": "holy mass|misa: found",
+        "ok": false,
+        "detail": "missing"
+      },
+      {
+        "name": "lunch|paniudto|tanghalian: found",
+        "ok": false,
+        "detail": "missing"
+      },
+      {
+        "name": "ambiguity on date",
+        "ok": true,
+        "detail": "[\"date: Which date does this activity refer to?\"]"
+      },
+      {
+        "name": "no invented date",
+        "ok": true
+      },
+      {
+        "name": "no lost source evidence",
+        "ok": true
+      }
+    ],
+    "output": [
+      {
+        "type": "event",
+        "title": "Graduation activities",
+        "time": "10:00",
+        "endTime": "11:00",
+        "location": "San Narciso Parish",
+        "requirements": [
+          "Wear OJT/Pinning uniform",
+          "Wear black trousers or slacks"
+        ],
+        "notes": [
+          "Lunch is scheduled at RTC Gym at 12 PM."
+        ],
+        "confidence": {
+          "overall": "needs_review",
+          "title": "confirmed",
+          "date": "needs_review",
+          "time": "confirmed",
+          "endTime": "confirmed",
+          "location": "inferred",
+          "requirements": "confirmed"
+        }
+      },
+      {
+        "ambiguities": [
+          "date: Which date does this activity refer to? []"
+        ]
+      }
+    ],
+    "issues": [
+      "item 1: date expression “unknown” is not in the source; ignored"
+    ],
+    "timings": {
+      "cache_n": 1618,
+      "prompt_n": 109,
+      "prompt_ms": 12528.434,
+      "prompt_per_token_ms": 114.9397614678899,
+      "prompt_per_second": 8.7002094595382,
+      "predicted_n": 251,
+      "predicted_ms": 83179.854,
+      "predicted_per_token_ms": 332.719416,
+      "predicted_per_second": 3.005535450927817
+    }
+  }
+]

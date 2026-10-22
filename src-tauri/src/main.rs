@@ -2,6 +2,7 @@
 
 mod ai;
 mod assets;
+mod diagnostics;
 mod jobs;
 mod local_ai;
 mod ocr;
@@ -43,6 +44,9 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            diagnostics::local_diagnostics_session,
+            diagnostics::local_diagnostics_identity,
+            diagnostics::local_diagnostics_stage,
             reliability::reminder_status,
             reliability::reminder_time_options,
             reliability::reminder_take_activation,

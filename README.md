@@ -101,3 +101,7 @@ Offline packaging/performance evidence and remaining release gates are recorded 
 ## Native reliability branch — 2026-10-20
 
 `codex/native-reliability` implements an unfinished Milestone A: opt-in native reminders, a SQLite delivery journal (tasks stay in localStorage), Settings activation/privacy/background controls, durable scheduling fences and shared close guards. Notifications require explicit activation after upgrade. No automatic autostart, task migration or backup import is included yet. Fedora OS submission checks have run; visibility, broader lifecycle/recovery and Windows/macOS native acceptance are tracked separately. See [implementation and gate status](docs/NATIVE_RELIABILITY.md) for commands, ownership boundaries, storage paths, unencrypted-data disclosure and remaining A–E work. No push/main merge is included.
+
+### Local AI failure diagnosis
+
+For opt-in sanitized diagnostics, isolated native OCR/screenshot acceptance, Windows dependency checks and current verified/pending results, see [the local AI reliability checkpoint](docs/LOCAL_AI_RELIABILITY.md). The complete multilingual accuracy and Windows native gates remain open.

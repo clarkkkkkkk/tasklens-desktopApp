@@ -246,12 +246,24 @@ pub struct Engine {
 
 /// The OCR pipeline without any Tauri dependency: decode, preprocess, recognise, parse.
 /// `folder` is a private temporary directory that the caller removes afterwards.
+#[cfg(test)]
 pub fn recognize_bytes(
     engine: &Engine,
     bytes: &[u8],
     folder: &Path,
     cancel: &std::sync::atomic::AtomicBool,
     progress: impl Fn(&str),
+) -> Result<Value, String> {
+    recognize_bytes_traced(engine, bytes, folder, cancel, progress, None, None)
+}
+fn recognize_bytes_traced(
+    engine: &Engine,
+    bytes: &[u8],
+    folder: &Path,
+    cancel: &std::sync::atomic::AtomicBool,
+    progress: impl Fn(&str),
+    trace: Option<&str>,
+    job: Option<&str>,
 ) -> Result<Value, String> {
     progress("preparing_image");
     let image = decode(bytes)?;
@@ -281,7 +293,7 @@ pub fn recognize_bytes(
         "-c".into(),
         "tessedit_create_txt=0".into(),
     ];
-    platform::run_to_file(
+    platform::run_traced(
         &engine.binary,
         &args,
         &folder.join("stdout.txt"),
@@ -290,6 +302,9 @@ pub fn recognize_bytes(
             timeout: Duration::from_secs(180),
             max_output_bytes: 1_000_000,
         },
+        trace,
+        job,
+        "reading_text",
     )?;
     let tsv = fs::read_to_string(folder.join("out.tsv"))
         .map_err(|_| "Text recognition produced no output.".to_string())?;
@@ -311,7 +326,12 @@ pub fn recognize_bytes(
     }))
 }
 
-fn recognize(app: &tauri::AppHandle, id: &str, bytes: Vec<u8>) -> Result<Value, String> {
+fn recognize(
+    app: &tauri::AppHandle,
+    id: &str,
+    trace: &str,
+    bytes: Vec<u8>,
+) -> Result<Value, String> {
     let jobs = app.state::<Jobs>();
     let job = jobs.register(id)?;
     let install = installation(app);
@@ -329,9 +349,17 @@ fn recognize(app: &tauri::AppHandle, id: &str, bytes: Vec<u8>) -> Result<Value, 
     };
     let folder = platform::app_data(app)?.join("ocr-jobs").join(id);
     fs::create_dir_all(&folder).map_err(|_| platform::GENERIC_ERROR.to_string())?;
-    let result = recognize_bytes(&engine, &bytes, &folder, &job.cancel, |stage| {
-        let _ = app.emit("local-ai-progress", json!({"jobId": id, "stage": stage}));
-    });
+    let result = recognize_bytes_traced(
+        &engine,
+        &bytes,
+        &folder,
+        &job.cancel,
+        |stage| {
+            let _ = app.emit("local-ai-progress", json!({"jobId": id, "stage": stage}));
+        },
+        Some(trace),
+        Some(id),
+    );
     let _ = fs::remove_dir_all(&folder);
     result
 }
@@ -358,6 +386,13 @@ pub async fn ocr_recognize(
         .unwrap_or_default()
         .to_string();
     crate::jobs::valid_id(&id)?;
+    let trace = request
+        .headers()
+        .get("x-tasklens-trace")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or(&id)
+        .to_string();
+    crate::jobs::valid_id(&trace)?;
     let bytes = match request.body() {
         InvokeBody::Raw(bytes) => bytes.clone(),
         _ => return Err("Send the image as binary data.".into()),
@@ -365,7 +400,7 @@ pub async fn ocr_recognize(
     if bytes.is_empty() || bytes.len() > MAX_IMAGE_BYTES {
         return Err("This image is too large. Choose an image smaller than 10 MB.".into());
     }
-    tauri::async_runtime::spawn_blocking(move || recognize(&app, &id, bytes))
+    tauri::async_runtime::spawn_blocking(move || recognize(&app, &id, &trace, bytes))
         .await
         .map_err(|_| platform::GENERIC_ERROR.to_string())?
 }
@@ -518,6 +553,65 @@ mod tests {
             )
             .unwrap();
         }
+    }
+    #[test]
+    #[ignore = "Opt-in native smoke; uses only its own synthetic temporary directory"]
+    fn native_ocr_smoke() {
+        use sha2::{Digest, Sha256};
+        let binary = PathBuf::from(
+            std::env::var("TASKLENS_TESSERACT").expect("Exact bundled executable required"),
+        );
+        let tessdata = PathBuf::from(std::env::var("TASKLENS_TESSDATA").unwrap());
+        let folder = PathBuf::from(std::env::var("TASKLENS_OCR_SMOKE_OUTPUT").unwrap());
+        let engine = Engine {
+            binary: binary.clone(),
+            tessdata,
+            languages: LANGUAGES.iter().map(|s| s.to_string()).collect(),
+        };
+        let fixture = std::env::var("TASKLENS_OCR_FIXTURE").unwrap_or_else(|_| "midterm".into());
+        assert!([
+            "midterm",
+            "graduation-english",
+            "graduation-cebuano",
+            "graduation-tagalog"
+        ]
+        .contains(&fixture.as_str()));
+        let bytes = fs::read(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../tests/fixtures/screenshots")
+                .join(format!("{fixture}.png")),
+        )
+        .unwrap();
+        crate::diagnostics::set_recording(true);
+        let started = std::time::Instant::now();
+        let result = recognize_bytes(&engine, &bytes, &folder, &Default::default(), |_| {});
+        let summary = match &result {
+            Ok(doc) => {
+                json!({"ok":true,"regions":doc["regions"].as_array().unwrap().len(),"meaningful":doc["fullText"].as_str().unwrap().to_ascii_lowercase().contains(if fixture=="midterm" {"midterm"} else {"holy mass"}),"languages":doc["languages"]})
+            }
+            Err(error) => {
+                json!({"ok":false,"failure":serde_json::from_str::<Value>(error).unwrap_or(json!({"code":"UNCLASSIFIED"}))})
+            }
+        };
+        let report = json!({"commit":env!("TASKLENS_BUILD_COMMIT"),"target":env!("TASKLENS_TARGET_TRIPLE"),"binarySha256":format!("{:x}",Sha256::digest(fs::read(&binary).unwrap())),"durationMs":started.elapsed().as_millis(),"result":summary,"diagnostics":crate::diagnostics::events()});
+        fs::write(
+            folder.join("report.json"),
+            serde_json::to_vec_pretty(&report).unwrap(),
+        )
+        .unwrap();
+        if let Ok(doc) = &result {
+            fs::write(
+                folder.join("synthetic-ocr.json"),
+                serde_json::to_vec_pretty(doc).unwrap(),
+            )
+            .unwrap();
+        }
+        assert!(result.is_ok(), "OCR smoke failed; inspect sanitized report");
+        assert_eq!(summary["meaningful"], true);
+        let cancel = std::sync::atomic::AtomicBool::new(true);
+        assert!(recognize_bytes(&engine, &bytes, &folder, &cancel, |_| {})
+            .unwrap_err()
+            .contains("cancelled"));
     }
     #[test]
     fn rejects_unsupported_formats() {

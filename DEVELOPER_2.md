@@ -126,3 +126,7 @@ Main integration merge `8f32047` preserves checkpoint `8713545` and upstream `cf
 ## Native reliability branch — 2026-10-20
 
 `codex/native-reliability` implements an unfinished Milestone A: opt-in native reminders, a SQLite delivery journal (tasks stay in localStorage), Settings activation/privacy/background controls, durable scheduling fences and shared close guards. Notifications require explicit activation after upgrade. No automatic autostart, task migration or backup import is included yet. Fedora OS submission checks have run; visibility, broader lifecycle/recovery and Windows/macOS native acceptance are tracked separately. See [implementation and gate status](docs/NATIVE_RELIABILITY.md) for commands, ownership boundaries, storage paths, unencrypted-data disclosure and remaining A–E work. No push/main merge is included.
+
+## Local AI reliability handoff — 2026-10-22
+
+Checkpoint developed on `codex/local-ai-reliability`; the user authorized publication to `main` on 2026-10-22. Fedora is the active verification scope; Windows is deferred. Preserve original Windows failing binaries and normal profiles. Run the exact-binary PE audit and production OCR smoke before investigating Qwen. Use the unique acceptance identity/receipt for downstream native testing; never delete the normal WebView profile. See [commands, Fedora measurements and open gates](docs/LOCAL_AI_RELIABILITY.md). Publication does not imply completed accuracy or native acceptance.

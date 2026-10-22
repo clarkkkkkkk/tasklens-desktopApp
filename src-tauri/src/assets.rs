@@ -291,7 +291,12 @@ pub fn initialize(app: &tauri::AppHandle, force: bool) {
                 },
             );
             let _ = fs::remove_file(output);
-            result
+            // Component status is user-facing; the process trace retains typed details.
+            result.map_err(|error| {
+                serde_json::from_str::<crate::diagnostics::Failure>(&error)
+                    .map(|failure| failure.message)
+                    .unwrap_or(error)
+            })
         })();
         components[name] =
             json!({"state":if result.is_ok() { "ready" } else { "error" }, "message":result.err()});

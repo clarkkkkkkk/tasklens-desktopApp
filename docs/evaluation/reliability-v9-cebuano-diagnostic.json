@@ -1,0 +1,46 @@
+{
+  "model": "Qwen3-4B-Q4_K_M.gguf",
+  "sampling": {
+    "temperature": 0,
+    "top_k": 1,
+    "top_p": 1,
+    "seed": 7
+  },
+  "args": [],
+  "runtime": {
+    "loadSeconds": 6.617,
+    "prewarmSeconds": 0.6471391439999997,
+    "peakRssKiB": 5447048
+  },
+  "results": [
+    {
+      "id": "graduation-cebuano",
+      "languages": "cebuano",
+      "seconds": 176.204355847,
+      "attempts": 2,
+      "checks": [
+        {
+          "name": "valid output",
+          "ok": false,
+          "detail": "The explicit clock time in [r6] was omitted. A missing date does not make a directly stated clock time unknown; keep the time and ask for the date."
+        }
+      ],
+      "issues": [
+        "item 1: date expression “ugma” is not in the source; ignored",
+        "item 2: date expression “bukas” is not in the source; ignored"
+      ],
+      "error": "actions: The explicit clock time in [r6] was omitted. A missing date does not make a directly stated clock time unknown; keep the time and ask for the date.",
+      "timings": {
+        "cache_n": 1784,
+        "prompt_n": 70,
+        "prompt_ms": 6080.554,
+        "prompt_per_token_ms": 86.86505714285714,
+        "prompt_per_second": 11.512108929548196,
+        "predicted_n": 257,
+        "predicted_ms": 87305.993,
+        "predicted_per_token_ms": 341.03903515625,
+        "predicted_per_second": 2.9322156613005936
+      }
+    }
+  ]
+}

@@ -55,6 +55,11 @@ export type OcrStage = 'preparing_image' | 'reading_text';
 export interface OcrService {
   recognize(
     image: Blob,
-    options: { jobId: string; signal: AbortSignal; onStage?: (stage: OcrStage) => void },
+    options: {
+      jobId: string;
+      traceId?: string;
+      signal: AbortSignal;
+      onStage?: (stage: OcrStage) => void;
+    },
   ): Promise<OcrDocument>;
 }

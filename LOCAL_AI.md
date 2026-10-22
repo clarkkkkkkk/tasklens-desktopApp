@@ -8,7 +8,7 @@ Startup verifies bundled models and OCR data on a background worker and probes a
 
 No application-time downloads, remote inference, cloud OCR, remote transcription or telemetry are used. The webview permits only Tauri IPC. Rust communicates with its own llama-server on `127.0.0.1`, a random port, with a per-launch key and no web UI. Prompts travel in request bodies; every native program receives structured arguments. Offline tests must leave loopback enabled.
 
-Extraction keeps the existing evidence/schema/date/time/confidence validator and one bounded repair attempt. Qwen3 uses its non-thinking chat template (compact-output prompt version 7; final accuracy acceptance pending), an empty thought block and model-specific stop tokens. Screenshot OCR is real; the sample screenshot and onboarding demo are mock and retain their provenance labels.
+Extraction keeps the existing evidence/schema/date/time/confidence validator and one bounded repair attempt. Qwen3 uses its non-thinking chat template (compact-output prompt version 11; final accuracy acceptance pending), an empty thought block and model-specific stop tokens. Screenshot OCR is real; the sample screenshot and onboarding demo are mock and retain their provenance labels.
 
 The extraction server is reused between requests. Speech takes the same native model gate, stops llama-server before loading Whisper, and exits before subsequent extraction can load Qwen. Startup does not load either inference model into RAM. Temporary audio/OCR jobs retain their existing cancellation and cleanup behavior.
 
@@ -98,3 +98,7 @@ Prompt v7 generates an absent date/time/end_time/arrival_time/location as `null`
 ### Cancellation reliability follow-up (2026-10-21)
 
 Native inference checks cancellation before submitting a request and before each socket read. Cancellation uses a terminal I/O error rather than `Interrupted`, which Rust buffered readers automatically retry. This releases the local model gate promptly after cancellation; it does not change inference quality or accelerate normal token generation. See `docs/evaluation/audio-performance-2026-10-21.md` for the real-model measurements, rejected cache experiment and verification limits.
+
+## Reliability diagnostics and recovery
+
+AI Settings offers opt-in session diagnostics with explicit sanitized export. It excludes source content and authentication; existing content-bearing developer extraction diagnostics remain separate. Screenshot failures retain recognized text for inference retry or explicit manual task creation. Cancellation stops an active managed generation before another request begins. Strict terminal-stream checks reject incomplete responses. Windows PE dependency auditing is included in asset verification; native Windows OCR acceptance is still pending. See [reproduction commands and measured Fedora evidence](docs/LOCAL_AI_RELIABILITY.md).

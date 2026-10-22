@@ -1,0 +1,113 @@
+{
+  "engine": "tesseract 5.5.1",
+  "fullText": "Graduation activities\nHOLY MASS - mandatory for graduating students, except\nthe stated religious exemption.\nTime: 10:00 AM - 11:00 AM.\nVenue: San Narciso Parish.\nLUNCH - 12 PM at RTC Gym.\n\nReguired outfit for Holy Mass: OJT/Pinning uniform; black\ntrousers or slacks.",
+  "imageHeight": 464,
+  "imageWidth": 864,
+  "languages": ["eng", "ceb", "tgl"],
+  "regions": [
+    {
+      "block": 1,
+      "box": {
+        "height": 24,
+        "width": 314,
+        "x": 67,
+        "y": 61
+      },
+      "confidence": 0.912,
+      "id": "r1",
+      "paragraph": 1,
+      "text": "Graduation activities"
+    },
+    {
+      "block": 1,
+      "box": {
+        "height": 27,
+        "width": 708,
+        "x": 68,
+        "y": 116
+      },
+      "confidence": 0.92,
+      "id": "r2",
+      "paragraph": 2,
+      "text": "HOLY MASS - mandatory for graduating students, except"
+    },
+    {
+      "block": 1,
+      "box": {
+        "height": 27,
+        "width": 378,
+        "x": 66,
+        "y": 148
+      },
+      "confidence": 0.92,
+      "id": "r3",
+      "paragraph": 2,
+      "text": "the stated religious exemption."
+    },
+    {
+      "block": 1,
+      "box": {
+        "height": 21,
+        "width": 341,
+        "x": 67,
+        "y": 188
+      },
+      "confidence": 0.915,
+      "id": "r4",
+      "paragraph": 3,
+      "text": "Time: 10:00 AM - 11:00 AM."
+    },
+    {
+      "block": 1,
+      "box": {
+        "height": 21,
+        "width": 340,
+        "x": 66,
+        "y": 228
+      },
+      "confidence": 0.903,
+      "id": "r5",
+      "paragraph": 4,
+      "text": "Venue: San Narciso Parish."
+    },
+    {
+      "block": 1,
+      "box": {
+        "height": 26,
+        "width": 369,
+        "x": 68,
+        "y": 269
+      },
+      "confidence": 0.928,
+      "id": "r6",
+      "paragraph": 5,
+      "text": "LUNCH - 12 PM at RTC Gym."
+    },
+    {
+      "block": 2,
+      "box": {
+        "height": 27,
+        "width": 711,
+        "x": 68,
+        "y": 308
+      },
+      "confidence": 0.91,
+      "id": "r7",
+      "paragraph": 1,
+      "text": "Reguired outfit for Holy Mass: OJT/Pinning uniform; black"
+    },
+    {
+      "block": 2,
+      "box": {
+        "height": 21,
+        "width": 225,
+        "x": 66,
+        "y": 340
+      },
+      "confidence": 0.923,
+      "id": "r8",
+      "paragraph": 1,
+      "text": "trousers or slacks."
+    }
+  ]
+}

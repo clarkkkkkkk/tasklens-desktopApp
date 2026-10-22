@@ -83,6 +83,7 @@ export class LlamaCppProvider implements AIProvider {
     const { content, truncated, elapsedMs } = await this.manager.complete(
       {
         jobId: request.jobId,
+        traceId: request.traceId,
         prompt: qwenChatPrompt(request.system, request.user, request.repair),
         schema: request.schema,
         maxTokens: request.maxOutputTokens,
@@ -93,7 +94,7 @@ export class LlamaCppProvider implements AIProvider {
   }
 
   /** Loads the model and caches the fixed prompt prefix while OCR runs. */
-  prepare(_modelId: string, system: string, signal: AbortSignal) {
-    return this.manager.prewarm(qwenPromptPrefix(system), signal);
+  prepare(_modelId: string, system: string, signal: AbortSignal, traceId?: string) {
+    return this.manager.prewarm(qwenPromptPrefix(system), signal, traceId);
   }
 }

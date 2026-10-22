@@ -7,9 +7,15 @@ export class NativeOcrService implements OcrService {
     image: Blob,
     {
       jobId,
+      traceId,
       signal,
       onStage,
-    }: { jobId: string; signal: AbortSignal; onStage?: (stage: OcrStage) => void },
+    }: {
+      jobId: string;
+      traceId?: string;
+      signal: AbortSignal;
+      onStage?: (stage: OcrStage) => void;
+    },
   ) {
     signal.throwIfAborted();
     const bytes = new Uint8Array(await image.arrayBuffer());
@@ -23,7 +29,10 @@ export class NativeOcrService implements OcrService {
     const cancel = () => void cancelNativeJob(jobId);
     signal.addEventListener('abort', cancel, { once: true });
     try {
-      const result = await nativeInvoke('ocr_recognize', bytes, { 'x-tasklens-job': jobId });
+      const result = await nativeInvoke('ocr_recognize', bytes, {
+        'x-tasklens-job': jobId,
+        'x-tasklens-trace': traceId ?? jobId,
+      });
       signal.throwIfAborted();
       return ocrDocumentSchema.parse(result);
     } finally {

@@ -262,46 +262,145 @@ pub fn run_to_file(
     cancel: &AtomicBool,
     limits: Limits,
 ) -> Result<(), String> {
-    let file = fs::File::create(output).map_err(|_| GENERIC_ERROR.to_string())?;
-    let mut child = spawn(
-        command(program)
-            .args(args)
-            .stdout(file)
-            .stderr(Stdio::null()),
+    run_traced(
+        program,
+        args,
+        output,
+        cancel,
+        limits,
+        None,
+        None,
+        "asset_probe",
     )
-    .map_err(|_| "Could not start the local runtime.".to_string())?;
-    wait(&mut child, output, cancel, limits)
 }
 
-fn wait(
-    child: &mut Child,
+pub fn run_traced(
+    program: &Path,
+    args: &[String],
     output: &Path,
     cancel: &AtomicBool,
     limits: Limits,
+    trace: Option<&str>,
+    job: Option<&str>,
+    stage: &'static str,
 ) -> Result<(), String> {
+    use crate::diagnostics::{Failure, Span};
+    let name = program.file_name().unwrap_or_default().to_string_lossy();
+    let runtime = if name.contains("tesseract") {
+        "tesseract"
+    } else if name.contains("whisper") {
+        "whisper-cli"
+    } else if name.contains("llama") {
+        "llama-server"
+    } else {
+        "other"
+    };
+    let span = Span::new(stage, trace, job).runtime(runtime);
+    if cancel.load(Ordering::SeqCst) {
+        span.finish("CANCELLED", None, None, &[]);
+        return Err(Failure::wire(
+            "CANCELLED",
+            "CANCELLED",
+            stage,
+            "Processing was cancelled.",
+        ));
+    }
+    let file = fs::File::create(output).map_err(|_| GENERIC_ERROR.to_string())?;
+    let mut child = match spawn(
+        command(program)
+            .args(args)
+            .stdout(file)
+            .stderr(Stdio::piped()),
+    ) {
+        Ok(child) => child,
+        Err(error) => {
+            span.finish("SPAWN_FAILED", None, None, &[]);
+            return Err(Failure::wire(
+                "RUNTIME_MISSING",
+                if error.kind() == std::io::ErrorKind::PermissionDenied {
+                    "PERMISSION_DENIED"
+                } else {
+                    "SPAWN_FAILED"
+                },
+                stage,
+                "Could not start the local runtime.",
+            ));
+        }
+    };
+    let pid = child.id();
+    let stderr = child.stderr.take().map(crate::diagnostics::stderr_reader);
     let start = Instant::now();
-    loop {
+    let mut last_sample = Instant::now();
+    let (outcome, status) = loop {
+        if crate::diagnostics::enabled() && last_sample.elapsed() >= Duration::from_secs(5) {
+            crate::diagnostics::process_sample(stage, trace, job, pid);
+            last_sample = Instant::now();
+        }
         let oversized = fs::metadata(output)
             .map(|m| m.len() > limits.max_output_bytes)
             .unwrap_or(false);
-        if cancel.load(Ordering::SeqCst) {
-            let _ = child.kill();
-            let _ = child.wait();
-            return Err(CANCELLED.into());
-        }
-        if start.elapsed() > limits.timeout || oversized {
-            let _ = child.kill();
-            let _ = child.wait();
-            return Err("Local processing exceeded its time or size limit.".into());
-        }
-        if let Some(status) = child.try_wait().map_err(|_| GENERIC_ERROR.to_string())? {
-            return if status.success() {
-                Ok(())
+        if cancel.load(Ordering::SeqCst) || start.elapsed() > limits.timeout || oversized {
+            let outcome = if cancel.load(Ordering::SeqCst) {
+                "CANCELLED"
+            } else if oversized {
+                "OUTPUT_LIMIT"
             } else {
-                Err("The local runtime stopped unexpectedly.".into())
+                "TIMEOUT"
             };
+            let _ = child.kill();
+            break (outcome, child.wait().ok());
         }
-        std::thread::sleep(Duration::from_millis(40));
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                break (
+                    if status.success() {
+                        "OK"
+                    } else {
+                        "PROCESS_EXIT"
+                    },
+                    Some(status),
+                )
+            }
+            Err(_) => {
+                let _ = child.kill();
+                break ("PROCESS_WAIT_FAILED", child.wait().ok());
+            }
+            Ok(None) => std::thread::sleep(Duration::from_millis(40)),
+        }
+    };
+    let categories = stderr.and_then(|r| r.join().ok()).unwrap_or_default();
+    span.finish(outcome, Some(pid), status, &categories);
+    let detail = match status.and_then(|s| s.code()).map(|c| c as u32) {
+        Some(0xC0000135) => "DLL_NOT_FOUND",
+        Some(0xC000007B) => "INVALID_IMAGE_FORMAT",
+        Some(0xC000001D) => "ILLEGAL_INSTRUCTION",
+        Some(0xC0000005) => "ACCESS_VIOLATION",
+        _ => outcome,
+    };
+    match outcome {
+        "OK" => Ok(()),
+        "CANCELLED" => Err(Failure::wire(
+            "CANCELLED",
+            outcome,
+            stage,
+            "Processing was cancelled.",
+        )),
+        "TIMEOUT" | "OUTPUT_LIMIT" => Err(Failure::wire(
+            "OCR_FAILED",
+            outcome,
+            stage,
+            "Local processing exceeded its time or size limit.",
+        )),
+        _ => Err(Failure::wire(
+            if stage == "asset_probe" {
+                "RUNTIME_MISSING"
+            } else {
+                "OCR_FAILED"
+            },
+            detail,
+            stage,
+            "The local runtime stopped unexpectedly.",
+        )),
     }
 }
 
@@ -383,5 +482,62 @@ mod runtime_selection_tests {
             Some(PathBuf::from("llama-server"))
         );
         assert_eq!(select_binary("llama-server", true, |_| None), None);
+    }
+}
+
+#[cfg(test)]
+mod process_tests {
+    use super::*;
+    #[test]
+    #[ignore = "Child process fixture for cancellation/timeout tests"]
+    fn sleep_fixture() {
+        std::thread::sleep(Duration::from_secs(10));
+    }
+    #[test]
+    fn distinguishes_exit_timeout_and_cancel() {
+        let folder =
+            std::env::temp_dir().join(format!("tasklens-process-test-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(&folder).unwrap();
+        let executable = std::env::current_exe().unwrap();
+        let limits = || Limits {
+            timeout: Duration::from_millis(150),
+            max_output_bytes: 65536,
+        };
+        let failed = run_to_file(
+            &executable,
+            &["--invalid-test-argument".into()],
+            &folder.join("failed.txt"),
+            &AtomicBool::new(false),
+            Limits {
+                timeout: Duration::from_secs(5),
+                max_output_bytes: 65536,
+            },
+        )
+        .unwrap_err();
+        assert!(failed.contains("PROCESS_EXIT"));
+        let timed = run_to_file(
+            &executable,
+            &[
+                "--exact".into(),
+                "platform::process_tests::sleep_fixture".into(),
+                "--ignored".into(),
+            ],
+            &folder.join("timeout.txt"),
+            &AtomicBool::new(false),
+            limits(),
+        )
+        .unwrap_err();
+        assert!(timed.contains("TIMEOUT"));
+        let cancelled = run_to_file(
+            Path::new("does-not-exist"),
+            &[],
+            &folder.join("cancel.txt"),
+            &AtomicBool::new(true),
+            limits(),
+        )
+        .unwrap_err();
+        assert!(cancelled.contains("CANCELLED"));
+        assert!(!folder.join("cancel.txt").exists());
+        fs::remove_dir_all(folder).unwrap();
     }
 }

@@ -1,3 +1,4 @@
+import { diagnosticIdentity, diagnosticSession } from '../../services/localai/diagnostics';
 import { useLocalIntelligence } from '../../services/localai/useLocalIntelligence';
 import { useCallback, useEffect, useState } from 'react';
 import { useApp } from '../../app/context';
@@ -43,6 +44,12 @@ export function LocalAISettings({
   const { services } = useApp();
   const manager = services.localAI;
   const { status: intelligence } = useLocalIntelligence();
+  const [recordingDiagnostics, setRecordingDiagnostics] = useState(false);
+  useEffect(() => {
+    void diagnosticSession()
+      .then((v) => setRecordingDiagnostics(v.enabled))
+      .catch(() => {});
+  }, []);
   const [status, setStatus] = useState<LocalAIStatus | null>(null),
     [busy, setBusy] = useState(''),
     [error, setError] = useState('');
@@ -209,6 +216,45 @@ export function LocalAISettings({
         </div>
         {local.developerMode && (
           <div className="developer-fields">
+            <label>
+              <input
+                type="checkbox"
+                checked={recordingDiagnostics}
+                disabled={!manager.available || !!busy}
+                onChange={(e) =>
+                  void act('diagnostics', async () => {
+                    const result = await diagnosticSession(e.target.checked);
+                    setRecordingDiagnostics(result.enabled);
+                  })
+                }
+              />{' '}
+              Record runtime diagnostics for this session
+            </label>
+            <p className="field-help">
+              Keeps up to 512 stage and process events in memory. Screenshots, recognized text,
+              prompts and responses are excluded. Turning this off clears the events.
+            </p>
+            <Button
+              disabled={!manager.available || !!busy}
+              onClick={() =>
+                void act('export-diagnostics', async () => {
+                  const report = {
+                    ...(await diagnosticSession()),
+                    identity: await diagnosticIdentity(),
+                  };
+                  const url = URL.createObjectURL(
+                    new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }),
+                  );
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = 'tasklens-runtime-diagnostics.json';
+                  link.click();
+                  setTimeout(() => URL.revokeObjectURL(url), 1000);
+                })
+              }
+            >
+              Export runtime diagnostics
+            </Button>
             <label>
               Context size (tokens)
               <select

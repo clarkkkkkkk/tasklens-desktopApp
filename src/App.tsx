@@ -298,6 +298,7 @@ export default function App() {
                       setView('settings');
                     }}
                     onResult={(action) => onOpen(action, true)}
+                    onManual={(action) => onOpen(action)}
                     onRemove={() => {
                       if (selection && !snapshot.actions.some((a) => a.id === selection.id))
                         onClose();

@@ -18,7 +18,7 @@ hound = "3.5"
 rubato = "0.16"
 symphonia = { version = "0.5", default-features = false, features = ["wav", "pcm", "mp3", "isomp4", "aac", "alac", "ogg", "vorbis"] }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { version = "1", features = ["raw_value"] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "bmp"] }
 sha2 = "0.10"
 uuid = { version = "1", features = ["v4"] }
@@ -34,7 +34,7 @@ notify-rust = "=4.18.1"
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "=0.62.2", features = ["UI_Notifications"] }
-windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security", "Win32_System_JobObjects", "Win32_System_Registry", "Win32_System_SystemInformation", "Win32_System_Threading"] }
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security", "Win32_System_JobObjects", "Win32_System_ProcessStatus", "Win32_System_Registry", "Win32_System_SystemInformation", "Win32_System_Threading"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libc = "0.2"
@@ -46,3 +46,8 @@ objc2-foundation = "=0.3.2"
 objc2-user-notifications = "=0.3.2"
 block2 = "=0.6.2"
 block = "0.1"
+
+# Keep streaming integrity verification practical in development builds. Inference sidecars
+# are separately built Release binaries; this changes neither their settings nor model data.
+[profile.dev.package.sha2]
+opt-level = 3

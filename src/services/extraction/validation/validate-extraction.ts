@@ -301,7 +301,9 @@ function buildResult(
     }
 
     // The item's own statement: units cited for its title and times.
-    const statementIds = [...new Set([...titleIds, ...time.ids, ...arrival.ids, ...endTime.ids])];
+    const statementIds = [
+      ...new Set([...titleIds, ...time.ids, ...arrival.ids, ...endTime.ids]),
+    ].filter((id) => !context.units.find((u) => u.id === id)?.messageTimestamp);
     const date = checkDate({
       item,
       index,
@@ -528,6 +530,9 @@ function checkTime(
   units: SourceUnit[],
   rangeEdge: 'start' | 'end' = 'start',
 ): { value: string | null; ids: string[]; confidence: ConfidenceLevel } {
+  // Header clocks describe when a message was sent, not when its activity occurs.
+  const activityUnits = units.filter((u) => !u.messageTimestamp);
+  ids = ids.filter((id) => activityUnits.some((u) => u.id === id));
   let value = field.value && VALID_TIME.test(field.value) ? field.value : null;
   // Convert the time as written ourselves: small models misconvert 12-hour times.
   const written = field.text ? findTimes(field.text) : [];
@@ -549,7 +554,7 @@ function checkTime(
   if (support !== 'exact') {
     // Recover the citation only when exactly one unit states this time explicitly.
     const time = value;
-    const stating = units.filter((u) => timeSupport(time, u.text) === 'exact');
+    const stating = activityUnits.filter((u) => timeSupport(time, u.text) === 'exact');
     if (stating.length === 1) {
       issues.push(`${label}: cited ${stating[0].id}, the only unit stating ${value}`);
       ids = [stating[0].id];
@@ -604,7 +609,10 @@ function checkDate({
     issues.push(`${label}: date expression “${expression}” is not in the source; ignored`);
     expression = '';
   }
-  const statement = textOf(statementIds.length ? statementIds : ids);
+  const activityDateIds = ids.filter(
+    (id) => !context.units.find((u) => u.id === id)?.messageTimestamp,
+  );
+  const statement = textOf(statementIds.length ? statementIds : activityDateIds);
   let value =
     item.date.value && /^\d{4}-\d{2}-\d{2}$/.test(item.date.value) ? item.date.value : null;
   if (value && !isoDate(...(value.split('-').map(Number) as [number, number, number])))
@@ -618,13 +626,16 @@ function checkDate({
       : (relativeMentions(statement)[0] ?? null);
 
   if (!phrase) {
-    if (!value)
+    if (!value) {
+      if (item.type !== 'task')
+        ask(index, 'date', 'Which date does this activity refer to?', [], statementIds);
       return {
         value: null,
         ids: [],
         confidence: item.type === 'task' ? undefined : 'needs_review',
       };
-    const cited = textOf([...new Set([...ids, ...statementIds])]);
+    }
+    const cited = textOf([...new Set([...activityDateIds, ...statementIds])]);
     const support = cited ? dateSupport(value, cited) : 'none';
     if (support === 'none') {
       issues.push(`${label}: unsupported date ${value} removed`);

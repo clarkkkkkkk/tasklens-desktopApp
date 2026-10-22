@@ -129,6 +129,47 @@ describe('prompt', () => {
   });
 });
 
+it('keeps message timestamps out of activity fields while retaining the relative-date anchor', () => {
+  const context = contextForCase(caseById('bundle-english'));
+  expect(context.units.find((u) => u.id === 'r2')?.messageTimestamp).toBe(true);
+  expect(context.units.find((u) => u.id === 'r4')?.members).toEqual(['r4']);
+  const result = ok(
+    validateExtraction(
+      rawBundle([
+        rawItem({
+          type: 'deadline',
+          title: { evidence: ['r4'], value: 'Submit Chapter 3', confidence: 'confirmed' },
+          date: {
+            evidence: ['r2'],
+            expression: 'Oct 5, 2026',
+            basis: 'explicit',
+            value: '2026-10-05',
+            confidence: 'confirmed',
+          },
+          time: { evidence: ['r2'], text: '9:14 AM', value: '09:14', confidence: 'confirmed' },
+        }),
+      ]),
+      context,
+    ),
+  );
+  expect(result.actions[0].date).toBe('2026-10-09');
+  expect(result.actions[0].time).toBeUndefined();
+  expect(result.actions[0].evidence?.filter((e) => e.field === 'time')).toEqual([]);
+});
+
+it('keeps the next attendance separate from a completed venue label', () => {
+  for (const language of ['english', 'cebuano', 'tagalog']) {
+    const units = unitsFromOcr(recordedOcr(`graduation-${language}`));
+    const venue = units.find((u) => /San Narciso Parish/.test(u.text))!;
+    const lunch = units.find((u) => /LUNCH/.test(u.text))!;
+    expect(venue.id).not.toBe(lunch.id);
+    expect(lunch.text).toContain('12 PM');
+    expect(lunch.members).toContain('r6');
+    expect(lunch.members).not.toContain('r7');
+    expect(venue.members).not.toContain('r6');
+  }
+});
+
 describe('temporal helpers', () => {
   it('reads 12-hour, 24-hour, bare and Cebuano times', () => {
     expect(findTimes('Mga 1:30PM kinahanglan naa')).toContainEqual({

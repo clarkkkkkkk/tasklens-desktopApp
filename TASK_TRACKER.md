@@ -410,3 +410,16 @@ Current implementation, honest limitations and encryption follow-up: [reliabilit
 
 - [x] Isolated real D-Bus unavailable-service acceptance: error propagation/status and guarded Quit passed without modifying the normal desktop service.
 - [x] Explicit custom-reminder editor approval preserves the saved UTC instant and source/notes; legacy custom values are not automatically approved on load. Native unit regression added; focused frontend regression passed. Actual native custom-reminder delivery remains unverified.
+
+### 2026-10-22 local AI reliability — unfinished checkpoint
+
+- [x] Typed process/transport diagnostics, bounded opt-in sanitized session export, terminal-stream validation and cancellation recovery.
+- [x] Fedora isolated offline synthetic screenshot → real Qwen review → explicit save → restart with source/evidence preserved.
+- [x] Native loading/generation cancellation followed by successful real inference.
+- [x] Isolated offline native text capture → review/save retained the explicit date/time and both supplies; bounded repair was required, total 219.755 s.
+- [x] Full fresh debug asset validation measured: 299.347 s before, 26.246 s with optimized SHA compression; no integrity bypass.
+- [ ] Complete strict multilingual accuracy acceptance. Full v10 run: 7/14 cases passed; all three graduation cases passed, 18 assertions failed elsewhere. Version 11 real-model acceptance pending.
+- [ ] Deferred: Windows exact-binary OCR/dependency diagnosis and native screenshot/review/save/offline checks. Current scope is Fedora only.
+- [ ] Complete controlled inference performance comparisons and final native-platform acceptance.
+
+Evidence, limitations and commands: [LOCAL_AI_RELIABILITY](docs/LOCAL_AI_RELIABILITY.md). No original crash cause, Windows acceptance or overall completion inferred from compilation.

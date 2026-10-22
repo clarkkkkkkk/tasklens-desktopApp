@@ -13,7 +13,14 @@ export interface RouteNotice {
   candidate: ScoredCandidate;
   fallbackFrom?: ScoredCandidate;
 }
+export interface OcrCheckpoint {
+  image: Blob;
+  document: OcrDocument;
+}
 export interface ExtractionOptions {
+  traceId?: string;
+  ocrCheckpoint?: OcrCheckpoint;
+  onOcr?: (checkpoint: OcrCheckpoint) => void;
   signal: AbortSignal;
   /** Index into extractionSteps. */
   onProgress: (step: number) => void;

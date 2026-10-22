@@ -1,4 +1,5 @@
 import { loadEnv } from 'vite';
+import { auditWindowsBinary } from './pe-dependencies.mjs';
 import { execFileSync } from 'node:child_process';
 import { readFileSync, statSync, readdirSync } from 'node:fs';
 import path from 'node:path';
@@ -55,6 +56,8 @@ for (const [name, key] of runtimes) {
     if (unexpected.length)
       throw new Error(`Unbundled runtime dependencies: ${unexpected.join(', ')}`);
     console.info(`${name}: ${dependencies.join(', ')}`);
+  } else if (process.platform === 'win32') {
+    console.info(`${name}: ${auditWindowsBinary(file).join(', ')}`);
   } else if (process.platform === 'darwin') {
     const output = execFileSync('otool', ['-L', file], { encoding: 'utf8' });
     const dependencies = output
