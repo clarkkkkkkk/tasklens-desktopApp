@@ -170,3 +170,108 @@ test('skip remains usable when a background compositor pauses animations', async
   await button(page, 'New item').click();
   await expect(page.getByLabel('Title', { exact: true })).toBeVisible();
 });
+
+test('preview entrances keep left copy static and reduced motion cancels active effects', async ({
+  page,
+}) => {
+  // Hold entrances so cancellation and initial-load motion can be inspected deterministically.
+  await page.addInitScript(() => {
+    const original = Element.prototype.animate;
+    Element.prototype.animate = function (keyframes, options) {
+      const animation = original.call(this, keyframes, options);
+      if (this.closest('.onboarding')) animation.pause();
+      return animation;
+    };
+  });
+  await page.goto('/');
+  const motionTargets = () =>
+    page.locator('.onboarding-step').evaluate((element) => {
+      const targets = element
+        .getAnimations({ subtree: true })
+        .filter((animation) => !(animation instanceof CSSTransition))
+        .map((animation) => (animation.effect as KeyframeEffect).target as Element);
+      return {
+        count: targets.length,
+        leftCount: targets.filter((target) => target.closest('.onboarding-copy')).length,
+        overlaps: targets.some((target, i) =>
+          targets.some((other, j) => i !== j && target.contains(other)),
+        ),
+      };
+    });
+  await expect.poll(async () => (await motionTargets()).count).toBeGreaterThan(0);
+  expect((await motionTargets()).overlaps).toBe(false);
+  expect((await motionTargets()).leftCount).toBe(0);
+  for (const selector of ['.onboarding-header', '.onboarding-progress', '.onboarding-actions']) {
+    await expect(page.locator(selector)).toHaveCSS('transform', 'none');
+  }
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(async () => (await motionTargets()).count).toBe(0);
+  await expect(page.locator('.onboarding-copy h1')).toHaveCSS('opacity', '1');
+  await button(page, 'Get Started').click();
+  await page.getByRole('button', { name: /^Review/ }).click();
+  expect((await motionTargets()).count).toBe(0);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.getByRole('button', { name: /^Remember/ }).click();
+  await expect.poll(async () => (await motionTargets()).count).toBe(1);
+  expect((await motionTargets()).overlaps).toBe(false);
+  expect((await motionTargets()).leftCount).toBe(0);
+
+  // Several step changes during suspended effects must land on the newest step without exits.
+  const leftAnimated = await page.evaluate(async () => {
+    let animated = false;
+    for (const name of ['Continue', 'Back', 'Continue', 'Continue', 'Back', 'Continue']) {
+      const next = Array.from(
+        document.querySelectorAll<HTMLButtonElement>('.onboarding-actions button'),
+      ).find((element) => element.textContent?.trim() === name);
+      next?.click();
+      await new Promise(requestAnimationFrame);
+      animated ||= document
+        .querySelector('.onboarding-copy')!
+        .getAnimations({ subtree: true })
+        .some((animation) => !(animation instanceof CSSTransition));
+    }
+    return animated;
+  });
+  expect(leftAnimated).toBe(false);
+  await expect(page.getByRole('heading', { name: 'See TaskLens in action.' })).toBeFocused();
+  await expect(page.getByLabel('Sample location')).toHaveValue('Campus');
+  expect((await motionTargets()).overlaps).toBe(false);
+  await expect(page.locator('.motion-exit-snapshot')).toHaveCount(0);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(async () => (await motionTargets()).count).toBe(0);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.getByLabel('Sample location').fill('A quieter campus');
+  expect((await motionTargets()).count).toBe(0);
+  await button(page, 'Skip tour').click();
+  await expect(page.locator('.onboarding')).toHaveCount(0);
+  expect((await data(page)).actions).toEqual([]);
+});
+
+test('all four steps remain accessible and static with reduced motion in a small window', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 600, height: 640 });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
+  for (const next of ['Get Started', 'Continue', 'Continue', 'Start using TaskLens']) {
+    if (next === 'Start using TaskLens') {
+      await expect(page.getByLabel('Sample location')).toHaveValue('Campus');
+      await page.getByLabel('Sample location').fill('Accessible campus');
+      await expect(page.getByLabel('Sample location')).toBeFocused();
+    }
+    expect(
+      await page
+        .locator('.onboarding')
+        .evaluate((element) => element.getAnimations({ subtree: true }).length),
+    ).toBe(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await button(page, next).click();
+  }
+  await expect(page.locator('.brand-handoff')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Inbox', exact: true })).toBeVisible();
+  expect((await data(page)).actions).toEqual([]);
+});

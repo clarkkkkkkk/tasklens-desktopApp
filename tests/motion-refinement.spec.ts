@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { settleMotion } from './motion-helpers';
+import AxeBuilder from '@axe-core/playwright';
 
 test.use({ video: 'on' });
 const button = (page: Page, name: string) => page.getByRole('button', { name, exact: true });
@@ -23,6 +24,8 @@ for (const viewport of [
     await page.setViewportSize(viewport);
     await page.goto('/');
     await settleMotion(page);
+    await page.screenshot({ path: info.outputPath('welcome.png') });
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     const shell = await shellBounds(page);
     const section = await page.locator('.onboarding-step').elementHandle();
     for (const [next, title] of [
@@ -33,6 +36,7 @@ for (const viewport of [
       await button(page, next).click();
       await expect(page.getByRole('heading', { name: title, exact: true })).toBeFocused();
       await settleMotion(page);
+      expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
       expect(await shellBounds(page)).toEqual(shell);
       expect(await section?.evaluate((element) => element.isConnected)).toBe(true);
       expect(await page.evaluate(() => window.scrollY)).toBe(0);
@@ -52,11 +56,25 @@ for (const viewport of [
     }
     await page.getByLabel('Sample location').fill('Motion acceptance campus');
     await page.getByText('View sample screenshot', { exact: true }).click();
-    await page.locator('.onboarding-stage').evaluate((element) => {
+    const leftBounds = await page.locator('.onboarding-copy').boundingBox();
+    const preview = page.getByRole('region', { name: 'Sample preview', exact: true });
+    await preview.evaluate((element) => {
       element.scrollTop = element.scrollHeight;
     });
+    expect(await preview.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    expect(await page.locator('.onboarding-copy').boundingBox()).toEqual(leftBounds);
+    expect(await page.locator('.onboarding-stage').evaluate((element) => element.scrollTop)).toBe(
+      0,
+    );
     expect(await shellBounds(page)).toEqual(shell);
     await page.screenshot({ path: info.outputPath('demo-expanded.png') });
+    await preview.focus();
+    await page.keyboard.press('Home');
+    await expect.poll(() => preview.evaluate((element) => element.scrollTop)).toBe(0);
+    await button(page, 'Back').click();
+    await button(page, 'Continue').click();
+    await expect(page.getByLabel('Sample location')).toHaveValue('Motion acceptance campus');
+    expect(await preview.evaluate((element) => element.scrollTop)).toBe(0);
     await button(page, 'Start using TaskLens').click();
     await expect(page.locator('.brand-handoff')).toHaveCount(0, { timeout: 5000 });
     await expect(page.locator('#main-content')).toBeFocused();
@@ -265,7 +283,7 @@ test('resize and suspended brand animations cannot leave the workspace blocked',
   await expect(page.locator('#main-content')).toBeFocused();
 });
 
-test('onboarding, previews, non-capture controls and dialogs are static while the logo intro still animates', async ({
+test('onboarding motion settles and workspace controls and dialogs remain static', async ({
   page,
 }) => {
   await page.goto('/');
@@ -283,17 +301,17 @@ test('onboarding, previews, non-capture controls and dialogs are static while th
       ),
     ).toBe(true);
   };
-  await noMotion();
+  await settleMotion(page);
   await button(page, 'Get Started').click();
   await expect(page.getByRole('heading', { name: 'From chaos to clarity.' })).toBeFocused();
-  await noMotion();
+  await settleMotion(page);
   await page.getByRole('button', { name: /^Review/ }).click();
-  await noMotion();
+  await settleMotion(page);
   await button(page, 'Continue').click();
-  await noMotion();
+  await settleMotion(page);
   await button(page, 'Continue').click();
   await expect(page.getByLabel('Sample location')).toHaveValue('Campus', { timeout: 15000 });
-  await noMotion();
+  await settleMotion(page);
   await button(page, 'Start using TaskLens').click();
   const intro = page.locator('.brand-handoff');
   await expect(intro).toBeVisible();
