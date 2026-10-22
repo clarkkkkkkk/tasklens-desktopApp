@@ -102,7 +102,7 @@ try {
     assert.ok(!('apiKey' in status.value));
   });
   await execute(
-    'window.__acceptanceReload=true;localStorage.setItem("tasklens:data:v1", JSON.stringify({version:1,actions:[],settings:{onboardingCompletedVersion:1,remindersEnabled:true,defaultReminders:[],theme:"light"}})); location.reload(); return true;',
+    'window.__acceptanceReload=true;localStorage.removeItem("tasklens:sidebar-collapsed:v1");localStorage.setItem("tasklens:data:v1", JSON.stringify({version:1,actions:[],settings:{onboardingCompletedVersion:1,remindersEnabled:true,defaultReminders:[],theme:"light"}})); location.reload(); return true;',
   );
   await until(() =>
     execute('return !window.__acceptanceReload && !!document.querySelector(".app-shell")'),
@@ -221,6 +221,84 @@ try {
     assert.equal(action.status, 'confirmed');
     assert.equal(action.source.extractionMode, 'mock');
     await until(() => execute('return !!document.activeElement?.hasAttribute("data-open-result")'));
+  });
+  await check(
+    'native sidebar collapse preserves navigation, geometry and keyboard activation',
+    async () => {
+      await execute('document.querySelector(".sidebar-toggle").click();return true;');
+      await until(() =>
+        execute('return document.querySelector(".sidebar").getBoundingClientRect().width === 72'),
+      );
+      assert.equal(
+        await execute(
+          'return document.querySelector(".sidebar-toggle").getAttribute("aria-expanded")',
+        ),
+        'false',
+      );
+      assert.equal(
+        await execute('return document.documentElement.scrollWidth <= innerWidth'),
+        true,
+      );
+      assert.equal(
+        await execute('return document.querySelector(".sidebar .brand img").getAttribute("src")'),
+        '/TaskLens.png',
+      );
+      await execute(
+        'document.querySelector(".sidebar nav button[title=Calendar]").click();return true;',
+      );
+      await until(() =>
+        execute(
+          'return Array.from(document.querySelectorAll("h1")).some(e=>e.getClientRects().length && e.textContent === "Calendar")',
+        ),
+      );
+      assert.equal(
+        await execute(
+          'return document.querySelector(".sidebar nav button[title=Calendar]").getAttribute("aria-current")',
+        ),
+        'page',
+      );
+      await execute(
+        'window.dispatchEvent(new KeyboardEvent("keydown", {key:" ",code:"Space",ctrlKey:true,shiftKey:true}));return true;',
+      );
+      assert.equal(
+        await execute(
+          'return document.querySelector(".sidebar-toggle").getAttribute("aria-expanded")',
+        ),
+        'true',
+      );
+      await execute(
+        'window.dispatchEvent(new KeyboardEvent("keydown", {key:" ",code:"Space",ctrlKey:true,shiftKey:true}));return true;',
+      );
+      assert.equal(
+        await execute(
+          'return document.querySelector(".sidebar-toggle").getAttribute("aria-expanded")',
+        ),
+        'false',
+      );
+    },
+  );
+  await check('native sidebar preference survives a new application process', async () => {
+    await call(`/session/${session}`, undefined, 'DELETE');
+    session = undefined;
+    const restarted = await call('/session', {
+      capabilities: { alwaysMatch: { 'tauri:options': { application: receipt.executable } } },
+    });
+    session = restarted.sessionId;
+    await until(() => execute('return !!document.querySelector(".sidebar-toggle")'));
+    assert.equal(
+      await execute(
+        'return document.querySelector(".sidebar-toggle").getAttribute("aria-expanded")',
+      ),
+      'false',
+    );
+    assert.equal(
+      await execute('return localStorage.getItem("tasklens:sidebar-collapsed:v1")'),
+      'true',
+    );
+    await until(() =>
+      execute('return document.querySelector(".sidebar").getBoundingClientRect().width === 72'),
+    );
+    await execute('document.querySelector(".sidebar-toggle").click();return true;');
   });
   writeFileSync(
     path.join(output, 'results.json'),

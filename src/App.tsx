@@ -38,6 +38,25 @@ export default function App() {
     services,
     announce,
   } = useApp();
+  // Device UI preference, separate from task backups and credential storage.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('tasklens:sidebar-collapsed:v1') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const sidebarCollapsedRef = useRef(sidebarCollapsed);
+  const toggleSidebar = useCallback(() => {
+    const next = !sidebarCollapsedRef.current;
+    sidebarCollapsedRef.current = next;
+    setSidebarCollapsed(next);
+    try {
+      localStorage.setItem('tasklens:sidebar-collapsed:v1', String(next));
+    } catch {
+      announce('Sidebar changed for this session. Its preference could not be saved.');
+    }
+  }, [announce]);
   const [view, setView] = useState<View>('inbox'),
     [searchOpen, setSearchOpen] = useState(false),
     [selection, setSelection] = useState<ExtractedAction | null>(null),
@@ -203,6 +222,26 @@ export default function App() {
   useEffect(() => {
     if (touring || loading || loadError) return;
     const handler = (event: KeyboardEvent) => {
+      if (
+        event.ctrlKey &&
+        event.shiftKey &&
+        !event.altKey &&
+        !event.metaKey &&
+        (event.code === 'Space' || event.key === ' ')
+      ) {
+        if (
+          event.repeat ||
+          event.isComposing ||
+          event.defaultPrevented ||
+          document.querySelector('dialog[open]') ||
+          brandHandoff ||
+          setupOpen
+        )
+          return;
+        event.preventDefault();
+        toggleSidebar();
+        return;
+      }
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
         if (!brandHandoff && !voiceBusy && !bundle && !setupOpen) setSearchOpen(true);
@@ -210,7 +249,7 @@ export default function App() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [touring, brandHandoff, voiceBusy, bundle, setupOpen, loading, loadError]);
+  }, [touring, brandHandoff, voiceBusy, bundle, setupOpen, loading, loadError, toggleSidebar]);
   async function backup() {
     try {
       downloadText(await services.repository.exportRaw(), 'tasklens-recovery.json');
@@ -260,6 +299,8 @@ export default function App() {
           Skip to workspace
         </a>
         <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggle={toggleSidebar}
           view={view}
           onNavigate={(v) => {
             if (v === requestedView.current) return;

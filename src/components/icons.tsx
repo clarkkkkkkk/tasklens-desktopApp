@@ -1,3 +1,4 @@
+import { PanelLeftIcon as SolarPanelLeft } from '@solar-icons/react/bold-duotone/panel-left';
 import { MicrophoneIcon as SolarMicrophone } from '@solar-icons/react/bold-duotone/microphone';
 import type { Icon, IconProps } from '@solar-icons/react/lib/types';
 import { DangerCircleIcon as SolarAlertCircle } from '@solar-icons/react/bold-duotone/danger-circle';
@@ -101,3 +102,5 @@ export const Trash2 = decorative(SolarTrash2);
 export const X = decorative(SolarX);
 
 export const Microphone = decorative(SolarMicrophone);
+
+export const PanelLeft = decorative(SolarPanelLeft);
