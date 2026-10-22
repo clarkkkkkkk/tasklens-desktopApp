@@ -250,8 +250,10 @@ export function DetailsPanel({
             )}
             {action.source.extractedBy && action.source.extractionMode !== 'mock' && (
               <p className="field-help ai-provenance">
-                Drafted on this device by {action.source.extractedBy.model}. Check the details
-                before confirming.
+                {action.source.extractedBy.kind === 'cloud'
+                  ? 'Drafted by Groq Cloud using'
+                  : 'Drafted on this device by'}{' '}
+                {action.source.extractedBy.model}. Check the details before confirming.
               </p>
             )}
             <OpenQuestions

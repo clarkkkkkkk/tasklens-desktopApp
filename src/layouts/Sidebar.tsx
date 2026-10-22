@@ -79,9 +79,9 @@ export function Sidebar({
   );
 }
 
-/** Subtle privacy indicator: all AI runs on this device. */
+/** Always describes the explicitly selected execution location. */
 function LocalStatus() {
-  const { services } = useApp();
+  const { services, snapshot } = useApp();
   const [processing, setProcessing] = useState(false);
   useEffect(() => {
     let dispose: (() => void) | undefined;
@@ -97,7 +97,13 @@ function LocalStatus() {
   return (
     <div className="local-status" role="status">
       <ShieldCheck size={16} />
-      <span>{processing ? 'Processing locally' : 'On your device. Only.'}</span>
+      <span>
+        {snapshot.settings.ai.executionMode === 'groq'
+          ? 'Groq Cloud selected'
+          : processing
+            ? 'Processing locally'
+            : 'On your device. Only.'}
+      </span>
       <span className="status-dot" />
     </div>
   );

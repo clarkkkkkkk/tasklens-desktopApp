@@ -22,6 +22,7 @@ export const priorityLabels: Record<AIPriority, string> = {
 };
 
 export interface RoutingPolicy {
+  executionMode?: 'local' | 'groq';
   mode: AIMode;
   priority: AIPriority;
   /** `providerId/modelId` chosen in Manual mode. */

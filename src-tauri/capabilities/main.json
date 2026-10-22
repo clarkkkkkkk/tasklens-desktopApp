@@ -2,11 +2,12 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
   "description": "TaskLens main window event and close handling",
-  "windows": [
-    "main"
-  ],
+  "windows": ["main"],
   "permissions": [
     "core:default",
-    "core:window:allow-close"
+    "core:window:allow-close",
+    "desktop-local",
+    "groq-connection",
+    "groq-extraction"
   ]
 }

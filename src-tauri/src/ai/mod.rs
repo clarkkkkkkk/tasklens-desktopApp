@@ -1,8 +1,10 @@
-//! AI routing support: hardware facts and the local Ollama bridge.
+//! AI routing support: hardware facts, local Ollama, and optional BYOK Groq.
 //!
 //! The router itself runs in TypeScript. These commands only report detected facts and relay
-//! requests to model servers on this computer. Nothing here reaches a remote host.
+//! requests to model servers on this computer. The separate Groq module owns all optional
+//! authenticated cloud requests; its endpoints, credentials and consent gates stay native.
 mod device;
+pub mod groq;
 mod ollama;
 
 use crate::{jobs::Jobs, local_ai::server, platform};

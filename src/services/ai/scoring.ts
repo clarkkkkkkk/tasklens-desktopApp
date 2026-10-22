@@ -125,7 +125,7 @@ export function evaluate(
     reasons.push(
       `Source is longer than its context window (needs ~${Math.round((req.estimatedInputTokens + OUTPUT_TOKENS) / 1000)}k tokens, has ${Math.round(context / 1000)}k)`,
     );
-  const memory = provider.kind !== 'mock' ? estimateMemory(model) : undefined;
+  const memory = provider.kind === 'local' ? estimateMemory(model) : undefined;
   if (memory && device.totalRamGB !== null && memory.minRamGB > device.totalRamGB * 0.8)
     reasons.push(
       `Too large for this device (needs ~${formatGB(memory.minRamGB)}; ${formatGB(device.totalRamGB)} RAM installed)`,
@@ -144,14 +144,17 @@ export function evaluate(
 
   // Device fit: judged by memory headroom.
   let deviceScore = 1;
-  let deviceNote = 'Runs anywhere';
+  let deviceNote =
+    provider.kind === 'cloud'
+      ? 'Runs on Groq; requires internet, consent and your API key'
+      : 'Runs anywhere';
   /**
    * A model that does not fit in free memory keeps only part of its score: being capable on
    * paper must not outrank a smaller model that actually fits. It is not excluded, so a device
    * whose only model is too big right now can still try it.
    */
   let fitFactor = 1;
-  if (provider.kind !== 'mock') {
+  if (provider.kind === 'local') {
     const budget = offload === 'full' ? device.vramBudgetGB : device.ramBudgetGB;
     if (!memory || budget === null) {
       deviceScore = 0.6;
@@ -187,7 +190,7 @@ export function evaluate(
   if (req.multilingual && !model.capabilities.includes('multilingual')) quality -= 0.15;
 
   let speedClass: SpeedClass = model.estimatedPerformance?.speedClass ?? 'moderate';
-  if (provider.kind !== 'mock' && memory) {
+  if (provider.kind === 'local' && memory) {
     speedClass =
       offload === 'full'
         ? memory.weightsGB <= 6
@@ -228,7 +231,9 @@ export function evaluate(
     ],
     speed: [
       SPEED_SCORE[speedClass],
-      `${speedClass[0].toUpperCase()}${speedClass.slice(1)} on this device`,
+      provider.kind === 'cloud'
+        ? 'Online latency varies; not benchmarked'
+        : `${speedClass[0].toUpperCase()}${speedClass.slice(1)} on this device`,
     ],
     reliability: [reliability, model.ready ? 'Verified and ready' : 'Not verified yet'],
   };

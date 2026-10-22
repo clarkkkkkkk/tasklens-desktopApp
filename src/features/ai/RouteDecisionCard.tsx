@@ -53,7 +53,7 @@ export function RouteWhy({ route }: { route: RouteNotice }) {
         </p>
       )}
       <ReasonList reasons={reasons} limit={6} />
-      <p className="field-help">Processed on this device. No source material leaves it.</p>
+      <p className="field-help">{decision.privacy}</p>
     </details>
   );
 }
@@ -76,9 +76,17 @@ function Facts({ candidate, decision }: { candidate: ScoredCandidate; decision: 
         </>
       )}
       <dt>Expected quality</dt>
-      <dd>{capitalize(candidate.qualityClass)}</dd>
+      <dd>
+        {candidate.provider.kind === 'cloud'
+          ? 'Not benchmarked'
+          : capitalize(candidate.qualityClass)}
+      </dd>
       <dt>Expected speed</dt>
-      <dd>{capitalize(candidate.speedClass)}</dd>
+      <dd>
+        {candidate.provider.kind === 'cloud'
+          ? 'Varies with network and provider load'
+          : capitalize(candidate.speedClass)}
+      </dd>
       {memory && (
         <>
           <dt>Memory</dt>
@@ -166,7 +174,9 @@ export function RouteDecisionCard({
             <span>{decision.privacy}</span>
           </p>
           {action}
-          {!compact && !mock && <ScoreBreakdown candidate={selected} />}
+          {!compact && selected.provider.kind === 'local' && (
+            <ScoreBreakdown candidate={selected} />
+          )}
         </>
       ) : (
         <>

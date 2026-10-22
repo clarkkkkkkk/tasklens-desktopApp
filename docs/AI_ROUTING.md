@@ -5,10 +5,12 @@ local models that are actually available. It is no longer tied to one model. The
 extraction → validation → review → confirmation → repository → calendar workflow is unchanged.
 Only the model call in the middle is now routed.
 
-Status: the router, local providers (bundled llama.cpp, Ollama), device detection and fallback are
-implemented and tested. TaskLens is **local-only**: every provider runs on this device, and the
-router has no cloud provider kind, cloud modes, upload consent or network gating. Proprietary and
-cloud AI was removed on 2026-10-19 (see the last section).
+Status: the router supports local providers (bundled llama.cpp, Ollama), browser/demo mocks,
+and optional BYOK Groq Cloud. `ai.executionMode` defaults to `local`; `groq` explicitly selects
+Groq and excludes local/mock extraction. Fallback stays inside Local mode. Device scoring applies
+to local inference only. See [GROQ_BYOK.md](GROQ_BYOK.md) for native credentials, consent, limits,
+and verification. The remaining local-routing design and historical removal notes below describe
+the earlier local-only implementation.
 
 ## A. Architecture
 

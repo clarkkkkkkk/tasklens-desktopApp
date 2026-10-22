@@ -1,3 +1,4 @@
+import { GroqSettings } from './GroqSettings';
 import { NativeReminderSettings } from './NativeReminderSettings';
 import { VoiceSettings } from '../voice/VoiceSettings';
 import { LocalAISettings } from './LocalAISettings';
@@ -154,6 +155,7 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
           <span className="badge">Active</span>
         </div>
       </section>
+      <GroqSettings />
       <AIRoutingPanel settings={settings} onUpdate={update} pending={pending} />
       <LocalAISettings settings={settings} onUpdate={update} pending={pending} />
       <section className="settings-section">

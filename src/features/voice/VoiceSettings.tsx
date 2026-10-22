@@ -43,9 +43,9 @@ export function VoiceSettings() {
     <section className="settings-section">
       <h2>Voice transcription</h2>
       <p>
-        Record with your system-default microphone. Transcription (whisper.cpp) and extraction run
-        on this device. Recordings are deleted after transcription; saved items retain their
-        transcript.
+        Record with your system-default microphone. Transcription (whisper.cpp) runs on this device.
+        Extraction uses the AI processing mode selected below. Recordings are deleted after
+        transcription; saved items retain their transcript.
       </p>
       {!services.voice.available && (
         <p className="field-help">

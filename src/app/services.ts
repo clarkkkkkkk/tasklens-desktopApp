@@ -36,11 +36,12 @@ import { AIRouter } from '../services/ai/router';
 import type { AIProvider } from '../services/ai/types';
 import { LlamaCppProvider } from '../services/ai/providers/LlamaCppProvider';
 import { MockProvider } from '../services/ai/providers/MockProvider';
+import { GroqProvider } from '../services/ai/providers/GroqProvider';
 import { OllamaProvider } from '../services/ai/providers/OllamaProvider';
 import { encodeImageForAI } from '../lib/images';
 import { defaultSettings, type Settings } from '../types/action';
 
-/** The adaptive on-device AI layer: providers, hardware detection and routing. */
+/** Shared providers, local hardware detection and explicit execution-mode routing. */
 export interface AIServices {
   router: AIRouter;
   registry: ProviderRegistry;
@@ -73,6 +74,7 @@ export function createServices(): Services {
 
   const intelligence: { current: IntelligenceStatus | null } = { current: null };
   const providers: AIProvider[] = [
+    new GroqProvider(),
     new LlamaCppProvider(
       localAI,
       () => intelligence.current,
@@ -89,6 +91,7 @@ export function createServices(): Services {
     }).catch(() => {});
   const policy = (): RoutingPolicy => ({
     mode: settings.current.ai.mode,
+    executionMode: settings.current.ai.executionMode,
     priority: settings.current.ai.priority,
     manualModel: settings.current.ai.manualModel,
     allowMock: useMock,
@@ -114,7 +117,21 @@ export function createServices(): Services {
       : storage,
     nativeReminders,
     extraction: useMock
-      ? demo
+      ? {
+          get mode() {
+            return settings.current.ai.executionMode === 'groq'
+              ? ('routed' as const)
+              : ('mock' as const);
+          },
+          extract(input, options) {
+            if (settings.current.ai.executionMode !== 'groq') return demo.extract(input, options);
+            return new RoutedExtractionService(
+              new NativeOcrService(),
+              router,
+              () => settings.current,
+            ).extract(input, options);
+          },
+        }
       : new RoutedExtractionService(new NativeOcrService(), router, () => settings.current, {
           encodeImage: encodeImageForAI,
         }),

@@ -1,10 +1,11 @@
+import type { AIProcessingStatus } from '../ai/types';
 import type { ExtractedAction, ExtractionAmbiguity } from '../../types/action';
 import type { RouteDecision, ScoredCandidate } from '../ai/router';
 import type { OcrDocument } from '../ocr/types';
 
 /** Source metadata (persisted with results) plus, for screenshots, the image itself. */
 export type ExtractionInput = ExtractedAction['source'] & {
-  /** Screenshot bytes. Used for local OCR only and never stored. */
+  /** Screenshot bytes for local OCR/vision only; never sent to a cloud provider or stored. */
   image?: Blob;
 };
 /** Which AI is about to run, and why. Sent again when a fallback replaces a failed provider. */
@@ -19,6 +20,7 @@ export interface OcrCheckpoint {
 }
 export interface ExtractionOptions {
   traceId?: string;
+  onStatus?: (status: AIProcessingStatus) => void;
   ocrCheckpoint?: OcrCheckpoint;
   onOcr?: (checkpoint: OcrCheckpoint) => void;
   signal: AbortSignal;
@@ -30,11 +32,14 @@ export interface ExtractionAttempt {
   rawOutput: string;
   elapsedMs: number;
   truncated: boolean;
+  inputTokens?: number;
+  outputTokens?: number;
   error?: string;
 }
 /** Developer diagnostics. Never shown in the main UI; never persisted. */
 export interface ExtractionDiagnostics {
   promptVersion: number;
+  totalElapsedMs?: number;
   ocr?: OcrDocument;
   attempts: ExtractionAttempt[];
   issues: string[];

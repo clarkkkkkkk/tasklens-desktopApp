@@ -97,13 +97,15 @@ export function AIRoutingPanel({
   const device = snapshot ? assessDevice(snapshot.device) : null;
   const allModels = useMemo(
     () =>
-      snapshot?.providers.flatMap((p) =>
-        p.models.map((m) => ({
-          key: modelKey(m),
-          label: `${m.name} · ${p.provider.name}`,
-          available: p.status.available,
-        })),
-      ) ?? [],
+      snapshot?.providers
+        .filter((p) => p.provider.kind !== 'cloud')
+        .flatMap((p) =>
+          p.models.map((m) => ({
+            key: modelKey(m),
+            label: `${m.name} · ${p.provider.name}`,
+            available: p.status.available,
+          })),
+        ) ?? [],
     [snapshot],
   );
   // What Automatic routing would pick, for "Use recommended" in Manual mode.
@@ -126,8 +128,8 @@ export function AIRoutingPanel({
         <span className="badge">Adaptive</span>
       </h2>
       <p>
-        TaskLens chooses the AI for each job from this device&rsquo;s hardware and the local models
-        that are actually available. Everything runs on this device.
+        Local AI chooses from models available on this computer. Groq Cloud uses the explicitly
+        selected online provider.
       </p>
       {error && <ErrorState message={error} />}
       <div className="setting-row">
@@ -193,7 +195,7 @@ export function AIRoutingPanel({
       </div>
 
       <fieldset className="setting-subsection ai-mode">
-        <legend>AI mode</legend>
+        <legend>Local model selection</legend>
         {aiModes.map((m) => (
           <label key={m} className={ai.mode === m ? 'selected' : ''}>
             <input
@@ -259,7 +261,13 @@ export function AIRoutingPanel({
                 <strong>{provider.name}</strong>
                 <span className="field-help">
                   {' '}
-                  · {provider.kind === 'mock' ? 'Demo' : 'Local'} · {provider.runtime}
+                  ·{' '}
+                  {provider.kind === 'mock'
+                    ? 'Demo'
+                    : provider.kind === 'cloud'
+                      ? 'Cloud'
+                      : 'Local'}{' '}
+                  · {provider.runtime}
                 </span>
                 <p className="field-help">
                   {status.available

@@ -1,0 +1,14 @@
+[[permission]]
+identifier = "desktop-local"
+description = "Main window desktop-local commands"
+commands.allow = ["local_diagnostics_session", "local_diagnostics_identity", "local_diagnostics_stage", "reminder_status", "reminder_time_options", "reminder_take_activation", "reminder_pause", "reminder_reconcile", "reminder_preview", "reminder_activate", "reminder_disable", "reminder_preferences", "reminder_test", "lifecycle_finish", "local_intelligence_status", "local_intelligence_retry", "voice_models", "voice_validate_model", "voice_start", "voice_stop", "voice_import_begin", "voice_import_chunk", "voice_cancel", "voice_transcribe", "ocr_recognize", "ocr_status", "ocr_import_languages", "local_ai_status", "local_ai_diagnostics", "local_ai_import_model", "local_ai_validate_model", "local_ai_load", "local_ai_unload", "local_ai_complete", "local_ai_prewarm", "local_jobs_cancel", "ai_device_profile", "ai_ollama_discover", "ai_ollama_chat"]
+
+[[permission]]
+identifier = "groq-connection"
+description = "Main window groq-connection commands"
+commands.allow = ["groq_status", "groq_connect", "groq_verify", "groq_disconnect", "groq_configure"]
+
+[[permission]]
+identifier = "groq-extraction"
+description = "Main window groq-extraction commands"
+commands.allow = ["groq_begin", "groq_generate", "groq_finish"]

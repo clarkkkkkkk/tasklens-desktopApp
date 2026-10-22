@@ -8,6 +8,7 @@ import { recommend, type RouteDecision, type RoutingSnapshot } from '../../servi
 export function policyFrom(ai: AIRoutingSettings, allowMock: boolean): RoutingPolicy {
   return {
     mode: ai.mode,
+    executionMode: ai.executionMode,
     priority: ai.priority,
     manualModel: ai.manualModel,
     allowMock,
@@ -41,7 +42,13 @@ export function useAIRouting(signals: TaskSignals) {
   const ai = data.settings.ai;
   useEffect(() => {
     void refresh();
-  }, [refresh, ai.ollama.enabled]);
+  }, [refresh, ai.ollama.enabled, ai.executionMode]);
+
+  useEffect(() => {
+    const listener = () => void refresh(true);
+    window.addEventListener('tasklens-groq-change', listener);
+    return () => window.removeEventListener('tasklens-groq-change', listener);
+  }, [refresh]);
 
   const allowMock = router.currentPolicy().allowMock;
   const policy = useMemo(() => policyFrom(ai, allowMock), [ai, allowMock]);

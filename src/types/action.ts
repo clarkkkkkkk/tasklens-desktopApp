@@ -105,14 +105,14 @@ export const actionSchema = z
       capturedAt: z.string().datetime().optional(),
       recordingDate: dateSchema.optional(),
       timezone: z.string().max(100).optional(),
-      /** Values left by the removed cloud prototype read as unknown instead of failing the load. */
-      extractionMode: z.enum(['mock', 'local']).optional().catch(undefined),
+      /** Known execution locations persist; unrecognized legacy values remain tolerated. */
+      extractionMode: z.enum(['mock', 'local', 'cloud']).optional().catch(undefined),
       /** Which AI produced the draft, for provenance in review. */
       extractedBy: z
         .object({
           provider: z.string().max(100),
           model: z.string().max(200),
-          kind: z.enum(['local', 'mock']),
+          kind: z.enum(['local', 'cloud', 'mock']),
         })
         .optional()
         .catch(undefined),
@@ -175,6 +175,7 @@ export const localAISettingsSchema = z.object({
  * credentials.
  */
 export const aiRoutingSettingsSchema = z.object({
+  executionMode: z.enum(['local', 'groq']).catch('local').default('local'),
   mode: z.enum(aiModes).catch('automatic'),
   priority: z.enum(aiPriorities).catch('balanced'),
   /** `providerId/modelId` chosen in Manual mode. */

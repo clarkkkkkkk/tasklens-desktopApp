@@ -35,8 +35,8 @@ export const capabilityLabels: Record<AICapability, string> = {
   'json-output': 'JSON output',
 };
 
-/** Every real provider runs on this device; `mock` is the labelled demo provider. */
-export type ProviderKind = 'local' | 'mock';
+/** Execution location is explicit; `mock` is the labelled demo provider. */
+export type ProviderKind = 'local' | 'cloud' | 'mock';
 /** Hardware a runtime can use. The bundled llama.cpp build is CPU-only. */
 export type Accelerator = 'cpu' | 'cuda' | 'rocm' | 'metal' | 'vulkan' | 'intel';
 export type SpeedClass = 'slow' | 'moderate' | 'fast';
@@ -96,6 +96,7 @@ export interface AIImage {
 /** One structured-output request. Never contains credentials. */
 export interface AIRequest {
   jobId: string;
+  extractionId?: string;
   traceId?: string;
   modelId: string;
   /** Fixed system prompt (cacheable). */
@@ -117,6 +118,14 @@ export interface AIResponse {
   content: string;
   truncated: boolean;
   elapsedMs: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  canRepair?: boolean;
+}
+
+export interface AIProcessingStatus {
+  stage: 'queued' | 'waiting' | 'sending';
+  retryAt?: number | null;
 }
 
 export interface AIProvider {
@@ -128,6 +137,13 @@ export interface AIProvider {
   isAvailable(): Promise<ProviderStatus>;
   getModels(): Promise<AIModel[]>;
   generate(request: AIRequest): Promise<AIResponse>;
+  beginExtraction?(
+    id: string,
+    fingerprint: string,
+    signal: AbortSignal,
+    onStatus?: (status: AIProcessingStatus) => void,
+  ): Promise<void>;
+  endExtraction?(id: string): Promise<void>;
   /** Optional warm-up while OCR runs (load weights, cache the fixed prompt prefix). */
   prepare?(modelId: string, system: string, signal: AbortSignal, traceId?: string): Promise<void>;
 }

@@ -29,6 +29,9 @@ fn main() {
         .manage(assets::Initialization::default())
         .manage(local_ai::server::Runtime::default())
         .setup(|app| {
+            app.manage(ai::groq::Groq::new(
+                platform::app_data(app.handle())?.join("groq-usage.json"),
+            )?);
             reliability::initialize(app.handle());
             let _ = reliability::tray(app.handle());
             if let Err(message) = voice::initialize(app.handle()) {
@@ -83,6 +86,14 @@ fn main() {
             ai::ai_device_profile,
             ai::ai_ollama_discover,
             ai::ai_ollama_chat,
+            ai::groq::groq_status,
+            ai::groq::groq_connect,
+            ai::groq::groq_verify,
+            ai::groq::groq_disconnect,
+            ai::groq::groq_configure,
+            ai::groq::groq_begin,
+            ai::groq::groq_generate,
+            ai::groq::groq_finish,
         ])
         .build(tauri::generate_context!())
         .expect("TaskLens could not start")

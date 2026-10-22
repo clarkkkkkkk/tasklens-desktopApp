@@ -2,7 +2,7 @@
 
 **Turn information into action. Privately.**
 
-A calm, local desktop workspace for screenshots, tasks, events, and deadlines. Phase 2 reads screenshots with **on-device OCR (Tesseract)** and understands them with **bundled Qwen3-4B running locally through llama.cpp**: capture → local extraction → review with Source Trace → save. **Nothing leaves your computer. No cloud services, API keys, accounts, or telemetry. Models, transcription and OCR are included in all-in-one desktop releases.** See [LOCAL_AI.md](LOCAL_AI.md).
+A calm, local desktop workspace for screenshots, tasks, events, and deadlines. Phase 2 reads screenshots with **on-device OCR (Tesseract)** and understands them with **bundled Qwen3-4B running locally through llama.cpp**: capture → local extraction → review with Source Trace → save. **Local AI is the default and works offline. Models, transcription and OCR are included in all-in-one desktop releases.** Optional **Groq Cloud** extraction uses your own API key after explicit selection and privacy consent; OCR text or transcripts are sent to Groq while original screenshots and audio stay local. See [Groq setup and verification](docs/GROQ_BYOK.md). See [LOCAL_AI.md](LOCAL_AI.md).
 
 ![TaskLens Inbox](docs/screenshots/inbox.png)
 

@@ -61,6 +61,9 @@ const SETUP_ERRORS = new Set<LocalAIErrorCode>([
   'MODEL_CORRUPTED',
   'MODEL_LOAD_FAILED',
   'NO_AI_AVAILABLE',
+  'GROQ_INVALID_KEY',
+  'GROQ_CONSENT',
+  'GROQ_DISABLED',
 ]);
 /** Text recognition always runs locally; which model runs next is the router's decision. */
 const OCR_COMPONENTS = ['tesseract', 'eng.traineddata', 'ceb.traineddata', 'tgl.traineddata'];
@@ -100,6 +103,8 @@ export function Inbox({
     [diagnostics, setDiagnostics] = useState<Partial<ExtractionDiagnostics> | null>(null),
     [route, setRoute] = useState<RouteNotice | null>(null);
   const source = job?.source ?? null;
+  const cloud = snapshot.settings.ai.executionMode === 'groq' && !job?.demo;
+  const [onlineStatus, setOnlineStatus] = useState('');
   const [phase, setPhase] = useState<ScreenshotPhase>('idle');
   const [checkpoint, setCheckpoint] = useState<OcrCheckpoint | null>(null);
   const checkpointRef = useRef<OcrCheckpoint | null>(null);
@@ -170,9 +175,9 @@ export function Inbox({
       busyRef.current = true;
       setBusy(true);
       setError(null);
-      setResults([]);
       setDiagnostics(null);
       setRoute(null);
+      setOnlineStatus('');
       setStep(checkpointRef.current?.image === next.image ? 1 : -1);
       setPhase(checkpointRef.current?.image === next.image ? 'inference' : 'preparing');
       const service = next.demo ? services.demoExtraction : services.extraction;
@@ -190,10 +195,21 @@ export function Inbox({
             onProgress: (s) => {
               if (current()) {
                 setStep(s);
+                if (s >= 3) setOnlineStatus('');
                 setPhase(
                   (['preparing', 'ocr', 'inference', 'validation'] as const)[s] ?? 'validation',
                 );
               }
+            },
+            onStatus: (state) => {
+              if (current())
+                setOnlineStatus(
+                  state.stage === 'queued'
+                    ? 'Waiting for the active Groq extraction…'
+                    : state.stage === 'waiting'
+                      ? `Waiting for rate-limit reset${state.retryAt ? ` at ${new Date(state.retryAt).toLocaleTimeString()}` : ''}…`
+                      : 'Sending for online extraction…',
+                );
             },
             onRoute: (r) => current() && setRoute(r),
           },
@@ -233,7 +249,12 @@ export function Inbox({
           diagnostics?: ExtractionDiagnostics;
         };
         setDiagnostics(extra.diagnostics ?? (extra.ocr ? { ocr: extra.ocr } : null));
-        setError({ message: failure.message, code: failure.code });
+        setError({
+          message:
+            failure.message +
+            (failure.retryAt ? ` Retry after ${new Date(failure.retryAt).toLocaleString()}.` : ''),
+          code: failure.code,
+        });
       } finally {
         if (version === generation.current) {
           setBusy(false);
@@ -378,7 +399,12 @@ export function Inbox({
       </div>
     </ErrorState>
   );
-  const stageLabel = (index: number) => extractionSteps[index];
+  const stageLabel = (index: number) =>
+    cloud && index === 2
+      ? onlineStatus || 'Preparing online extraction…'
+      : cloud && index === 3
+        ? 'Validating details…'
+        : extractionSteps[index];
   return (
     <section
       hidden={!active}
@@ -459,7 +485,7 @@ export function Inbox({
               <strong role="status">
                 {busy
                   ? stageLabel(Math.max(0, Math.min(step, extractionSteps.length - 1)))
-                  : results.length
+                  : phase === 'review-ready'
                     ? 'Ready for review'
                     : phase === 'failed'
                       ? 'Screenshot processing needs attention'
@@ -484,11 +510,16 @@ export function Inbox({
                 <p>Running a sample workflow. No AI is analyzing this image.</p>
               ) : elapsed >= notifyAfter ? (
                 <p>
-                  Still working on this device ({elapsed}s). This is taking longer than usual. Keep
-                  waiting or cancel; nothing is saved until you review it.
+                  {cloud ? 'Still processing' : 'Still working on this device'} ({elapsed}s). This
+                  is taking longer than usual. Keep waiting or cancel; nothing is saved until you
+                  review it.
                 </p>
               ) : (
-                <p>Processing locally. Your screenshot stays on this device.</p>
+                <p>
+                  {cloud
+                    ? 'Reading text locally, then sending recognized text to Groq. Your screenshot stays on this device.'
+                    : 'Processing locally. Your screenshot stays on this device.'}
+                </p>
               )
             ) : results.length ? (
               <p>
@@ -610,7 +641,12 @@ export function Inbox({
       <div className="privacy-note">
         <ShieldCheck size={16} />
         <p>
-          Your screenshots stay on this device. <span>Always yours, always private.</span>
+          Your screenshots stay on this device.{' '}
+          <span>
+            {cloud
+              ? 'Recognized text is sent to Groq.'
+              : 'Local AI processes your text on this computer.'}
+          </span>
         </p>
       </div>
       {services.extraction.mode === 'mock' && (

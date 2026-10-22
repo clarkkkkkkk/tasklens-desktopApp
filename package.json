@@ -25,7 +25,10 @@
     "test:assets": "node --test scripts/ai-assets.test.mjs",
     "prepare:notices": "node scripts/collect-ai-notices.mjs",
     "prepare:packaging": "node scripts/prepare-packaging-tools.mjs",
-    "test:native:ocr": "node scripts/ocr-smoke.mjs"
+    "test:native:ocr": "node scripts/ocr-smoke.mjs",
+    "test:native:groq:credentials": "node scripts/groq-credential-acceptance.mjs",
+    "test:native:groq": "node scripts/groq-native-acceptance.mjs",
+    "eval:groq": "node scripts/evaluate-groq.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.0",

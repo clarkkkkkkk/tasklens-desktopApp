@@ -15,6 +15,7 @@ const vision = (c: ScoredCandidate) => c.model.capabilities.includes('image-unde
 /** Short chips for a candidate card. */
 export function highlights(c: ScoredCandidate): string[] {
   if (c.provider.kind === 'mock') return ['Not real AI', 'Deterministic'];
+  if (c.provider.kind === 'cloud') return ['Online', 'Text sent to Groq', 'Your API key'];
   const chips = ['Private', 'Offline'];
   if (c.speedClass === 'fast') chips.push('Fast');
   if (c.memory && c.memory.weightsGB < 2) chips.push('Low memory');
@@ -63,6 +64,12 @@ export function reasonsFor(
     add('con', 'Returns a fixed sample result; it does not read your source');
     return reasons;
   }
+  if (selected.provider.kind === 'cloud') {
+    add('info', 'You selected Groq Cloud in Settings');
+    add('info', 'OCR and voice transcription run locally; source text is sent to Groq');
+    add('con', 'Requires internet and your Groq API key; quality and speed need evaluation');
+    return reasons;
+  }
   if (ctx.manual) add('info', 'You chose this model in Manual mode');
   if (req.hasImage) add('info', 'Current task contains a screenshot');
   if (req.input === 'voice') add('info', 'Speech is transcribed on this device first');
@@ -98,6 +105,8 @@ export function reasonsFor(
 export function privacyStatement(selected: ScoredCandidate | undefined): string {
   if (!selected) return 'Nothing is processed until an AI model is available.';
   if (selected.provider.kind === 'mock') return 'Nothing is analyzed; a fixed sample is returned.';
+  if (selected.provider.kind === 'cloud')
+    return 'Recognized text or transcripts are sent to Groq. Original screenshots and audio stay on this device.';
   return 'Processed on this device. No source material leaves it.';
 }
 

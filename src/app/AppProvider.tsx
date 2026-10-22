@@ -6,6 +6,7 @@ import {
   type Settings,
   type Snapshot,
 } from '../types/action';
+import { groqConnection } from '../services/ai/providers/GroqProvider';
 import { AppContext } from './context';
 import type { Services } from './services';
 export function AppProvider({ services, children }: { services: Services; children: ReactNode }) {
@@ -43,6 +44,11 @@ export function AppProvider({ services, children }: { services: Services; childr
   }, [reload, services.repository]);
   useEffect(() => {
     services.settings.current = snapshot.settings;
+    void groqConnection.configure(snapshot.settings.ai.executionMode === 'groq').catch(() => {
+      setNotice(
+        'Groq settings could not be synchronized. Online processing remains blocked until Settings is updated.',
+      );
+    });
     // Provider options (Ollama on/off) change what discovery reports.
     services.ai.registry.invalidate();
     services.localAI.setConfig({
@@ -80,7 +86,16 @@ export function AppProvider({ services, children }: { services: Services; childr
     );
   }
   async function saveSettings(settings: Settings) {
-    await commit(services.repository.saveSettings(settings), 'Preferences saved.');
+    const previous = services.settings.current.ai.executionMode;
+    if (settings.ai.executionMode !== previous)
+      await groqConnection.configure(settings.ai.executionMode === 'groq');
+    try {
+      await commit(services.repository.saveSettings(settings), 'Preferences saved.');
+      services.settings.current = settings;
+    } catch (error) {
+      await groqConnection.configure(previous === 'groq').catch(() => {});
+      throw error;
+    }
   }
   return (
     <AppContext.Provider

@@ -34,14 +34,14 @@ export function VoiceCapture({
   onGuardChange: (cancel: (() => Promise<void>) | null) => void;
 }) {
   const { status: intelligence } = useLocalIntelligence();
-  const textReady = componentsReady(intelligence, ['extraction', 'llama-server']);
-  const speechReady = componentsReady(intelligence, [
-    'extraction',
-    'llama-server',
-    'whisper',
-    'whisper-cli',
-  ]);
   const { services, snapshot } = useApp();
+  const cloud = snapshot.settings.ai.executionMode === 'groq';
+  const textReady = cloud || componentsReady(intelligence, ['extraction', 'llama-server']);
+  const speechReady = componentsReady(
+    intelligence,
+    cloud ? ['whisper', 'whisper-cli'] : ['extraction', 'llama-server', 'whisper', 'whisper-cli'],
+  );
+  const [onlineStatus, setOnlineStatus] = useState('');
   const [status, setStatus] = useState<CaptureStatus>('idle'),
     [error, setError] = useState(''),
     [elapsed, setElapsed] = useState(0),
@@ -168,14 +168,14 @@ export function VoiceCapture({
       window.removeEventListener('beforeunload', unload);
     };
   }, [status, services]);
-  function begin() {
+  function begin(keepResults = false) {
     if (busy.current || locked || poisoned.current || !acquire()) return null;
     busy.current = true;
     generation.current++;
     controller.current = new AbortController();
     setError('');
     setWarnings([]);
-    setResults([]);
+    if (!keepResults) setResults([]);
     pendingExtraction.current = null;
     pendingSpeech.current = null;
     pendingStop.current = null;
@@ -184,10 +184,24 @@ export function VoiceCapture({
   async function extract(input: ExtractedAction['source'], version: number, signal: AbortSignal) {
     setStatus('extracting');
     setExtractionStep(2);
+    setOnlineStatus('');
     const extraction = services.extraction.extract(input, {
       signal,
+      onStatus: (state) => {
+        if (version !== generation.current) return;
+        setOnlineStatus(
+          state.stage === 'queued'
+            ? 'Waiting for the active Groq extraction…'
+            : state.stage === 'waiting'
+              ? `Waiting for rate-limit reset${state.retryAt ? ` at ${new Date(state.retryAt).toLocaleTimeString()}` : ''}…`
+              : 'Sending for online extraction…',
+        );
+      },
       onProgress: (step) => {
-        if (version === generation.current) setExtractionStep(step);
+        if (version === generation.current) {
+          setExtractionStep(step);
+          if (step >= 3) setOnlineStatus('');
+        }
       },
     });
     pendingExtraction.current = extraction;
@@ -200,6 +214,10 @@ export function VoiceCapture({
           ? []
           : ['No clear action was found. Inspect your transcript or capture more context.'],
     );
+    if (!bundle.actions.length)
+      throw new Error(
+        'No actionable details could be validated. Your source is retained; retry or create a task manually.',
+      );
     setStatus('ready_for_review');
     busy.current = false;
     release();
@@ -390,7 +408,7 @@ export function VoiceCapture({
   }
   async function retry() {
     if (!source) return;
-    const job = begin();
+    const job = begin(true);
     if (!job) return;
     const next = { ...source, recordingDate: recordingDate || undefined };
     setSource(next);
@@ -408,7 +426,12 @@ export function VoiceCapture({
     finalizing: cleaning ? 'Cancelling capture…' : 'Preparing audio…',
     preprocessing: 'Preparing audio…',
     transcribing: 'Transcribing locally…',
-    extracting: extractionStep >= 3 ? 'Checking extracted information…' : 'Understanding details…',
+    extracting:
+      extractionStep >= 3
+        ? 'Validating details…'
+        : cloud
+          ? onlineStatus || 'Preparing online extraction…'
+          : 'Understanding details…',
     ready_for_review: 'Review ready',
     cancelled: 'Capture cancelled',
     error: 'Capture needs attention',
@@ -421,11 +444,15 @@ export function VoiceCapture({
         : 'Capture a little context';
   const steps =
     source?.type === 'text'
-      ? ['Understanding details', 'Checking information', 'Review ready']
+      ? [
+          cloud ? 'Online extraction' : 'Understanding details',
+          'Checking information',
+          'Review ready',
+        ]
       : [
           'Preparing audio',
           'Transcribing locally',
-          'Understanding details',
+          cloud ? 'Online extraction' : 'Understanding details',
           'Checking information',
           'Review ready',
         ];
@@ -685,15 +712,17 @@ export function VoiceCapture({
           )}
           {processing && !cleaning && waitSeconds >= notifyAfter && (
             <p role="status">
-              Still working on this device ({waitSeconds}s). This is taking longer than usual.
-              Nothing is saved until you review it.
+              {cloud ? 'Still processing' : 'Still working on this device'} ({waitSeconds}s). This
+              is taking longer than usual. Nothing is saved until you review it.
             </p>
           )}
         </div>
         <div className="capture-actions capture-card-footer">
           <p className="capture-privacy">
             <ShieldCheck size={14} />
-            Processed locally on this device
+            {cloud
+              ? 'Transcription stays local. Source text is sent to Groq.'
+              : 'Processed locally on this device'}
           </p>
           {status === 'recording' && (
             <Button variant="primary" data-recording-done onClick={() => void done()}>

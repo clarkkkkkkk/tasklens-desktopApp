@@ -18,6 +18,22 @@ export type LocalAIErrorCode =
   | 'CANCELLED'
   | 'DESKTOP_REQUIRED'
   | 'NO_AI_AVAILABLE'
+  | 'GROQ_STORAGE'
+  | 'GROQ_RATE_LIMIT'
+  | 'GROQ_DAILY_LIMIT'
+  | 'GROQ_TIMEOUT'
+  | 'GROQ_NETWORK'
+  | 'GROQ_INVALID_KEY'
+  | 'GROQ_MODEL_UNAVAILABLE'
+  | 'GROQ_REQUEST_REJECTED'
+  | 'GROQ_UNAVAILABLE'
+  | 'GROQ_INVALID_OUTPUT'
+  | 'GROQ_DISABLED'
+  | 'GROQ_CONSENT'
+  | 'GROQ_FORBIDDEN'
+  | 'GROQ_DUPLICATE'
+  | 'GROQ_QUEUE_FULL'
+  | 'GROQ_INPUT_LIMIT'
   | 'UNKNOWN';
 
 /** A user-presentable failure. Native messages are already free of paths and stack traces. */
@@ -27,6 +43,7 @@ export class LocalAIError extends Error {
     message: string,
     readonly detailCode?: string,
     readonly stage?: string,
+    readonly retryAt?: number,
   ) {
     super(message);
     this.name = 'LocalAIError';
@@ -34,6 +51,22 @@ export class LocalAIError extends Error {
 }
 
 const codes = new Set<string>([
+  'GROQ_STORAGE',
+  'GROQ_RATE_LIMIT',
+  'GROQ_DAILY_LIMIT',
+  'GROQ_TIMEOUT',
+  'GROQ_NETWORK',
+  'GROQ_INVALID_KEY',
+  'GROQ_MODEL_UNAVAILABLE',
+  'GROQ_REQUEST_REJECTED',
+  'GROQ_UNAVAILABLE',
+  'GROQ_INVALID_OUTPUT',
+  'GROQ_DISABLED',
+  'GROQ_CONSENT',
+  'GROQ_FORBIDDEN',
+  'GROQ_DUPLICATE',
+  'GROQ_QUEUE_FULL',
+  'GROQ_INPUT_LIMIT',
   'OCR_FAILED',
   'CANCELLED',
   'OCR_NOT_INSTALLED',
@@ -61,6 +94,7 @@ export function toLocalAIError(error: unknown): LocalAIError {
         failure.message,
         typeof failure.detailCode === 'string' ? failure.detailCode : undefined,
         typeof failure.stage === 'string' ? failure.stage : undefined,
+        typeof failure.retryAt === 'number' ? failure.retryAt : undefined,
       );
   } catch {
     /* Legacy native string errors remain supported. */

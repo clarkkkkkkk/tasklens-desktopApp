@@ -27,16 +27,21 @@ rusqlite = { version = "=0.40.2", features = ["bundled", "backup"] }
 chrono = { version = "=0.4.45", features = ["serde"] }
 chrono-tz = "=0.10.4"
 iana-time-zone = "=0.1.65"
-tokio = { version = "1", features = ["time"] }
+tokio = { version = "1", features = ["time", "sync", "macros"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
+zeroize = "1"
+tempfile = "3"
 
 [target.'cfg(not(target_os = "macos"))'.dependencies]
 notify-rust = "=4.18.1"
 
 [target.'cfg(windows)'.dependencies]
+keyring = { version = "=3.6.3", default-features = false, features = ["windows-native"] }
 windows = { version = "=0.62.2", features = ["UI_Notifications"] }
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security", "Win32_System_JobObjects", "Win32_System_ProcessStatus", "Win32_System_Registry", "Win32_System_SystemInformation", "Win32_System_Threading"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "=3.6.3", default-features = false, features = ["sync-secret-service", "crypto-rust"] }
 libc = "0.2"
 
 [target.'cfg(target_os = "macos")'.dependencies]

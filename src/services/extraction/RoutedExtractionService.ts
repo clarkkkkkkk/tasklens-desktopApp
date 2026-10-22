@@ -37,6 +37,7 @@ export interface ExtractionRouting {
   provider(id: string): AIProvider | undefined;
   recordFailure(key: string): void;
   recordSuccess(key: string): void;
+  currentPolicy?(): { executionMode?: 'local' | 'groq' };
 }
 
 export interface RoutedExtractionOptions {
@@ -69,9 +70,9 @@ function noCandidate(decision: RouteDecision): LocalAIError {
 }
 
 /**
- * Screenshot/voice/text → local OCR (screenshots) → router picks the best model on this device →
- * provider → validation (one repair) → review. When a provider fails, the next best local model
- * takes over and the route notice says so.
+ * Screenshot/voice/text → local preprocessing → explicitly selected execution mode →
+ * provider → semantic validation (at most one budgeted repair) → review. Local providers may
+ * fall back to another local provider; cloud extraction never crosses execution modes.
  */
 export class RoutedExtractionService implements ExtractionService {
   readonly mode: 'local' | 'routed' = 'routed';
@@ -92,8 +93,10 @@ export class RoutedExtractionService implements ExtractionService {
       traceId = crypto.randomUUID(),
       ocrCheckpoint,
       onOcr,
+      onStatus,
     }: ExtractionOptions,
   ) {
+    const started = performance.now();
     const warmController = new AbortController();
     const abortWarm = () => warmController.abort();
     signal.addEventListener('abort', abortWarm, { once: true });
@@ -228,6 +231,11 @@ export class RoutedExtractionService implements ExtractionService {
           imagePixels: ocr ? ocr.imageWidth * ocr.imageHeight : undefined,
         }),
       );
+      if ((early.policy.executionMode ?? 'local') !== (decision.policy.executionMode ?? 'local'))
+        throw new LocalAIError(
+          'CANCELLED',
+          'AI mode changed. Retry your retained source with the selected mode.',
+        );
       if (!decision.selected) throw withContext(noCandidate(decision), { ocr });
       await warming;
       signal.throwIfAborted();
@@ -247,16 +255,22 @@ export class RoutedExtractionService implements ExtractionService {
             progress,
             ocr,
             traceId,
+            onStatus,
           );
           this.routing.recordSuccess(candidate.key);
           completed = true;
           diagnosticStage(traceId, stage, 'end');
           diagnosticStage(traceId, 'review', 'end');
+          if (bundle.diagnostics) bundle.diagnostics.totalElapsedMs = performance.now() - started;
           return bundle;
         } catch (error) {
           if (signal.aborted || isCancellation(error)) throw withContext(error, { ocr, decision });
           // Invalid output after the repair attempt is not a provider failure: the user retries.
-          if (error instanceof LocalAIError && error.code === 'VALIDATION_FAILED') throw error;
+          if (
+            (error instanceof LocalAIError && error.code === 'VALIDATION_FAILED') ||
+            candidate.provider.kind === 'cloud'
+          )
+            throw withContext(error, { ocr, decision });
           this.routing.recordFailure(candidate.key);
           failed.push(candidate.provider.id);
           const alternative = this.routing.fallbackFor(decision, failed);
@@ -297,6 +311,7 @@ export class RoutedExtractionService implements ExtractionService {
     onProgress: (step: number) => void,
     ocr: OcrDocument | undefined,
     traceId: string,
+    onStatus?: ExtractionOptions['onStatus'],
   ): Promise<ExtractionBundle> {
     const provider = this.routing.provider(candidate.provider.id);
     if (!provider)
@@ -322,79 +337,101 @@ export class RoutedExtractionService implements ExtractionService {
           : [`Used after ${decision.selected?.model.name ?? 'the first choice'} failed`],
     };
     const extractionMode: ExtractedAction['source']['extractionMode'] =
-      candidate.provider.kind === 'mock' ? 'mock' : 'local';
-    const attempts: ExtractionAttempt[] = [];
-    let repair: string | undefined;
-    // One controlled retry: the second attempt is told what was wrong with the first.
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const response = await provider.generate({
-        jobId: crypto.randomUUID(),
-        traceId,
-        modelId: candidate.model.id,
-        system: TASKLENS_SYSTEM_PROMPT,
-        user,
-        repair,
-        schema,
-        maxOutputTokens: MAX_OUTPUT_TOKENS,
-        images,
+      candidate.provider.kind === 'mock'
+        ? 'mock'
+        : candidate.provider.kind === 'cloud'
+          ? 'cloud'
+          : 'local';
+    const extractionId = crypto.randomUUID();
+    try {
+      await provider.beginExtraction?.(
+        extractionId,
+        JSON.stringify({ kind: context.kind, units: context.units }),
         signal,
-      });
-      signal.throwIfAborted();
-      onProgress(3);
-      let result = validateExtraction(response.content, validationContext);
-      if (result.ok) {
-        const omitted = coverageIssue(validationContext, result.actions);
-        if (omitted)
-          result = { ok: false, stage: 'actions', error: omitted, issues: result.issues };
-      }
-      attempts.push({
-        rawOutput: response.content,
-        elapsedMs: response.elapsedMs,
-        truncated: response.truncated,
-        ...(result.ok ? {} : { error: `${result.stage}: ${result.error}` }),
-      });
-      if (result.ok)
-        return {
-          actions: result.actions.map((action) => ({
-            ...action,
-            source: {
-              ...action.source,
-              extractionMode,
-              extractedBy: {
-                provider: candidate.provider.name,
-                model: candidate.model.name,
-                kind: candidate.provider.kind,
+        onStatus,
+      );
+      const attempts: ExtractionAttempt[] = [];
+      let repair: string | undefined;
+      // One controlled retry: the second attempt is told what was wrong with the first.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const response = await provider.generate({
+          jobId: crypto.randomUUID(),
+          extractionId,
+          traceId,
+          modelId: candidate.model.id,
+          system: TASKLENS_SYSTEM_PROMPT,
+          user,
+          repair,
+          schema,
+          maxOutputTokens: candidate.provider.kind === 'cloud' ? 4096 : MAX_OUTPUT_TOKENS,
+          images,
+          signal,
+        });
+        signal.throwIfAborted();
+        const mode = this.routing.currentPolicy?.().executionMode;
+        if (mode && (mode === 'groq') !== (candidate.provider.kind === 'cloud'))
+          throw new LocalAIError('CANCELLED', 'AI mode changed. Retry your retained source.');
+        onProgress(3);
+        let result = validateExtraction(response.content, validationContext);
+        if (result.ok) {
+          const omitted = coverageIssue(validationContext, result.actions);
+          if (omitted)
+            result = { ok: false, stage: 'actions', error: omitted, issues: result.issues };
+        }
+        attempts.push({
+          rawOutput: response.content,
+          elapsedMs: response.elapsedMs,
+          truncated: response.truncated,
+          inputTokens: response.inputTokens,
+          outputTokens: response.outputTokens,
+          ...(result.ok ? {} : { error: `${result.stage}: ${result.error}` }),
+        });
+        if (result.ok)
+          return {
+            actions: result.actions.map((action) => ({
+              ...action,
+              source: {
+                ...action.source,
+                extractionMode,
+                extractedBy: {
+                  provider: candidate.provider.name,
+                  model: candidate.model.name,
+                  kind: candidate.provider.kind,
+                },
               },
+            })),
+            ambiguities: result.ambiguities,
+            diagnostics: {
+              promptVersion: TASKLENS_EXTRACTION_PROMPT_VERSION,
+              ocr,
+              attempts,
+              issues: result.issues,
+              route,
             },
-          })),
-          ambiguities: result.ambiguities,
+          };
+        if (response.canRepair === false) break;
+        repair = repairInstruction(validationContext, result.error, response.truncated);
+        onProgress(2);
+      }
+      throw withContext(
+        new LocalAIError(
+          'VALIDATION_FAILED',
+          'The extracted details could not be validated, so nothing was saved. Try again.',
+        ),
+        {
+          ocr,
+          decision,
           diagnostics: {
             promptVersion: TASKLENS_EXTRACTION_PROMPT_VERSION,
             ocr,
             attempts,
-            issues: result.issues,
+            issues: [],
             route,
           },
-        };
-      repair = repairInstruction(validationContext, result.error, response.truncated);
-      onProgress(2);
-    }
-    throw withContext(
-      new LocalAIError(
-        'VALIDATION_FAILED',
-        'The extracted details could not be validated, so nothing was saved. Try again.',
-      ),
-      {
-        ocr,
-        decision,
-        diagnostics: {
-          promptVersion: TASKLENS_EXTRACTION_PROMPT_VERSION,
-          ocr,
-          attempts,
-          issues: [],
-          route,
         },
-      },
-    );
+      );
+    } finally {
+      await provider.endExtraction?.(extractionId).catch(() => {});
+    }
   }
 }

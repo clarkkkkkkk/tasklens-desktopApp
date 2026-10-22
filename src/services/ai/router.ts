@@ -89,12 +89,20 @@ export function recommend(
   policy: RoutingPolicy,
   failures: ReadonlyMap<string, number> = new Map(),
 ): RouteDecision {
+  policy = { ...policy };
   const device = assessDevice(snapshot.device);
   const weights = weightsForTask(priorityWeights[policy.priority], requirements);
   const ranked: ScoredCandidate[] = [];
   const excluded: ExcludedModel[] = [];
 
   for (const { provider, status, models } of snapshot.providers) {
+    const mode = policy.executionMode ?? 'local';
+    if (
+      mode === 'groq'
+        ? provider.kind !== 'cloud' || provider.id !== 'groq'
+        : provider.kind === 'cloud'
+    )
+      continue;
     for (const model of models) {
       const key = modelKey(model);
       const evaluation = evaluate(model, provider, status, {
@@ -119,7 +127,10 @@ export function recommend(
         speedClass: evaluation.speedClass,
         qualityClass: evaluation.qualityClass,
         cautions: evaluation.cautions,
-        attachImage: requirements.hasImage && model.capabilities.includes('image-understanding'),
+        attachImage:
+          provider.kind === 'local' &&
+          requirements.hasImage &&
+          model.capabilities.includes('image-understanding'),
         highlights: [],
       };
       candidate.highlights = highlights(candidate);
@@ -150,7 +161,9 @@ export function recommend(
   );
 
   const manual =
-    policy.mode === 'manual' ? ranked.find((c) => c.key === policy.manualModel) : undefined;
+    policy.executionMode !== 'groq' && policy.mode === 'manual'
+      ? ranked.find((c) => c.key === policy.manualModel)
+      : undefined;
   const selected = manual ?? ranked[0];
   const alternatives = ranked
     .filter((c) => c !== selected)
@@ -163,7 +176,12 @@ export function recommend(
         manual: !!manual,
       })
     : noCandidateReasons(excluded);
-  if (policy.mode === 'manual' && policy.manualModel && !manual) {
+  if (
+    policy.executionMode !== 'groq' &&
+    policy.mode === 'manual' &&
+    policy.manualModel &&
+    !manual
+  ) {
     const missing = excluded.find((e) => e.key === policy.manualModel);
     reasons.unshift({
       tone: 'con',
@@ -188,7 +206,9 @@ export function recommend(
     headline: selected
       ? selected.provider.kind === 'mock'
         ? 'Demo / Mock AI: no real model available'
-        : `Best match for ${requirements.label}`
+        : selected.provider.kind === 'cloud'
+          ? 'Selected online provider'
+          : `Best match for ${requirements.label}`
       : 'No AI model can run this job right now',
   };
 }
@@ -208,15 +228,16 @@ function noCandidateReasons(excluded: ExcludedModel[]): RouteDecision['reasons']
 }
 
 /**
- * The best remaining real candidate after `failedProviders` failed. Every candidate runs on this
- * device; the caller reports the switch so a fallback is never silent.
+ * Local-mode fallback only. Cloud selection never crosses into a local or mock provider;
+ * local provider switches are reported by the caller.
  */
 export function fallbackFor(
   decision: RouteDecision,
   failedProviders: string[],
 ): ScoredCandidate | undefined {
+  if (decision.selected?.provider.kind === 'cloud') return undefined;
   return decision.ranked.find(
-    (c) => !failedProviders.includes(c.provider.id) && c.provider.kind !== 'mock',
+    (c) => !failedProviders.includes(c.provider.id) && c.provider.kind === 'local',
   );
 }
 
