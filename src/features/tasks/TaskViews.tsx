@@ -76,7 +76,7 @@ export function TaskViews({
       : null;
   return (
     <section>
-      <div className="page-heading">
+      <div className="page-heading" data-tour={`view-${view}`}>
         <div className="eyebrow">
           {view === 'today'
             ? displayDate(localDate(), {

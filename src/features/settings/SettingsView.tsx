@@ -6,18 +6,34 @@ import { VoiceSettings } from '../voice/VoiceSettings';
 import { LocalAISettings } from './LocalAISettings';
 import { AIRoutingPanel } from '../ai/AIRoutingPanel';
 import { MotionHeading } from '../../components/motion/MotionHeading';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Bell, Download, HardDrive, Monitor, ShieldCheck } from '../../components/icons';
 import { useApp } from '../../app/context';
 import { Button, ErrorState } from '../../components/ui';
 import { downloadText } from '../../lib/images';
 import { presets } from '../../services/reminders/ReminderScheduler';
 import type { Settings } from '../../types/action';
-export function SettingsView({ onReplay }: { onReplay: () => void }) {
+export function SettingsView({
+  onReplay,
+  onReplayGuidedTour,
+  active = true,
+  tourActive = false,
+  guidedReplayDisabled = false,
+}: {
+  onReplay: () => void;
+  onReplayGuidedTour?: () => void;
+  active?: boolean;
+  tourActive?: boolean;
+  guidedReplayDisabled?: boolean;
+}) {
   const { snapshot, saveSettings, services } = useApp();
   const [error, setError] = useState(''),
     [pending, setPending] = useState(false);
   const settings = snapshot.settings;
+  const [advancedMounted, setAdvancedMounted] = useState(!tourActive);
+  useEffect(() => {
+    if (active && !tourActive) setAdvancedMounted(true);
+  }, [active, tourActive]);
   const reminders = services.reminders.upcoming(snapshot.actions, settings).slice(0, 5);
   const updating = useRef(false);
   async function update(next: Settings) {
@@ -42,8 +58,8 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
     }
   }
   return (
-    <section className="settings-view">
-      <div className="page-heading">
+    <section className="settings-view" hidden={!active} data-tour-busy={pending}>
+      <div className="page-heading" data-tour="settings-heading">
         <MotionHeading>Settings</MotionHeading>
       </div>
       {error && <ErrorState message={error} />}
@@ -61,6 +77,25 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
             Replay onboarding
           </Button>
         </div>
+        {onReplayGuidedTour && (
+          <div className="setting-row">
+            <div>
+              <h3>Explore your workspace</h3>
+              <p>
+                {guidedReplayDisabled
+                  ? 'Finish your current capture or close the open dialog to take the tour.'
+                  : 'A guided look at the features already in your workspace.'}
+              </p>
+            </div>
+            <Button
+              data-replay-guided-tour
+              onClick={onReplayGuidedTour}
+              disabled={pending || guidedReplayDisabled}
+            >
+              Replay guided tour
+            </Button>
+          </div>
+        )}
         <div className="setting-row">
           <div>
             <h3>Launch at startup</h3>
@@ -71,7 +106,7 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
       </section>
       <GroqSettings />
       <section className="settings-section">
-        <h2>
+        <h2 data-tour="reminders">
           <Bell size={18} />
           Notifications
         </h2>
@@ -132,7 +167,7 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
           <HardDrive size={18} />
           Data &amp; Privacy
         </h2>
-        <div className="setting-row">
+        <div className="setting-row" data-tour="data-privacy">
           <div>
             <h3>Stored on this device</h3>
             <p>
@@ -170,9 +205,18 @@ export function SettingsView({ onReplay }: { onReplay: () => void }) {
       </p>
       <details className="settings-advanced settings-section">
         <summary>Advanced Settings</summary>
-        <AIRoutingPanel settings={settings} onUpdate={update} pending={pending} />
-        <LocalAISettings settings={settings} onUpdate={update} pending={pending} />
-        <VoiceSettings />
+        {advancedMounted && (
+          <>
+            <AIRoutingPanel
+              settings={settings}
+              onUpdate={update}
+              pending={pending}
+              active={active && !tourActive}
+            />
+            <LocalAISettings settings={settings} onUpdate={update} pending={pending} />
+            <VoiceSettings />
+          </>
+        )}
         <div className="setting-subsection">
           <h3>Upcoming reminder configurations</h3>
           {reminders.length ? (

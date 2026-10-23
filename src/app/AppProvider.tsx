@@ -56,6 +56,7 @@ export function AppProvider({ services, children }: { services: Services; childr
     }
   }, [loading, loadError, snapshot.settings.ai.executionMode, services]);
   const ensureProcessing = useCallback(async () => {
+    if (document.querySelector('dialog[data-guided-tour][open]')) return false;
     if (pendingSetup.current) return false;
     const state = services.processing.getSnapshot();
     if (state.connection.connectivity !== 'online' && !state.connection.providerReachable)
@@ -171,7 +172,8 @@ export function AppProvider({ services, children }: { services: Services; childr
         ensureProcessing,
         setupOpen: setup !== null,
         openAISetup: () => {
-          if (!pendingSetup.current) setSetup('groq');
+          if (!pendingSetup.current && !document.querySelector('dialog[data-guided-tour][open]'))
+            setSetup('groq');
         },
         loading,
         loadError,

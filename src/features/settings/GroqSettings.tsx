@@ -49,8 +49,8 @@ export function GroqSettings() {
     );
   }
   return (
-    <section className="settings-section" aria-labelledby="groq-heading">
-      <h2 id="groq-heading">
+    <section className="settings-section" aria-labelledby="groq-heading" data-tour-busy={pending}>
+      <h2 id="groq-heading" data-tour="ai-processing">
         <ShieldCheck size={18} />
         AI Processing
       </h2>

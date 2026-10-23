@@ -9,3 +9,11 @@ export async function settleMotion(page: Page) {
     );
   });
 }
+
+/** Onboarding/brand regression suites continue in Inbox after the new first-run tour. */
+export async function dismissGuidedTour(page: Page) {
+  const dialog = page.locator('dialog[data-guided-tour]');
+  await dialog.waitFor({ state: 'visible' });
+  await dialog.getByRole('button', { name: 'Skip tour', exact: true }).click();
+  await dialog.waitFor({ state: 'detached' });
+}

@@ -16,7 +16,7 @@ export function policyFrom(ai: AIRoutingSettings, allowMock: boolean): RoutingPo
 }
 
 /** Live device/provider snapshot and the router's decision for a sample task. */
-export function useAIRouting(signals: TaskSignals) {
+export function useAIRouting(signals: TaskSignals, active = true) {
   const { services, snapshot: data, processing } = useApp();
   const { router } = services.ai;
   const [snapshot, setSnapshot] = useState<RoutingSnapshot | null>(null),
@@ -41,14 +41,16 @@ export function useAIRouting(signals: TaskSignals) {
   // Provider options change what discovery reports, so re-read them with the settings.
   const ai = data.settings.ai;
   useEffect(() => {
+    if (!active) return;
     void refresh();
-  }, [refresh, ai.ollama.enabled, ai.executionMode]);
+  }, [refresh, ai.ollama.enabled, ai.executionMode, active]);
 
   useEffect(() => {
+    if (!active) return;
     const listener = () => void refresh(true);
     window.addEventListener('tasklens-groq-change', listener);
     return () => window.removeEventListener('tasklens-groq-change', listener);
-  }, [refresh]);
+  }, [refresh, active]);
 
   const allowMock = router.currentPolicy().allowMock;
   const policy = useMemo(

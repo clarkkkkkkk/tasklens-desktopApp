@@ -547,7 +547,7 @@ export function VoiceCapture({
         }}
       />
       <section className="capture-card" aria-label="Capture input">
-        <div className="capture-card-header">
+        <div className="capture-card-header" data-tour="voice">
           <span className="eyebrow">VOICE & TEXT</span>
           <div className="capture-input-tools" role="group" aria-label="Other capture methods">
             <Button
@@ -562,6 +562,7 @@ export function VoiceCapture({
             <Button
               variant="ghost"
               aria-pressed={mode === 'text'}
+              data-tour="text"
               disabled={disabled}
               onClick={() => chooseMode(mode === 'text' && !isWorking ? 'voice' : 'text')}
             >

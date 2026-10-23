@@ -1,0 +1,191 @@
+.guided-tour {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  overflow: hidden;
+  --tour-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+.guided-tour::backdrop {
+  background: transparent;
+}
+.tour-shade,
+.tour-shade-piece {
+  position: absolute;
+  pointer-events: none;
+}
+.tour-shade {
+  inset: 0;
+}
+.tour-shade-piece {
+  background: rgb(23 26 31 / 24%);
+  backdrop-filter: blur(3px);
+  transition:
+    top 260ms var(--tour-ease),
+    left 260ms var(--tour-ease),
+    width 260ms var(--tour-ease),
+    height 260ms var(--tour-ease),
+    bottom 260ms var(--tour-ease);
+}
+.tour-spotlight {
+  position: absolute;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 80%);
+  transition:
+    top 260ms var(--tour-ease),
+    left 260ms var(--tour-ease),
+    width 260ms var(--tour-ease),
+    height 260ms var(--tour-ease);
+}
+.tour-card {
+  position: absolute;
+  width: min(440px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-search);
+  visibility: hidden;
+}
+.tour-card[data-ready='true'] {
+  visibility: visible;
+}
+.tour-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.tour-progress {
+  height: 3px;
+  flex: 0 0 3px;
+  margin-top: var(--space-4);
+  background: var(--surface-secondary);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.tour-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+  transition: width 200ms var(--tour-ease);
+}
+.tour-card-content {
+  overflow: auto;
+  min-height: 0;
+  padding: var(--space-6) 0;
+}
+.tour-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.tour-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+.tour-title-row h2 {
+  margin: 0;
+  font-size: var(--text-title);
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.025em;
+}
+.tour-card-content > p {
+  margin: var(--space-4) 0 0;
+  font-size: var(--text-body);
+  line-height: 1.65;
+}
+.tour-tips {
+  list-style: none;
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--text-control);
+  line-height: 1.6;
+}
+.tour-tips li {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+.tour-tips svg {
+  flex: 0 0 16px;
+  margin-top: 3px;
+  color: var(--text);
+}
+.tour-target-notice {
+  color: var(--text-secondary);
+  font-size: var(--text-control) !important;
+}
+.tour-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+.tour-card-actions {
+  display: flex;
+  gap: var(--space-1);
+}
+.guided-tour .button {
+  transition:
+    background-color 160ms var(--tour-ease),
+    border-color 160ms var(--tour-ease);
+}
+.guided-tour :focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+.guided-tour h2:focus {
+  outline: none;
+}
+@media (max-width: 899px), (max-height: 700px) {
+  .tour-card {
+    padding: var(--space-5);
+  }
+  .tour-card-content {
+    padding: var(--space-4) 0;
+  }
+  .tour-tips {
+    margin-top: var(--space-3);
+  }
+}
+@media (max-width: 400px) {
+  .tour-card {
+    padding: var(--space-4);
+  }
+  .tour-card-footer .button {
+    padding-inline: var(--space-2);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .guided-tour *,
+  .guided-tour *::before,
+  .guided-tour *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

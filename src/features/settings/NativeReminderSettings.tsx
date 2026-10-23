@@ -59,7 +59,7 @@ export function NativeReminderSettings() {
       </p>
     );
   return (
-    <div className="setting-subsection">
+    <div className="setting-subsection" data-tour-busy={pending}>
       <h3>Native notification delivery</h3>
       <p className="field-help">
         {status
