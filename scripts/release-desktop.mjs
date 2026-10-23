@@ -12,6 +12,7 @@ import {
   statSync,
   existsSync,
   rmSync,
+  renameSync,
 } from 'node:fs';
 import path from 'node:path';
 import { loadEnv } from 'vite';
@@ -180,7 +181,8 @@ for (const name of names) {
   const matching = files.filter((file) => path.extname(file) === suffix);
   if (matching.length !== 1)
     throw new Error(`Expected exactly one fresh ${suffix} installer, found ${matching.length}`);
-  copyFileSync(matching[0], path.join(distribution, name));
+  // Keep the verified installer inode instead of duplicating another ~3 GB per platform.
+  renameSync(matching[0], path.join(distribution, name));
 }
 if (git('rev-parse', 'HEAD') !== commit || git('status', '--porcelain'))
   throw new Error('Candidate changed during packaging');

@@ -131,7 +131,7 @@ jobs:
         with:
           name: native-assets-${{ matrix.os }}
           path: ${{ runner.temp }}/native
-      - run: tar -xf "$RUNNER_TEMP/native/native-assets.tar"
+      - run: tar -xf "$RUNNER_TEMP/native/native-assets.tar" && rm "$RUNNER_TEMP/native/native-assets.tar"
       - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
   packaging:
     if: github.event_name == 'workflow_dispatch' && inputs.package
@@ -165,7 +165,7 @@ jobs:
         with:
           name: native-assets-${{ matrix.os }}
           path: ${{ runner.temp }}/native
-      - run: tar -xf "$RUNNER_TEMP/native/native-assets.tar"
+      - run: tar -xf "$RUNNER_TEMP/native/native-assets.tar" && rm "$RUNNER_TEMP/native/native-assets.tar"
       - if: runner.os == 'Windows'
         shell: pwsh
         env:
@@ -189,6 +189,8 @@ jobs:
           "TASKLENS_WEBVIEW2_INSTALLER=$env:RUNNER_TEMP/WEBVIEW2.exe" >> $env:GITHUB_ENV
           "TASKLENS_WEBVIEW2_SHA256=$env:TASKLENS_WEBVIEW2_SHA256" >> $env:GITHUB_ENV
           "TASKLENS_ISCC=$env:RUNNER_TEMP/Inno/ISCC.exe" >> $env:GITHUB_ENV
+      - name: Check large-payload packaging disk budget
+        run: node -e "const fs=require('node:fs');const s=fs.statfsSync('.');if(s.bavail*s.bsize<32*1024**3)throw new Error('BLOCKED: offline multi-installer packaging needs at least 32 GiB free workspace; use an adequately sized runner')"
       - name: Verify packaging architecture
         env:
           EXPECTED_ARCH: ${{ matrix.arch }}
