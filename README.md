@@ -10,6 +10,27 @@ _Current application UI rendered in Chromium with a fresh synthetic demo profile
 
 **Release status: pre-release candidate, not an approved production release.** Read [the release audit](RELEASE_AUDIT.md), [verification gates](RELEASE_CHECKLIST.md) and [security audit](SECURITY_AUDIT.md). A working sample is not evidence that real AI inference succeeded.
 
+## Download TaskLens
+
+[Official GitHub Releases](https://github.com/clarkkkkkkk/tasklens-desktopApp/releases)
+
+**No verified public installer is available yet.** The initial `v0.1.0-beta.1` prerelease is being prepared behind the [release gates](RELEASE_CHECKLIST.md). A draft is not a public download. Do not install build artifacts from an unrelated commit or treat source archives as offline installers.
+
+| Platform | Intended package | Current release limitation |
+| --- | --- | --- |
+| Windows x64 | Offline `.exe` | Final installer and installed-app acceptance pending |
+| Fedora x64 | `.rpm` | Earlier package inspected; final-commit native acceptance pending |
+| Ubuntu/Debian x64 | `.deb` | Packaging and installed-app acceptance not verified |
+| Linux x64 | `.AppImage` | Final-commit package and portable/native acceptance pending |
+| macOS Apple Silicon | `.dmg` | Installed-app acceptance, signing and notarization not verified |
+| macOS Intel | `.dmg` | Native build running; installed-app acceptance not verified |
+
+Prepared offline installers include Qwen, Whisper, OCR data and native runtimes; installed users do not need Node.js, Rust or Python. Local inference requires several GB of **available** memory and can be slow on CPU; a reliable minimum specification has not been established. The model files alone occupy 2.98 GB. Allow additional space for the package, reassembly and installed copy. Manual tasks remain usable when local inference cannot run.
+
+GitHub limits each release asset to under 2 GiB. Oversized installers must be downloaded as **all** numbered parts, verified and reassembled before execution. Parts are not executable installers. [Distribution instructions and safeguards](docs/RELEASING.md) explain the verified developer helper and remaining end-user delivery gap. Actual filenames, platform installation commands and public asset links will be added only after those packages pass acceptance; none are implied by this table.
+
+Verify downloads against the release's trusted `SHA256SUMS` using `sha256sum -c SHA256SUMS` on Linux, `shasum -a 256 -c SHA256SUMS` on macOS, or PowerShell `Get-FileHash -Algorithm SHA256` on Windows. Check every part and the reassembled package. Checksums detect corruption; they do not replace signing. Unsigned/unnotarized packages and OS restrictions must be disclosed in the corresponding release notes.
+
 ## The TaskLens application
 
 TaskLens brings capture, review and planning into one desktop workspace:

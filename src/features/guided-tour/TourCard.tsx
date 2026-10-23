@@ -51,7 +51,13 @@ export function TourCard({
       >
         <span style={{ width: `${((index + 1) / count) * 100}%` }} />
       </div>
-      <div ref={contentRef} className="tour-card-content">
+      <div
+        ref={contentRef}
+        className="tour-card-content"
+        role="region"
+        aria-label="Tour step details"
+        tabIndex={0}
+      >
         <div className="tour-title-row">
           <span className="tour-icon">
             <Icon size={24} />

@@ -2,6 +2,11 @@
 
 Scope/base and severity findings are recorded in [RELEASE_AUDIT](RELEASE_AUDIT.md). Evidence here is redacted. No credentials, raw provider error bodies, personal profiles or scanner secrets are committed.
 
+
+## Dependency follow-up — 2026-10-24
+
+A fresh advisory database reported **RUSTSEC-2026-0386** in Tokio 1.53.2 (`AsyncFd` I/O safety). The lockfile was updated to the advisory's patched 1.53.3 release; Cargo also normalized dependency edges during resolution without changing other package versions. No advisory suppression or audit threshold was added. Run locked Rust tests and the exact-commit Cargo audit before release approval. The previously documented upstream maintenance/GTK warnings remain separate from this fixed advisory. [Tokio upstream fix](https://github.com/tokio-rs/tokio/pull/8587).
+
 ## Executed discovery
 
 - Gitleaks 8.30.1, official archive checksum verified (`551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb`): all reachable history (`--all --full-history`, 45 commits) and scoped working tree/generated frontend scan: **zero findings**. Supplemented default rules with a Groq BYOK detector. Historical refs unavailable locally are outside scope.
