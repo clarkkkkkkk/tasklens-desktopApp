@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
-import { settleMotion } from './motion-helpers';
+import { dismissGuidedTour, settleMotion } from './motion-helpers';
 
 test.use({ video: 'on' });
 test.setTimeout(90000);
@@ -51,6 +51,7 @@ for (const viewport of [
     await expect(page.locator('.brand-handoff')).toHaveAttribute('data-phase', 'dock');
     await page.screenshot({ path: info.outputPath('6-brand-travel.png') });
     await expect(page.locator('.brand-handoff')).toHaveCount(0);
+    if (!process.env.TASKLENS_MOTION_BASELINE_URL) await dismissGuidedTour(page);
     await settleMotion(page);
     await page.screenshot({ path: info.outputPath('7-inbox-arrival.png') });
     for (const name of [

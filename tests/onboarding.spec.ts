@@ -1,4 +1,4 @@
-import { settleMotion } from './motion-helpers';
+import { dismissGuidedTour, settleMotion } from './motion-helpers';
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 const button = (page: Page, name: string) => page.getByRole('button', { name, exact: true });
@@ -37,6 +37,7 @@ test('first launch, back, preferences, demo and completion preserve data', async
   await settleMotion(page);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await button(page, 'Start using TaskLens').click();
+  await dismissGuidedTour(page);
   await expect(page.getByRole('heading', { name: 'Inbox', exact: true })).toBeVisible();
   await expect(page.getByText('Drop your first screenshot here')).toBeVisible();
   expect((await data(page)).actions).toEqual([]);
@@ -272,6 +273,7 @@ test('all four steps remain accessible and static with reduced motion in a small
     await button(page, next).click();
   }
   await expect(page.locator('.brand-handoff')).toHaveCount(0);
+  await dismissGuidedTour(page);
   await expect(page.getByRole('heading', { name: 'Inbox', exact: true })).toBeVisible();
   expect((await data(page)).actions).toEqual([]);
 });

@@ -53,7 +53,7 @@ export function Dropzone({
       </div>
       <h2>{dragging ? 'Make room for clarity.' : 'Drop a screenshot here'}</h2>
       <p>Paste from clipboard or click to browse</p>
-      <Button onClick={() => input.current?.click()} disabled={disabled}>
+      <Button data-tour="screenshot" onClick={() => input.current?.click()} disabled={disabled}>
         <ImagePlus size={16} />
         Browse files
       </Button>
