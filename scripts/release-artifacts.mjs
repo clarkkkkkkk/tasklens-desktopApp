@@ -3,6 +3,10 @@ import { createReadStream } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { lstat, readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { verifyParts } from './release-parts.mjs';
+/** GitHub rejects release assets of 2 GiB or more. */
+export const GITHUB_ASSET_LIMIT = 2 ** 31;
+export const partsManifestPath = (filename) => `parts/${filename}/${filename}.parts.json`;
 export const releaseNames = (version, platform, arch) => {
   if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version))
     throw new Error('Invalid release version');
@@ -36,9 +40,12 @@ export async function inventory(
       bytes: info.size,
       sha256: await sha256(file),
       signing,
-      githubReleaseEligible: info.size < 2 ** 31,
+      githubReleaseEligible: info.size < GITHUB_ASSET_LIMIT,
       distribution:
-        info.size < 2 ** 31 ? 'github-or-approved-host' : 'approved-large-file-host-required',
+        info.size < GITHUB_ASSET_LIMIT
+          ? 'github-or-approved-host'
+          : 'approved-large-file-host-required',
+      partsManifest: null,
       downloadUrl: null,
       downloadVerified: false,
     });
@@ -88,6 +95,18 @@ export async function verifyInventory(directory) {
       (await sha256(path.join(directory, entry.filename))) !== entry.sha256
     )
       throw new Error(`Installer integrity failure: ${entry.filename}`);
+    if (entry.partsManifest != null) {
+      if (entry.partsManifest !== partsManifestPath(entry.filename))
+        throw new Error('Unsafe parts manifest path');
+      const parts = await verifyParts(path.join(directory, ...entry.partsManifest.split('/')));
+      if (
+        parts.artifact.file !== entry.filename ||
+        parts.artifact.bytes !== entry.bytes ||
+        parts.artifact.sha256 !== entry.sha256
+      )
+        throw new Error(`Parts do not reassemble ${entry.filename}`);
+    } else if (entry.bytes >= GITHUB_ASSET_LIMIT)
+      throw new Error(`Oversized installer has no GitHub parts: ${entry.filename}`);
   }
   return report;
 }

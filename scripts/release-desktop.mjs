@@ -1,5 +1,6 @@
 import { assertReleaseEnvironment } from './release-policy.mjs';
-import { inventory, releaseNames } from './release-artifacts.mjs';
+import { inventory, releaseNames, partsManifestPath } from './release-artifacts.mjs';
+import { splitArtifact } from './release-parts.mjs';
 import { execFileSync } from 'node:child_process';
 import {
   mkdirSync,
@@ -186,10 +187,25 @@ const report = await inventory(distribution, {
   signing,
 });
 report.target = target;
-writeFileSync(
-  path.join(distribution, 'SHA256SUMS'),
-  report.artifacts.map((a) => `${a.sha256}  ${a.filename}\n`).join(''),
-);
+// Offline models push every installer past GitHub's asset limit; ship verified parts instead.
+const sums = [];
+for (const artifact of report.artifacts) {
+  sums.push(`${artifact.sha256}  ${artifact.filename}`);
+  if (artifact.githubReleaseEligible) continue;
+  const manifestFile = path.join(distribution, ...partsManifestPath(artifact.filename).split('/'));
+  const { manifest } = await splitArtifact(
+    path.join(distribution, artifact.filename),
+    path.dirname(manifestFile),
+  );
+  if (manifest.artifact.sha256 !== artifact.sha256) throw new Error('Split changed the installer');
+  artifact.partsManifest = partsManifestPath(artifact.filename);
+  artifact.distribution = 'github-release-parts';
+  for (const part of manifest.parts)
+    sums.push(
+      `${part.sha256}  ${path.posix.join(path.posix.dirname(artifact.partsManifest), part.file)}`,
+    );
+}
+writeFileSync(path.join(distribution, 'SHA256SUMS'), sums.join('\n') + '\n');
 writeFileSync(
   path.join(distribution, 'release-assets.json'),
   JSON.stringify(report, null, 2) + '\n',

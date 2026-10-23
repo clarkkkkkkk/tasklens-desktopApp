@@ -58,6 +58,23 @@ test('release inventory requires every target installer and detects post-build m
     await verifyInventory(dir);
     await writeFile(path.join(dir, report.artifacts[0].filename), 'tampered-package');
     await assert.rejects(verifyInventory(dir), /integrity/);
+    await writeFile(path.join(dir, report.artifacts[0].filename), 'synthetic-package');
+    const { partsManifestPath } = await import('./release-artifacts.mjs');
+    const manifest = path.join(dir, partsManifestPath(report.artifacts[0].filename));
+    const split = await splitArtifact(
+      path.join(dir, report.artifacts[0].filename),
+      path.dirname(manifest),
+      5,
+    );
+    report.artifacts[0].partsManifest = partsManifestPath(report.artifacts[0].filename);
+    await writeFile(path.join(dir, 'release-assets.json'), JSON.stringify(report));
+    await verifyInventory(dir);
+    await writeFile(path.join(path.dirname(manifest), split.manifest.parts[1].file), 'XXXXX');
+    await assert.rejects(verifyInventory(dir), /checksum/);
+    report.artifacts[0].partsManifest = '../../etc/passwd';
+    await writeFile(path.join(dir, 'release-assets.json'), JSON.stringify(report));
+    await assert.rejects(verifyInventory(dir), /Unsafe parts/);
+    report.artifacts[0].partsManifest = null;
     report.artifacts[0].filename = '../outside.rpm';
     await writeFile(path.join(dir, 'release-assets.json'), JSON.stringify(report));
     await assert.rejects(verifyInventory(dir), /Unsafe/);
