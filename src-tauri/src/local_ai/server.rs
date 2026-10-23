@@ -17,6 +17,9 @@ use std::{
 };
 use tauri::{Emitter, Manager};
 
+/// Cold loads on 8 GB machines under memory pressure can take minutes.
+pub(crate) const MODEL_LOAD_BUDGET: Duration = Duration::from_secs(300);
+
 #[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
@@ -346,7 +349,7 @@ impl Runtime {
                 load_span.finish("PROCESS_EXIT", Some(child.id()), Some(status), &[]);
                 return Err(crate::diagnostics::Failure::wire("MODEL_LOAD_FAILED","PROCESS_EXIT","model_loading","The local model runtime stopped while loading. Check available memory and try Reload model."));
             }
-            if started.elapsed() > Duration::from_secs(300) {
+            if started.elapsed() > MODEL_LOAD_BUDGET {
                 let _ = child.kill();
                 let status = child.wait().ok();
                 load_span.finish("TIMEOUT", Some(child.id()), status, &[]);
