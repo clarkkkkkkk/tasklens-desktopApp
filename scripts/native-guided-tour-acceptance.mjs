@@ -50,7 +50,7 @@ async function until(script, seconds = 20) {
 }
 async function click(name) {
   await evaluate(
-    'const button=Array.from(document.querySelectorAll("button")).find(el=>el.textContent.trim()===args[0]&&!el.disabled&&el.getClientRects().length&&!el.closest("[hidden]"));if(!button)throw new Error("Missing button: "+args[0]);button.click();',
+    'const button=Array.from(document.querySelectorAll("button")).find(el=>el.textContent.trim()===args[0]&&!el.disabled&&el.getClientRects().length&&!el.closest("[hidden]"));if(!button)throw new Error("Missing button: "+args[0]);button.focus();button.click();',
     [name],
   );
 }
@@ -161,7 +161,7 @@ try {
         'return !!document.querySelector(".tour-card[data-ready=true]") && !!document.querySelector("[data-tour-target]")',
       );
       await until(
-        'const card=document.querySelector(".tour-card").getBoundingClientRect();const target=document.querySelector("[data-tour-target]").getBoundingClientRect();return !(card.left<target.right&&card.right>target.left&&card.top<target.bottom&&card.bottom>target.top);',
+        'const dialog=document.querySelector("[data-guided-tour]");if(dialog.getAnimations({subtree:true}).some(a=>a.playState==="running"))return false;const card=document.querySelector(".tour-card").getBoundingClientRect();const target=document.querySelector("[data-tour-target]").getBoundingClientRect();return !(card.left<target.right&&card.right>target.left&&card.top<target.bottom&&card.bottom>target.top);',
       );
       const state = await evaluate(
         'const card=document.querySelector(".tour-card").getBoundingClientRect();const target=document.querySelector("[data-tour-target]").getBoundingClientRect();return {counter:document.querySelector(".tour-card-header").textContent,inside:card.left>=11&&card.top>=11&&card.right<=innerWidth-11&&card.bottom<=innerHeight-11,overlap:card.left<target.right&&card.right>target.left&&card.top<target.bottom&&card.bottom>target.top};',
