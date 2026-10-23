@@ -166,6 +166,71 @@ try {
       assert.match(value.value.fullText, /pictorial/i);
       return { regions: value.value.regions.length, text: value.value.fullText };
     });
+    if (
+      process.env.TASKLENS_ACCEPTANCE_IMAGE_FLOW &&
+      !process.env.TASKLENS_ACCEPTANCE_SKIP_EXTRACTION
+    )
+      await check(
+        'real screenshot through OCR, local extraction, evidence review and draft save',
+        async () => {
+          const before = new Set(
+            await sync(
+              `return JSON.parse(localStorage.getItem('tasklens:data:v1')).actions.map(a=>a.id)`,
+            ),
+          );
+          const bytes = readFileSync('tests/fixtures/screenshots/pictorial.png').toString('base64');
+          await sync(
+            `const file=new File([Uint8Array.from(atob(arguments[0]),c=>c.charCodeAt(0))],'pictorial.png',{type:'image/png'});const transfer=new DataTransfer();transfer.items.add(file);document.querySelector('.dropzone').dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:transfer}));return true;`,
+            [bytes],
+          );
+          let review;
+          for (let i = 0; i < 1800; i++) {
+            review = await sync(
+              `return !!document.querySelector('dialog.inbox-result-dialog[open],dialog.bundle-review[open]')`,
+            );
+            if (review) break;
+            const ready = await sync(
+              `return !!document.querySelector('[data-open-result]') && document.body.innerText.includes('Ready for review')`,
+            );
+            if (ready)
+              await sync(`document.querySelector('[data-open-result]').click();return true;`);
+            const error = await sync(
+              `return document.querySelector('.inbox-view [role="alert"]')?.textContent || ''`,
+            );
+            assert.equal(error, '', error);
+            await wait(500);
+          }
+          assert.equal(review, true, 'Screenshot did not reach native review');
+          const reviewText = await sync(`return document.querySelector('dialog[open]').innerText`);
+          assert.match(reviewText, /pictorial/i);
+          await sync(
+            `const modal=document.querySelector('dialog[open]');const save=Array.from(modal.querySelectorAll('button')).find(b=>/^(Save draft|Save drafts & finish)$/.test(b.textContent.trim())&&!b.disabled);if(!save)throw new Error('Draft save unavailable');save.click();return true;`,
+          );
+          for (let i = 0; i < 100; i++) {
+            if (
+              !(await sync(
+                `return !!document.querySelector('dialog.inbox-result-dialog[open],dialog.bundle-review[open]')`,
+              ))
+            )
+              break;
+            await wait(100);
+          }
+          const saved = (
+            await sync(`return JSON.parse(localStorage.getItem('tasklens:data:v1')).actions`)
+          ).filter((a) => !before.has(a.id));
+          assert.ok(saved.length > 0, 'Screenshot actions were not saved');
+          for (const action of saved) {
+            assert.equal(action.source.type, 'image');
+            assert.equal(action.source.extractionMode, 'local');
+            assert.match(action.source.ocr.fullText, /pictorial/i);
+            const regions = new Set(action.source.ocr.regions.map((r) => r.id));
+            for (const evidence of action.evidence || [])
+              for (const id of evidence.segmentIds)
+                assert.ok(regions.has(id), 'Source Trace references an absent OCR region');
+          }
+          return { saved: saved.length, review: reviewText, localSourceEvidence: true };
+        },
+      );
     // Component-only runs diagnose OCR/speech latency without claiming extraction acceptance.
     if (!process.env.TASKLENS_ACCEPTANCE_SKIP_EXTRACTION) {
       await check('real typed text extraction and review', async () => {
@@ -367,7 +432,12 @@ try {
       !process.env.TASKLENS_ACCEPTANCE_SKIP_EXTRACTION &&
       !process.env.TASKLENS_ACCEPTANCE_SKIP_TRANSCRIPTION
     )
-      await check('voice-to-action through the production import and review UI', async () => {
+      await check('voice-to-action through production import, review and save', async () => {
+        const previousIds = new Set(
+          await sync(
+            `return JSON.parse(localStorage.getItem('tasklens:data:v1')).actions.map(a=>a.id)`,
+          ),
+        );
         const base64 = readFileSync(process.env.TASKLENS_ACCEPTANCE_AUDIO).toString('base64');
         await sync(
           `const f=new File([Uint8Array.from(atob(arguments[0]),c=>c.charCodeAt(0))],'exam.wav',{type:'audio/wav'}); const transfer=new DataTransfer(); transfer.items.add(f); document.querySelector('.voice-capture').dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:transfer}));return true;`,
@@ -393,7 +463,27 @@ try {
         const expected = JSON.parse(process.env.TASKLENS_ACCEPTANCE_VOICE_FIELDS || '{}');
         for (const [field, pattern] of Object.entries(expected))
           assert.match(fields[field] || '', new RegExp(pattern, 'i'), field);
-        return { review: text, fields };
+        await sync(
+          `const button=Array.from(document.querySelectorAll('dialog.bundle-review[open] button')).find(b=>b.textContent.trim()==='Save drafts & finish'&&!b.disabled);if(!button)throw new Error('Voice draft save unavailable');button.click();return true;`,
+        );
+        for (let i = 0; i < 100; i++) {
+          if (!(await sync(`return !!document.querySelector('dialog.bundle-review[open]')`))) break;
+          await wait(100);
+        }
+        const saved = (
+          await sync(`return JSON.parse(localStorage.getItem('tasklens:data:v1')).actions`)
+        ).filter((a) => !previousIds.has(a.id));
+        assert.ok(saved.length > 0, 'Voice actions were not saved');
+        for (const action of saved) {
+          assert.equal(action.source.type, 'voice');
+          assert.equal(action.source.extractionMode, 'local');
+          assert.match(action.source.transcript.text, /exam|math/i);
+          const segments = new Set(action.source.transcript.segments.map((s) => s.id));
+          for (const evidence of action.evidence || [])
+            for (const id of evidence.segmentIds)
+              assert.ok(segments.has(id), 'Voice evidence references an absent transcript segment');
+        }
+        return { review: text, fields, saved: saved.length };
       });
     await check('returning native window preserves onboarding state', async () => {
       const before = await sync(`return localStorage.getItem('tasklens:data:v1')`);
