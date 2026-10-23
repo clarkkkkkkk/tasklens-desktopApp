@@ -1,0 +1,8 @@
+[extend]
+useDefault = true
+
+[[rules]]
+id = "tasklens-groq-byok"
+description = "Groq BYOK credential (never belongs in this repository)"
+regex = '''\bgsk_[A-Za-z0-9]{40,}\b'''
+keywords = ["gsk_"]

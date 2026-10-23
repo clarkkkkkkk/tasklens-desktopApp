@@ -54,11 +54,11 @@
           "state": "ready",
           "elapsedMs": 450
         },
-        "model": "/home/clark/.cache/tasklens-avx2-acceptance/usr/lib/TaskLens/resources/models/Qwen3-4B-Q4_K_M.gguf",
+        "model": "<user-home>/.cache/tasklens-avx2-acceptance/usr/lib/TaskLens/resources/models/Qwen3-4B-Q4_K_M.gguf",
         "ocr": {
           "available": true,
           "binaryFound": true,
-          "dataDirectory": "/home/clark/.cache/tasklens-avx2-acceptance/usr/lib/TaskLens/resources/tessdata",
+          "dataDirectory": "<user-home>/.cache/tasklens-avx2-acceptance/usr/lib/TaskLens/resources/tessdata",
           "languages": [
             {
               "code": "eng",

@@ -1,0 +1,28 @@
+{
+  "auditBase": "374f692afe22de55bb80472035006e67919ddf44",
+  "date": "2026-10-23",
+  "realInference": {
+    "provider": "local",
+    "model": "Qwen3-4B",
+    "fixture": "simple-english",
+    "status": "failed",
+    "failure": "MODEL_LOAD_FAILED",
+    "loadMs": 206284,
+    "cloudRequest": false
+  },
+  "historicalMultilingual": {
+    "source": "reliability-v10-full.md",
+    "checksPassed": 110,
+    "checksTotal": 128,
+    "cases": 14,
+    "currentReleaseAcceptance": false
+  },
+  "liveGroq": {
+    "status": "not_run",
+    "reason": "No explicitly configured test key"
+  },
+  "windowsNative": {
+    "status": "not_run",
+    "reason": "No Windows host available"
+  }
+}

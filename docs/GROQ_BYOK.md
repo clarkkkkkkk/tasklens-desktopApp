@@ -43,23 +43,23 @@ The schema additions do not change snapshot version 1. Old snapshots default to 
 
 Limits apply per OS-user application profile and are advisory controls for normal operation, not tamper-proof account enforcement.
 
-| Control | Behavior |
-| --- | --- |
-| Concurrency | One extraction session active; at most two pending, held across validation and repair |
-| Duplicates | Reject duplicate active/pending IDs or hashed source fingerprints; fingerprints are memory-only |
-| Minute allowance | Two extraction HTTP attempts in a rolling 60-second window |
-| Daily allowance | Ten extraction HTTP attempts per local calendar day |
-| Counting | Reserve and atomically persist just before sending. Errors, 429 retries, repairs and already-sent cancellations count. Queued cancellations do not. |
-| Restarts/key changes | Counters survive; disconnecting or replacing a key does not reset them |
-| Input | Estimated maximum 8,192 tokens including prompt/schema overhead, plus a hard 64 KiB serialized request ceiling; no silent truncation |
-| Output | Maximum 4,096 completion tokens; actual returned token usage is recorded when supplied |
-| HTTP timeout | Ten seconds to connect; sixty seconds per attempt |
-| Automatic retries | Only HTTP 429, at most two retries after the original attempt |
-| Backoff | Two seconds initially, doubling with up to 500 ms jitter, never before applicable local/provider reset times |
-| Long reset | If the required wait exceeds two minutes, return a retry time instead of remaining active indefinitely |
-| Semantic repair | At most one, on the same provider. Skip it when known remaining allowance cannot cover it. |
-| Unknown quota | Never presented as available tokens. Estimates are not provider-reported account quota. |
-| Persistence failure | Block cloud submission; preserve capture and local task functionality |
+| Control              | Behavior                                                                                                                                            |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Concurrency          | One extraction session active; at most two pending, held across validation and repair                                                               |
+| Duplicates           | Reject duplicate active/pending IDs or hashed source fingerprints; fingerprints are memory-only                                                     |
+| Minute allowance     | Two extraction HTTP attempts in a rolling 60-second window                                                                                          |
+| Daily allowance      | Ten extraction HTTP attempts per local calendar day                                                                                                 |
+| Counting             | Reserve and atomically persist just before sending. Errors, 429 retries, repairs and already-sent cancellations count. Queued cancellations do not. |
+| Restarts/key changes | Counters survive; disconnecting or replacing a key does not reset them                                                                              |
+| Input                | Estimated maximum 8,192 tokens including prompt/schema overhead, plus a hard 64 KiB serialized request ceiling; no silent truncation                |
+| Output               | Maximum 4,096 completion tokens; actual returned token usage is recorded when supplied                                                              |
+| HTTP timeout         | Ten seconds to connect; sixty seconds per attempt                                                                                                   |
+| Automatic retries    | Only HTTP 429, at most two retries after the original attempt                                                                                       |
+| Backoff              | Two seconds initially, doubling with up to 500 ms jitter, never before applicable local/provider reset times                                        |
+| Long reset           | If the required wait exceeds two minutes, return a retry time instead of remaining active indefinitely                                              |
+| Semantic repair      | At most one, on the same provider. Skip it when known remaining allowance cannot cover it.                                                          |
+| Unknown quota        | Never presented as available tokens. Estimates are not provider-reported account quota.                                                             |
+| Persistence failure  | Block cloud submission; preserve capture and local task functionality                                                                               |
 
 `Retry-After` accepts seconds or an HTTP date. Groq request and token reset-duration headers are parsed separately. In particular, Groq's request headers describe account requests per day and token headers describe tokens per minute. Account usage by other applications can exhaust quota sooner than TaskLens predicts; Groq's responses remain authoritative. See [Groq rate-limit documentation](https://console.groq.com/docs/rate-limits).
 
@@ -88,20 +88,20 @@ For native Settings/IPC acceptance, build a disposable application with `node sc
 
 The table below records the original BYOK integration at `46a18e5`. Current Settings, first-use setup, connectivity, animation, and review verification is recorded in [the UX implementation report](SETTINGS_INBOX_UX.md). Real Groq and Windows checks require separate resources and are never represented by mocks.
 
-| Check | Result |
-| --- | --- |
-| TypeScript and ESLint | Passed |
-| TypeScript unit tests | 132 passed; two opt-in evaluation tests skipped |
-| Rust tests | 69 passed; eight explicit native/live tests ignored |
-| Browser tests | 69 passed in the complete final suite, including all six Groq cases |
-| Fedora 44 native application | Built; five Groq Settings/IPC smoke checks passed in disposable profile |
-| Fedora Secret Service | Actual cross-process persistence/read/removal/absence passed with isolated synthetic credential |
-| Locked/unavailable credential storage | Mocked native persistent/session/deletion/restart tests passed; real locked-store interaction not run |
-| Native local Tesseract | Synthetic smoke passed: 13 regions, English/Cebuano/Tagalog language data |
-| Runtime assets | Asset unit tests and pinned bundled-payload verification passed |
-| Windows Credential Manager/build/UI | Not run on this machine; Windows backend and acceptance runner provided |
-| Real Groq valid/invalid key, account limits and latency | Not run; no explicitly configured live test key |
-| Existing local AI/Ollama | Routing, extraction and Rust regression tests passed; live Qwen/Ollama inference not rerun for this change |
+| Check                                                   | Result                                                                                                     |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| TypeScript and ESLint                                   | Passed                                                                                                     |
+| TypeScript unit tests                                   | 132 passed; two opt-in evaluation tests skipped                                                            |
+| Rust tests                                              | 69 passed; eight explicit native/live tests ignored                                                        |
+| Browser tests                                           | 69 passed in the complete final suite, including all six Groq cases                                        |
+| Fedora 44 native application                            | Built; five Groq Settings/IPC smoke checks passed in disposable profile                                    |
+| Fedora Secret Service                                   | Actual cross-process persistence/read/removal/absence passed with isolated synthetic credential            |
+| Locked/unavailable credential storage                   | Mocked native persistent/session/deletion/restart tests passed; real locked-store interaction not run      |
+| Native local Tesseract                                  | Synthetic smoke passed: 13 regions, English/Cebuano/Tagalog language data                                  |
+| Runtime assets                                          | Asset unit tests and pinned bundled-payload verification passed                                            |
+| Windows Credential Manager/build/UI                     | Not run on this machine; Windows backend and acceptance runner provided                                    |
+| Real Groq valid/invalid key, account limits and latency | Not run; no explicitly configured live test key                                                            |
+| Existing local AI/Ollama                                | Routing, extraction and Rust regression tests passed; live Qwen/Ollama inference not rerun for this change |
 
 ### Multilingual evaluation
 
@@ -111,12 +111,12 @@ Evaluation writes `docs/evaluation/groq-eval.json` and `.md` only after an opted
 
 Native HTTP response time is recorded separately from total validation/pipeline time. The fixture harness replays recorded local Tesseract OCR, so its pipeline timing includes the Rust test bridge and is not live screenshot capture latency. Actual application diagnostics also record end-to-end extraction time, including real preprocessing and waits, when users run a capture.
 
-| Fixture language group | Real Groq quality/latency | Existing local comparison |
-| --- | --- | --- |
-| English | Not run | Existing Qwen report available |
-| Cebuano | Not run | Existing Qwen report available |
-| Tagalog | Not run | Existing Qwen report available |
-| Mixed-language text/voice/screenshot | Not run | Existing Qwen report available |
+| Fixture language group               | Real Groq quality/latency | Existing local comparison      |
+| ------------------------------------ | ------------------------- | ------------------------------ |
+| English                              | Not run                   | Existing Qwen report available |
+| Cebuano                              | Not run                   | Existing Qwen report available |
+| Tagalog                              | Not run                   | Existing Qwen report available |
+| Mixed-language text/voice/screenshot | Not run                   | Existing Qwen report available |
 
 The recorded [Qwen baseline](evaluation/reliability-v10-full.md) passed 110/128 checks across fourteen cases, with per-case extraction times of 29.8–251.8 seconds. It uses prompt version 10; the current prompt is newer. Do not claim a controlled performance or accuracy improvement from that historical comparison. Benchmarks cover dates/times, multiple activities, requirements, locations, evidence correspondence, undated announcements and information that must remain unresolved.
 
@@ -181,3 +181,7 @@ The recorded [Qwen baseline](evaluation/reliability-v10-full.md) passed 110/128 
 - `src/services/extraction/RoutedExtractionService.ts`
 - `src/services/localai/native.ts`
 - `src/types/action.ts`
+
+## Release audit boundary
+
+Production credentials retain the `app.tasklens.desktop.groq` OS service. Isolated acceptance builds derive a different service from their application identifier and cannot address that production entry through the normal store. Current platform verification and open dependency findings are recorded in [SECURITY_AUDIT](../SECURITY_AUDIT.md); no live-key benchmark was performed for this audit.
