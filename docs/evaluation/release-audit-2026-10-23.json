@@ -24,5 +24,77 @@
   "windowsNative": {
     "status": "not_run",
     "reason": "No Windows host available"
+  },
+  "packages": {
+    "target": "x86_64-unknown-linux-gnu",
+    "commit": "f0f1c60e70b20f175c49530f514184ce11b89b48",
+    "version": "0.1.0",
+    "manifestVersion": 1,
+    "modelsBytes": 2984882223,
+    "artifacts": [
+      {
+        "file": "src-tauri/target/release/bundle/appimage/TaskLens_0.1.0_amd64.AppImage",
+        "bytes": 3024558584,
+        "sha256": "cfa0c690f3c0d4eedbf806f2d96c942078a9ec8eb0c917d92ffaccf55806d4c6",
+        "githubReleaseEligible": false,
+        "partsManifest": "distribution/TaskLens_0.1.0_amd64.AppImage/TaskLens_0.1.0_amd64.AppImage.parts.json"
+      },
+      {
+        "file": "src-tauri/target/release/bundle/rpm/TaskLens-0.1.0-1.x86_64.rpm",
+        "bytes": 3132677361,
+        "sha256": "dace7fbeff276b613f9343c5f56b0fac32937057f67e3fbcf0165808959ab82c",
+        "githubReleaseEligible": false,
+        "partsManifest": "distribution/TaskLens-0.1.0-1.x86_64.rpm/TaskLens-0.1.0-1.x86_64.rpm.parts.json"
+      }
+    ],
+    "rpmInventoryVerified": [
+      "Qwen3-4B-Q4_K_M.gguf",
+      "ggml-small.bin",
+      "eng.traineddata",
+      "ceb.traineddata",
+      "tgl.traineddata",
+      "llama-server",
+      "whisper-cli",
+      "notices"
+    ]
+  },
+  "nativeFedora": {
+    "appChecksPassed": 12,
+    "ocrSmoke": "passed; meaningful text and 13 regions; eng+ceb+tgl available",
+    "credentialPhases": ["write", "read in separate process", "remove", "absent"],
+    "credentialResult": "passed",
+    "liveGroq": "not run"
+  },
+  "browser": {
+    "auditCommit": "f0f1c60",
+    "passed": 68,
+    "failed": 29,
+    "durationMinutes": 21.1,
+    "port": 1492,
+    "notes": "Concurrent build load; restart test hardcodes port 1420. Failures remain unresolved, not all attributed to load.",
+    "restartRerun": {
+      "port": 1420,
+      "passed": 1,
+      "durationSeconds": 43.3
+    }
+  },
+  "installerReassembly": {
+    "input": "historical 2026-10-17 AppImage",
+    "bytes": 3020552696,
+    "sha256": "0f0064717ed67c8cdf0a8d9f98665e1bbe094cf4f5addc1b55a5cb2d13d418b8",
+    "result": "split, reassemble and independent SHA256 comparison passed",
+    "currentAuditPackages": "split and checksummed; reassembly not rerun"
+  },
+  "integration": {
+    "preservedMainCommit": "a37d2df",
+    "releasePreparationBranchIncluded": false,
+    "packageMatchesIntegratedFrontend": false,
+    "automatedChecks": {
+      "typeScript": "passed",
+      "eslint": "passed",
+      "formatting": "passed",
+      "unitPassed": 144,
+      "unitSkipped": 2
+    }
   }
 }

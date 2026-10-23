@@ -34,3 +34,7 @@ If a real exposed credential is later discovered: stop release approval, report 
 ## Verification limits
 
 No live Groq account request was performed. A successful mocked response is not credential persistence, platform security or cloud accuracy evidence. Current Windows store/ACL behavior and Fedora locked/unavailable Secret Service behavior need isolated native acceptance. Upstream advisory warnings, unencrypted local data, and incomplete current installer/runtime verification remain material release limitations.
+
+## Completed Fedora acceptance
+
+The isolated native application passed 12 command/UI checks without a live Groq request. A unique synthetic Secret Service entry passed write/read/remove/absence across separate processes. This validates the available unlocked Fedora store only; locked/unavailable-store and Windows acceptance are still pending. The complete local browser run recorded 68 passes and 29 failures; it is not a fully passed security or release gate.
