@@ -25,26 +25,52 @@ async function verifyGeometry(page: Page) {
   await settleMotion(page);
   await expect(page.locator('.tour-card')).toHaveAttribute('data-ready', 'true');
   await expect(page.locator('[data-tour-target]')).toHaveCount(1);
-  await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const card = document.querySelector('.tour-card')!.getBoundingClientRect();
-        const target = document.querySelector('[data-tour-target]')!.getBoundingClientRect();
-        return (
-          card.left >= 11 &&
-          card.top >= 11 &&
-          card.right <= innerWidth - 11 &&
-          card.bottom <= innerHeight - 11 &&
-          !(
-            card.left < target.right &&
-            card.right > target.left &&
-            card.top < target.bottom &&
-            card.bottom > target.top
-          )
-        );
+  try {
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const card = document.querySelector('.tour-card')!.getBoundingClientRect();
+          const target = document.querySelector('[data-tour-target]')!.getBoundingClientRect();
+          return (
+            card.left >= 11 &&
+            card.top >= 11 &&
+            card.right <= innerWidth - 11 &&
+            card.bottom <= innerHeight - 11 &&
+            !(
+              card.left < target.right &&
+              card.right > target.left &&
+              card.top < target.bottom &&
+              card.bottom > target.top
+            )
+          );
+        }),
+      )
+      .toBe(true);
+  } catch (error) {
+    console.error(
+      'Guided tour geometry at failure:',
+      await page.evaluate(() => {
+        const dialog = document.querySelector('dialog[data-guided-tour]');
+        const card = document.querySelector('.tour-card');
+        const spotlight = document.querySelector('[data-tour-target]');
+        const scroller = document.querySelector('.main-content');
+        return {
+          step: dialog?.getAttribute('data-step'),
+          viewport: { width: innerWidth, height: innerHeight },
+          card: card?.getBoundingClientRect().toJSON(),
+          spotlight: spotlight?.getBoundingClientRect().toJSON(),
+          scrollTop: scroller?.scrollTop,
+          targets: [...document.querySelectorAll('[data-tour]')]
+            .filter((el) => el.getClientRects().length)
+            .map((el) => ({
+              id: el.getAttribute('data-tour'),
+              rect: el.getBoundingClientRect().toJSON(),
+            })),
+        };
       }),
-    )
-    .toBe(true);
+    );
+    throw error;
+  }
 }
 
 test('first-run tour starts after the complete handoff and never repeats on restart', async ({
