@@ -1,6 +1,14 @@
 name: Desktop validation and candidate packaging
+# Fast checks (types, lint, unit, browser, audits, secret scan) live in quality.yml only.
 on:
   pull_request:
+    paths:
+      - 'src-tauri/**'
+      - 'scripts/**'
+      - 'package*.json'
+      - '.node-version'
+      - 'rust-toolchain.toml'
+      - '.github/workflows/native-voice.yml'
   push:
     branches: [main]
   workflow_dispatch:
@@ -21,49 +29,8 @@ env:
   CARGO_BUILD_JOBS: 2
   TASKLENS_BUILD_JOBS: 2
 jobs:
-  static:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version-file: .node-version
-          cache: npm
-      - run: npm ci
-      - run: npm run check
-      - run: npm run format:check
-      - run: npm run test:assets && npm run test:release
-      - run: npm audit --audit-level=moderate
-      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
-        with:
-          toolchain: 1.99.0
-          components: rustfmt
-      - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
-      - run: cargo install cargo-audit --version 0.22.2 --locked
-      - run: cargo audit --file src-tauri/Cargo.lock
-  frontend:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version-file: .node-version
-          cache: npm
-      - run: npm ci
-      - run: npm test
-      - run: npm run build
-  browser:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version-file: .node-version
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
   native-assets:
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -71,15 +38,24 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version-file: .node-version
           cache: npm
-      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec
         with:
           toolchain: 1.99.0
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libdbus-1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            src-tauri/resources/models
+            src-tauri/resources/tessdata
+            .local-ai/downloads
+          key: offline-assets-${{ hashFiles('src-tauri/resources/models.json') }}
       - run: npm ci
       - run: npm run prepare:models
       - run: npm run build:runtimes
@@ -94,6 +70,7 @@ jobs:
           compression-level: 0
           retention-days: 3
   rust:
+    timeout-minutes: 60
     needs: native-assets
     strategy:
       fail-fast: false
@@ -102,7 +79,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec
         with:
           toolchain: 1.99.0
       - if: runner.os == 'Linux'
@@ -114,8 +93,9 @@ jobs:
       - run: tar -xf "$RUNNER_TEMP/native/native-assets.tar"
       - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
   packaging:
+    timeout-minutes: 120
     if: github.event_name == 'workflow_dispatch' && inputs.package
-    needs: [static, frontend, browser, rust, native-assets]
+    needs: [rust, native-assets]
     strategy:
       fail-fast: false
       matrix:
@@ -123,11 +103,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version-file: .node-version
           cache: npm
-      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec
         with:
           toolchain: 1.99.0
       - if: runner.os == 'Linux'
@@ -170,10 +152,13 @@ jobs:
           retention-days: 7
           if-no-files-found: error
   artifact-verification:
+    timeout-minutes: 60
     needs: packaging
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version-file: .node-version
@@ -185,4 +170,4 @@ jobs:
           for directory in "$RUNNER_TEMP"/candidates/candidate-*; do
             node scripts/release-artifacts.mjs "$directory"
           done
-      # Publication is deliberately separate; follow docs/release/RELEASE_CHECKLIST.md.
+      # Publication is deliberately separate; follow RELEASE_CHECKLIST.md and docs/RELEASING.md.
