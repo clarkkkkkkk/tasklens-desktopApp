@@ -32,6 +32,7 @@ tokio = { version = "1", features = ["time", "sync", "macros"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
 zeroize = "1"
 tempfile = "3"
+dunce = "1.0.5"
 
 [target.'cfg(not(target_os = "macos"))'.dependencies]
 notify-rust = "=4.18.1"
@@ -47,6 +48,7 @@ libc = "0.2"
 zbus = { version = "=5.19.0", features = ["blocking-api"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "=3.6.3", default-features = false, features = ["apple-native"] }
 objc = "0.2"
 objc2 = "=0.6.4"
 objc2-foundation = "=0.3.2"

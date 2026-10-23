@@ -51,11 +51,12 @@ Fedora prerequisites and Windows build requirements are in [LOCAL_AI.md](LOCAL_A
 
 ## Supported targets and evidence
 
-| Platform     | Intended target                                    | Acceptance                                                                        |
-| ------------ | -------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Fedora Linux | x86_64, RPM/AppImage                               | Native checks available; consult the dated matrix, not a blanket production claim |
-| Windows      | x86_64, offline Inno Setup installer with WebView2 | Current Windows installer/runtime acceptance pending                              |
-| macOS        | Apple Silicon build recipes                        | Experimental; current runtime/signing acceptance not established                  |
+| Platform            | Intended target                             | Acceptance (see [checklist](RELEASE_CHECKLIST.md))                                          |
+| ------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Linux x86_64        | RPM (Fedora), DEB (Ubuntu/Debian), AppImage | Native OCR, Whisper and Qwen verified on Fedora; current packages and clean install pending |
+| Windows x64         | Offline Inno Setup installer with WebView2  | Not yet built or run on Windows                                                             |
+| macOS Apple Silicon | DMG                                         | CI compiles and tests; DMG, signing and runtime not verified                                |
+| macOS Intel         | DMG                                         | Configuration prepared; never built                                                         |
 
 No signed public release or approved demonstration video is linked yet. See the [one-minute native demo checklist](DEMO_CHECKLIST.md). A video link will be added only after a real desktop recording is supplied or approved.
 

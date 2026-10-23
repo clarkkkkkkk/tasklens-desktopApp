@@ -9,13 +9,13 @@ pub enum CredentialFailure {
     Unavailable,
 }
 
-#[cfg(any(windows, target_os = "linux"))]
+#[cfg(any(windows, target_os = "linux", target_os = "macos"))]
 fn entry(service: &str) -> Result<keyring::Entry, CredentialFailure> {
     keyring::Entry::new(service, ACCOUNT).map_err(|_| CredentialFailure::Unavailable)
 }
 
 fn read(service: &str) -> Result<Zeroizing<String>, CredentialFailure> {
-    #[cfg(any(windows, target_os = "linux"))]
+    #[cfg(any(windows, target_os = "linux", target_os = "macos"))]
     return entry(service)?
         .get_password()
         .map(Zeroizing::new)
@@ -23,30 +23,30 @@ fn read(service: &str) -> Result<Zeroizing<String>, CredentialFailure> {
             keyring::Error::NoEntry => CredentialFailure::Missing,
             _ => CredentialFailure::Unavailable,
         });
-    #[cfg(not(any(windows, target_os = "linux")))]
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     Err(CredentialFailure::Unavailable)
 }
 
 fn write(service: &str, key: &str) -> Result<(), CredentialFailure> {
-    #[cfg(any(windows, target_os = "linux"))]
+    #[cfg(any(windows, target_os = "linux", target_os = "macos"))]
     return entry(service)?
         .set_password(key)
         .map_err(|_| CredentialFailure::Unavailable);
-    #[cfg(not(any(windows, target_os = "linux")))]
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     Err(CredentialFailure::Unavailable)
 }
 
 fn remove(service: &str) -> Result<(), CredentialFailure> {
-    #[cfg(any(windows, target_os = "linux"))]
+    #[cfg(any(windows, target_os = "linux", target_os = "macos"))]
     return match entry(service)?.delete_credential() {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
         Err(_) => Err(CredentialFailure::Unavailable),
     };
-    #[cfg(not(any(windows, target_os = "linux")))]
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     Err(CredentialFailure::Unavailable)
 }
 
-#[cfg(all(test, any(windows, target_os = "linux")))]
+#[cfg(all(test, any(windows, target_os = "linux", target_os = "macos")))]
 mod tests {
     /// Run in separate processes with the same random service name to verify persistence.
     #[test]

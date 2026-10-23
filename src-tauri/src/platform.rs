@@ -27,7 +27,9 @@ pub fn exe_name(name: &str) -> String {
 fn resource_roots(app: &tauri::AppHandle) -> Vec<PathBuf> {
     let mut roots = Vec::new();
     if let Ok(dir) = app.path().resource_dir() {
-        roots.push(dir.join("resources"));
+        // On Windows Tauri returns a canonical `\\?\C:\...` path, which disables `/`
+        // normalisation; Tesseract appends `/eng.traineddata` and could not open its data.
+        roots.push(dunce::simplified(&dir).join("resources"));
     }
     // Development builds read runtimes prepared by `npm run build:runtimes`.
     #[cfg(debug_assertions)]

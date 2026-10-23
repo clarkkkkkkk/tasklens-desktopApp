@@ -784,7 +784,7 @@ mod tests {
                 |_| Ok(()),
             )
         };
-        while started.elapsed() < Duration::from_secs(180) && !health().is_ok_and(|s| s == 200) {
+        while started.elapsed() < server::MODEL_LOAD_BUDGET && !health().is_ok_and(|s| s == 200) {
             if child.try_wait().unwrap().is_some() {
                 break;
             }
