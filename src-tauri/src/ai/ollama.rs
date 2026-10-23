@@ -112,7 +112,13 @@ pub struct NdjsonParser {
 }
 
 impl NdjsonParser {
-    pub fn push(&mut self, bytes: &[u8], mut on_event: impl FnMut(Value)) {
+    pub fn push(&mut self, bytes: &[u8], mut on_event: impl FnMut(Value)) -> std::io::Result<()> {
+        if self.pending.len().saturating_add(bytes.len()) > MAX_RESPONSE_BYTES {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "response too large",
+            ));
+        }
         self.pending.extend_from_slice(bytes);
         while let Some(end) = self.pending.iter().position(|b| *b == b'\n') {
             let line: Vec<u8> = self.pending.drain(..=end).collect();
@@ -120,6 +126,7 @@ impl NdjsonParser {
                 on_event(event);
             }
         }
+        Ok(())
     }
 }
 
@@ -153,7 +160,7 @@ pub fn chat(mut body: Value, cancel: &AtomicBool) -> Result<Value, String> {
                 if event["done"].as_bool() == Some(true) {
                     truncated = event["done_reason"].as_str() == Some("length");
                 }
-            });
+            })?;
             if content.len() > MAX_RESPONSE_BYTES {
                 return Err(std::io::Error::other("response too large"));
             }
@@ -192,6 +199,15 @@ mod tests {
     use super::*;
 
     #[test]
+    fn rejects_unterminated_oversized_events() {
+        let mut parser = NdjsonParser::default();
+        assert!(parser
+            .push(&vec![b'x'; MAX_RESPONSE_BYTES + 1], |_| {})
+            .is_err());
+        assert!(parser.pending.is_empty());
+    }
+
+    #[test]
     fn reads_detected_model_facts() {
         let tag = json!({
             "name": "qwen2.5vl:7b",
@@ -222,7 +238,7 @@ mod tests {
             "{\"message\":{\"content\":\"{\\\"a\\\"\"},\"done\":false}\n{\"mess",
             "age\":{\"content\":\":1}\"},\"done\":true,\"done_reason\":\"length\"}\n",
         ] {
-            parser.push(part.as_bytes(), |e| events.push(e));
+            parser.push(part.as_bytes(), |e| events.push(e)).unwrap();
         }
         assert_eq!(events.len(), 2);
         assert_eq!(events[1]["done_reason"], "length");

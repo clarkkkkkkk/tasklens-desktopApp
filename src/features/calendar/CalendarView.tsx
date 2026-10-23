@@ -24,13 +24,13 @@ export function CalendarView({
   }
   return (
     <section>
-      <div className="page-heading">
+      <div className="page-heading" data-tour="view-calendar">
         <div className="eyebrow">THE BIGGER PICTURE</div>
         <MotionHeading>Calendar</MotionHeading>
         <p>Your plans, with a little perspective.</p>
       </div>
       <div className="calendar-card">
-        <div className="calendar-toolbar">
+        <div className="calendar-toolbar" data-tour="calendar">
           <h2>{label}</h2>
           <div>
             <Button

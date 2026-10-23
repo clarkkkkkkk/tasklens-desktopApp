@@ -59,6 +59,12 @@ for (const [name, key] of runtimes) {
   } else if (process.platform === 'win32') {
     console.info(`${name}: ${auditWindowsBinary(file).join(', ')}`);
   } else if (process.platform === 'darwin') {
+    const architecture = process.arch === 'arm64' ? 'arm64' : 'x86_64';
+    const architectures = execFileSync('lipo', ['-archs', file], { encoding: 'utf8' })
+      .trim()
+      .split(/\s+/);
+    if (architectures.length !== 1 || architectures[0] !== architecture)
+      throw new Error(`Wrong macOS sidecar architecture: ${name}`);
     const output = execFileSync('otool', ['-L', file], { encoding: 'utf8' });
     const dependencies = output
       .split('\n')

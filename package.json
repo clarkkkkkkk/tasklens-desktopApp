@@ -28,7 +28,10 @@
     "test:native:ocr": "node scripts/ocr-smoke.mjs",
     "test:native:groq:credentials": "node scripts/groq-credential-acceptance.mjs",
     "test:native:groq": "node scripts/groq-native-acceptance.mjs",
-    "eval:groq": "node scripts/evaluate-groq.mjs"
+    "eval:groq": "node scripts/evaluate-groq.mjs",
+    "test:release": "node --test scripts/release-tools.test.mjs",
+    "docs:check": "node scripts/check-docs.mjs",
+    "verify:release": "node scripts/release-artifacts.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.0",
@@ -57,7 +60,7 @@
     "typescript": "~5.7.3",
     "typescript-eslint": "^8.0.0",
     "vite": "^6.1.0",
-    "vitest": "4.1.11"
+    "vitest": "4.1.12"
   },
   "engines": {
     "node": ">=22.12.0"

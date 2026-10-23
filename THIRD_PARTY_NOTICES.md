@@ -83,3 +83,9 @@ Pinned direct dependencies: rusqlite 0.40.2 (MIT) with bundled SQLite (public do
 ## Native browser link opening
 
 The Groq setup guide uses tauri-plugin-opener (Apache-2.0 OR MIT) and its locked native dependencies. `prepare:notices` includes their upstream license texts and version inventory in the existing bundled dependency-notices directory. Only fixed Groq setup/policy links are exposed through TaskLens's native command; generic opener JavaScript interception is disabled.
+
+## Release preparation additions
+
+macOS credential integration enables keyring 3.6.3's `apple-native` backend and its security-framework/core-foundation dependencies under their upstream licenses. The locked dependency inventory and full available license texts are collected into `resources/notices/dependencies/` by `npm run prepare:notices`; rerun on each native build platform. Windows staging also includes `docs/third-party/native-reliability/`, matching Tauri resource bundles.
+
+Microsoft WebView2 and Inno Setup retain their own redistribution/license terms. Verify those terms and actual-platform system-library notices before publication. The TaskLens MIT license does not replace model/runtime/library licenses. No model, OCR language data or required notice was intentionally removed to reduce installer size.

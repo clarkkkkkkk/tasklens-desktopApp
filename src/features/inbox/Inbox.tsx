@@ -79,6 +79,7 @@ export function Inbox({
   onRemove,
   onBundle,
   onVoiceGuard,
+  onCaptureBusyChange,
   onOpenSettings,
 }: {
   active: boolean;
@@ -91,6 +92,7 @@ export function Inbox({
   onRemove: () => void;
   onBundle: (actions: ExtractedAction[]) => void;
   onVoiceGuard: (cancel: (() => Promise<void>) | null) => void;
+  onCaptureBusyChange?: (busy: boolean) => void;
   onOpenSettings: () => void;
 }) {
   const { services, snapshot, processing, ensureProcessing } = useApp();
@@ -105,6 +107,9 @@ export function Inbox({
     [diagnostics, setDiagnostics] = useState<Partial<ExtractionDiagnostics> | null>(null),
     [route, setRoute] = useState<RouteNotice | null>(null);
   const source = job?.source ?? null;
+  useEffect(() => {
+    onCaptureBusyChange?.(busy);
+  }, [busy, onCaptureBusyChange]);
   const cloud =
     (route ? route.candidate.provider.kind === 'cloud' : processing.effectiveMode === 'groq') &&
     !job?.demo;
@@ -162,6 +167,8 @@ export function Inbox({
     async (next: Job, prepared = false) => {
       if (locked || owner.current === 'voice' || (owner.current === 'image' && !prepared)) return;
       owner.current = 'image';
+      setBusy(true);
+      onCaptureBusyChange?.(true);
       if (!next.demo && !(await ensureProcessing())) {
         owner.current = null;
         busyRef.current = false;
@@ -277,12 +284,19 @@ export function Inbox({
         }
       }
     },
-    [intelligence, services, defaults, locked, preserveOcr, ensureProcessing],
+    [intelligence, services, defaults, locked, preserveOcr, ensureProcessing, onCaptureBusyChange],
   );
   const accept = useCallback(
     async (file: File, origin: Origin) => {
-      if (owner.current || busyRef.current || locked) return;
+      if (
+        owner.current ||
+        busyRef.current ||
+        locked ||
+        document.querySelector('dialog[data-guided-tour][open]')
+      )
+        return;
       owner.current = 'image';
+      onCaptureBusyChange?.(true);
       const captureId = crypto.randomUUID();
       diagnosticStage(captureId, 'selection', 'start');
       setSelectedName(file.name);
@@ -331,7 +345,7 @@ export function Inbox({
         }
       }
     },
-    [process, locked, onCaptureInteraction, preserveOcr],
+    [process, locked, onCaptureInteraction, preserveOcr, onCaptureBusyChange],
   );
   useEffect(() => {
     if (!active || suspendPaste) return;
@@ -435,7 +449,7 @@ export function Inbox({
           Drop your first screenshot here
         </p>
       )}
-      <div className="page-heading">
+      <div className="page-heading" data-tour="inbox-heading">
         <div className="eyebrow">YOUR SPACE TO START</div>
         <MotionHeading>Inbox</MotionHeading>
         <p>Turn screenshots and information into organized actions.</p>
@@ -482,7 +496,7 @@ export function Inbox({
           aria-label="Screenshot capture"
           data-state={phase}
         >
-          <div className="upload-header">
+          <div className="upload-header" data-tour="screenshot">
             <FileImage size={17} />
             <span>{source.fileName}</span>
             <span className="badge">Local preview</span>
@@ -655,7 +669,11 @@ export function Inbox({
             text: 'Your plans, together in one quiet, organized place.',
           },
         ].map(({ icon: Icon, title, text }, i) => (
-          <div className="workflow-step" key={title}>
+          <div
+            className="workflow-step"
+            key={title}
+            data-tour={i === 1 ? 'review-guidance' : undefined}
+          >
             <div>
               <span className="step-icon">
                 <Icon size={19} />

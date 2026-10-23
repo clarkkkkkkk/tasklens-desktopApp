@@ -47,6 +47,7 @@ libc = "0.2"
 zbus = { version = "=5.19.0", features = ["blocking-api"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "=3.6.3", default-features = false, features = ["apple-native"] }
 objc = "0.2"
 objc2 = "=0.6.4"
 objc2-foundation = "=0.3.2"

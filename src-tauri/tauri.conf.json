@@ -59,6 +59,9 @@
           "type": "none"
         }
       }
-    }
+    },
+    "publisher": "TaskLens contributors",
+    "shortDescription": "Turn information into action. Privately.",
+    "category": "Productivity"
   }
 }

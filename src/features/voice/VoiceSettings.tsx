@@ -40,7 +40,7 @@ export function VoiceSettings() {
     }
   }
   return (
-    <section className="settings-section">
+    <section className="settings-section" data-tour-busy={!!pending}>
       <h2>Voice transcription</h2>
       <p>
         Record with your system-default microphone. Transcription (whisper.cpp) runs on this device.

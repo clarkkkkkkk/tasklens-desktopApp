@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-test('saved data survives closing and reopening the browser process', async () => {
+test('saved data survives closing and reopening the browser process', async ({ baseURL }) => {
   const profile = await mkdtemp(join(tmpdir(), 'tasklens-restart-'));
   const options = {
     headless: true,
@@ -12,7 +12,7 @@ test('saved data survives closing and reopening the browser process', async () =
   let context = await chromium.launchPersistentContext(profile, options);
   try {
     let page = await context.newPage();
-    await page.goto('http://127.0.0.1:1420');
+    await page.goto(baseURL!);
     await page.getByRole('button', { name: 'Skip tour' }).click();
     await page.getByRole('button', { name: 'New item' }).click();
     await page.getByLabel('Title', { exact: true }).fill('Survives restart');
@@ -21,7 +21,7 @@ test('saved data survives closing and reopening the browser process', async () =
     await context.close();
     context = await chromium.launchPersistentContext(profile, options);
     page = await context.newPage();
-    await page.goto('http://127.0.0.1:1420');
+    await page.goto(baseURL!);
     await page.getByRole('button', { name: /All Tasks/ }).click();
     await expect(page.getByText('Survives restart', { exact: true })).toBeVisible();
   } finally {

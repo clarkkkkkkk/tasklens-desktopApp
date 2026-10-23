@@ -10,6 +10,17 @@ use std::{
 };
 
 pub const CANCELLED_IO: &str = "tasklens-cancelled";
+const MAX_HEADER_LINE: usize = 16 * 1024;
+const MAX_HEADERS: usize = 64 * 1024;
+fn read_bounded_line(reader: &mut impl BufRead, line: &mut Vec<u8>) -> io::Result<usize> {
+    let n = reader
+        .take((MAX_HEADER_LINE + 1) as u64)
+        .read_until(b'\n', line)?;
+    if n > MAX_HEADER_LINE {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "header limit"));
+    }
+    Ok(n)
+}
 
 struct Cancellable<'a> {
     stream: TcpStream,
@@ -93,17 +104,22 @@ pub fn send(
         deadline: Instant::now() + request.timeout,
     });
     let mut line = Vec::new();
-    reader.read_until(b'\n', &mut line)?;
+    read_bounded_line(&mut reader, &mut line)?;
     let status = String::from_utf8_lossy(&line)
         .split_whitespace()
         .nth(1)
         .and_then(|s| s.parse::<u16>().ok())
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "bad status line"))?;
     let (mut chunked, mut length) = (false, None);
+    let mut header_bytes = line.len();
     loop {
         line.clear();
-        if reader.read_until(b'\n', &mut line)? == 0 {
+        if read_bounded_line(&mut reader, &mut line)? == 0 {
             break;
+        }
+        header_bytes += line.len();
+        if header_bytes > MAX_HEADERS {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "header limit"));
         }
         let header = String::from_utf8_lossy(&line).trim().to_ascii_lowercase();
         if header.is_empty() {
@@ -121,7 +137,7 @@ pub fn send(
     if chunked {
         loop {
             line.clear();
-            reader.read_until(b'\n', &mut line)?;
+            read_bounded_line(&mut reader, &mut line)?;
             let size_text = String::from_utf8_lossy(&line);
             let size_text = size_text.trim().split(';').next().unwrap_or_default();
             let mut remaining = usize::from_str_radix(size_text, 16)
@@ -136,7 +152,7 @@ pub fn send(
                 remaining -= take;
             }
             line.clear();
-            reader.read_until(b'\n', &mut line)?;
+            read_bounded_line(&mut reader, &mut line)?;
         }
     } else if let Some(mut remaining) = length {
         while remaining > 0 {
@@ -204,6 +220,35 @@ mod tests {
             socket.write_all(response).unwrap();
         });
         port
+    }
+
+    #[test]
+    fn rejects_unbounded_loopback_headers_before_reading_body() {
+        for response in [
+            format!(
+                "HTTP/1.1 200 OK\r\nX-Large: {}\r\n\r\n",
+                "x".repeat(MAX_HEADER_LINE)
+            ),
+            format!(
+                "HTTP/1.1 200 OK\r\n{}\r\n",
+                "X-Small: 1234567890\r\n".repeat(5000)
+            ),
+        ] {
+            let port = serve(Box::leak(response.into_bytes().into_boxed_slice()));
+            let result = send(
+                Request {
+                    port,
+                    method: "GET",
+                    path: "/",
+                    api_key: None,
+                    body: None,
+                    timeout: Duration::from_secs(2),
+                    cancel: None,
+                },
+                |_| Ok(()),
+            );
+            assert_eq!(result.unwrap_err().kind(), io::ErrorKind::InvalidData);
+        }
     }
 
     fn get(port: u16) -> (u16, Vec<u8>) {

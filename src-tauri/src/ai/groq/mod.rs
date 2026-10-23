@@ -146,11 +146,18 @@ pub struct Groq {
     client: Client,
 }
 impl Groq {
+    #[cfg(test)]
     pub fn new(path: PathBuf) -> std::result::Result<Self, reqwest::Error> {
+        Self::for_profile(path, "app.tasklens.tests")
+    }
+    pub fn for_profile(
+        path: PathBuf,
+        identifier: &str,
+    ) -> std::result::Result<Self, reqwest::Error> {
         let config = Config::load(&path);
         let config_error = config.is_err();
         Ok(Self {
-            credentials: Arc::new(credentials::OsStore),
+            credentials: Arc::new(credentials::OsStore::for_application(identifier)),
             #[cfg(test)]
             test_clock: None,
             #[cfg(test)]

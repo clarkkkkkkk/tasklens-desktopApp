@@ -6,7 +6,17 @@ A calm, local desktop workspace for screenshots, tasks, events, and deadlines. P
 
 ![TaskLens Inbox](docs/screenshots/inbox.png)
 
-## Run the app
+## Downloads and installation
+
+**Public release status: NOT READY.** Version 0.1.0 is being prepared as a prerelease. There are no verified public installer links yet. See the [production readiness report](docs/release/PRODUCTION_READINESS.md) and [platform test matrix](docs/release/PLATFORM_TEST_MATRIX.md) before treating any platform as supported.
+
+The planned packages are a Windows x64 EXE, Fedora RPM, Ubuntu DEB, Linux AppImage, and separate macOS Apple Silicon/Intel DMGs. Intel macOS remains unverified. Native installers include the models and runtimes; installed users do not need Node, Rust, Python, Tesseract, Ollama or Homebrew.
+
+[Installation and distribution guide](docs/release/DISTRIBUTION.md) covers graphical installation, checksum verification, PowerShell, DNF, APT, AppImage and DMG terminal commands, build preparation, signing and troubleshooting. Its local-candidate examples are not published download instructions. Oversized installers require an approved large-file host; the complete offline payload is preserved.
+
+For offline AI testing, budget roughly 3 GB for model files plus runtimes, installation and temporary packaging space. A 16 GB RAM machine and at least 12 GB free disk are practical test recommendations, **not certified minimum requirements**. Performance depends strongly on CPU and memory pressure. x86_64 sidecars have a portable baseline and a CPU-gated AVX2 variant; actual old-CPU acceptance remains open. Linux requires compatible GTK 3/WebKitGTK 4.1 runtime libraries. The current native evidence is primarily Fedora 44; Ubuntu 24.04, Windows 10/11 and macOS require the checks listed in the matrix.
+
+## Build from source / development
 
 Requires Node **22.12+** and npm. Install dependencies once; the bundled desktop application runs without a network connection.
 
@@ -70,7 +80,7 @@ npm run test:e2e       # real-browser workflows + axe accessibility checks
 npm run build          # frontend production bundle
 cargo fmt --manifest-path src-tauri/Cargo.toml --check
 cargo check --manifest-path src-tauri/Cargo.toml
-npm run tauri build      # Windows: MSI + NSIS installers
+npm run release:desktop  # native offline installers; clean committed candidate required
 npm run test:native:win  # Windows: Phase 1 flows; build with VITE_TASKLENS_EXTRACTION=mock (expects the sample result)
 npm run test:native:ai   # Windows: real OCR + local model in the app window, cancellation, loopback-only check
 ```

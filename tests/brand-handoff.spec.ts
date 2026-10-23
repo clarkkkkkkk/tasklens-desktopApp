@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { settleMotion } from './motion-helpers';
+import { dismissGuidedTour, settleMotion } from './motion-helpers';
 
 async function demoStep(page: Page) {
   await page.goto('/');
@@ -32,6 +32,7 @@ for (const width of [1440, 900, 600]) {
     });
     await expect(intro).toHaveAttribute('data-phase', 'dock');
     await expect(intro).toHaveCount(0);
+    await dismissGuidedTour(page);
     await expect(page.locator('#main-content')).toBeFocused();
     await expect(page.locator('.sidebar .brand')).toHaveCSS('visibility', 'visible');
     await expect(page.locator('.sidebar .brand img')).toHaveCount(1);
@@ -61,6 +62,7 @@ test('reduced motion skips the brand sequence and settles an in-flight handoff',
   await expect(page.locator('.brand-handoff')).toBeVisible();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(page.locator('.brand-handoff')).toHaveCount(0);
+  await dismissGuidedTour(page);
   await expect(page.locator('#main-content')).toBeFocused();
   await settleMotion(page);
   await page.getByRole('button', { name: 'Settings', exact: true }).click();

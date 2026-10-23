@@ -44,7 +44,7 @@ export function Sidebar({
   }
   return (
     <aside className="sidebar" aria-label="Workspace navigation" data-collapsed={collapsed}>
-      <div className="brand">
+      <div className="brand" data-tour="brand">
         <img src="/TaskLens.png" alt="" />
         <div className="brand-copy">
           <span className="brand-name">TaskLens</span>
@@ -66,10 +66,11 @@ export function Sidebar({
       <div className="sidebar-section-label" aria-hidden={collapsed}>
         WORKSPACE
       </div>
-      <nav id="workspace-navigation" aria-label="Main navigation">
+      <nav id="workspace-navigation" aria-label="Main navigation" data-tour="navigation">
         {navigation.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
+            data-tour={`nav-${id}`}
             title={label}
             aria-label={collapsed ? label : undefined}
             onClick={() => onNavigate(id)}

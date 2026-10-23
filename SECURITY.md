@@ -1,6 +1,6 @@
 # Local data security
 
-TaskLens performs its implemented AI inference locally and has no automatic cloud fallback. Reminder notifications are separately opt-in. Generic notifications contain no task title by default; enabling titles is a distinct device privacy preference. Notes, source images, OCR, evidence and transcripts are never included in notification payloads.
+TaskLens defaults to local inference and has no automatic cloud fallback. Optional Groq BYOK sends recognized text or local transcripts only after explicit selection and consent; original screenshots and audio remain local. Keys stay in native OS credential storage or an explicit session-only state, never localStorage or exported backups. Reminder notifications are separately opt-in. Generic notifications contain no task title by default; enabling titles is a distinct device privacy preference. Notes, source images, OCR, evidence and transcripts are never included in notification payloads.
 
 Current task data remains in webview localStorage under `tasklens:data:v1`. The new native SQLite file at `app_data_dir()/storage/tasklens.sqlite3` is a **delivery journal only** until the canonical-storage milestone is completed. The journal, task storage and JSON exports are **unencrypted**. Backups contain private data; keep them in a trusted location. Permissions do not protect against malware running as the same user.
 
@@ -13,3 +13,9 @@ Claims are committed before notification submission. A crash can occur after the
 A separate design must specify SQLCipher distribution and licensing, OS-backed key storage on Linux/Windows/macOS, key recovery and loss behavior, authenticated encrypted export envelopes, rotation, and a recoverable verified migration. Plaintext leftovers, temporary files, WAL/journals and recovery snapshots must be addressed. Do not claim encryption until these paths and failure cases have been tested.
 
 See [native reliability status](docs/NATIVE_RELIABILITY.md) for the incomplete acceptance gates. Do not commit real task snapshots, private screenshots/transcripts, microphone identifiers, credentials, model weights or native acceptance profiles.
+
+## Release security
+
+See the [sanitized release security audit](docs/release/SECURITY_AUDIT.md) for executed scans, dependency warnings and unresolved native gates. macOS Keychain support is implemented but awaits native verification. Production frontend builds reject mock-provider selection and credential-like VITE environment variables. PR CI requires no real API keys or release-signing secrets.
+
+Use official checksum manifests and verify code signatures where available. A SHA-256 value from an untrusted download is not publisher authentication. No installer host or automatic update channel has been approved; public release links must not be invented. Report suspected credentials privately and rotate exposed keys; never include key values or private task data in public issues. History rewriting requires explicit owner approval.

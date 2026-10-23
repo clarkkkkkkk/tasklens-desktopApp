@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { settleMotion } from './motion-helpers';
+import { dismissGuidedTour, settleMotion } from './motion-helpers';
 import AxeBuilder from '@axe-core/playwright';
 
 test.use({ video: 'on' });
@@ -77,6 +77,7 @@ for (const viewport of [
     expect(await preview.evaluate((element) => element.scrollTop)).toBe(0);
     await button(page, 'Start using TaskLens').click();
     await expect(page.locator('.brand-handoff')).toHaveCount(0, { timeout: 5000 });
+    await dismissGuidedTour(page);
     await expect(page.locator('#main-content')).toBeFocused();
     await expect(page.getByRole('heading', { name: 'Inbox', exact: true })).toBeVisible();
     const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('tasklens:data:v1')!));
@@ -247,6 +248,7 @@ test('brand is inert, docks at measured geometry and does not replay Inbox entra
     element.getAnimations({ subtree: true }).forEach((animation) => animation.play()),
   );
   await expect(brand).toHaveCount(0);
+  await dismissGuidedTour(page);
   expect(
     await page.locator('.main-content').evaluate((element) => element.getAnimations().length),
   ).toBe(0);
@@ -264,6 +266,7 @@ test('resize and suspended brand animations cannot leave the workspace blocked',
   await expect(page.locator('.brand-handoff')).toHaveCount(1);
   await page.setViewportSize({ width: 900, height: 640 });
   await expect(page.locator('.brand-handoff')).toHaveCount(0);
+  await dismissGuidedTour(page);
   await expect(page.locator('#main-content')).toBeFocused();
   await button(page, 'Settings').click();
   await button(page, 'Replay onboarding').click();
@@ -319,6 +322,7 @@ test('onboarding motion settles and workspace controls and dialogs remain static
     await intro.evaluate((element) => element.getAnimations({ subtree: true }).length),
   ).toBeGreaterThan(0);
   await expect(intro).toHaveCount(0);
+  await dismissGuidedTour(page);
   await noMotion();
   await page.getByRole('button', { name: 'Search your workspace', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Search your workspace' })).toBeVisible();

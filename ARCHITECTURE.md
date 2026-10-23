@@ -104,7 +104,7 @@ The versioned model manifest pins Qwen3-4B Q4_K_M, Whisper Small multilingual, l
 
 Screenshot inputs still decode in Rust; their temporary grayscale copy is BMP so the pinned static Leptonica build needs no separate PNG/JPEG/TIFF runtime. Text/speech/screenshots retain the existing validator, review and persistence contracts. Integrated prompt version 7 uses Qwen3 non-thinking markers, compact absent fields expanded before validation, and manifest stop tokens. The fixed system prefix can be cached locally across server restarts. LocalStorage and onboarding versions are unchanged.
 
-Linux x86_64, Windows x86_64 and Apple Silicon macOS are the release targets; Intel macOS is deferred. Windows uses a single Inno offline installer with an offline WebView2 payload; oversized files require hosting outside GitHub Releases. See LOCAL_AI.md and OFFLINE_AI_IMPLEMENTATION_REPORT.md for commands, measurements and actual acceptance status.
+Linux x86_64, Windows x86_64, Apple Silicon macOS and Intel macOS have release preparation paths; Intel support and all platform claims remain gated by native acceptance. Windows uses a single Inno offline installer with an offline WebView2 payload; oversized files require hosting outside GitHub Releases. See LOCAL_AI.md and OFFLINE_AI_IMPLEMENTATION_REPORT.md for commands, measurements and actual acceptance status.
 
 ### CPU runtime selection and responsive first launch
 
@@ -123,3 +123,9 @@ This is partial Milestone A, not primary SQLite storage, backup restore or autos
 ## Local AI reliability checkpoint (2026-10-22)
 
 Capture traces and typed native failures are session-only and privacy-safe. Screenshot recovery retains an image-bound OCR checkpoint independently of diagnostics; explicit phases prevent failure appearing complete. Native streaming validates terminal completion and reconciles process health before reuse. JSON schema wire order is preserved without changing durable reminder serialization. See [measured evidence and pending platform gates](docs/LOCAL_AI_RELIABILITY.md).
+
+## Production release preparation — 2026-10-23
+
+The existing release wrapper prepares native resources, requires a clean committed source tree and matching versions, clears generated staging, and emits the expected platform installer set with a source-identified checksum manifest. Download locations stay unset until an approved upload is independently verified. Oversized complete installers use an owner-approved large-file host; no runtime model download is introduced.
+
+macOS credential persistence uses keyring's native Keychain backend with the unchanged application-specific service identity. Windows and Linux retain their existing OS backends. Intel packaging adds the x86_64 target and AVX2 sidecar overlay without affecting ARM64 bundles. Compilation, installer generation and installed runtime acceptance are recorded separately in [the release reports](docs/release/PRODUCTION_READINESS.md). No storage migration, required cloud account, backend or UI redesign is part of release preparation.
