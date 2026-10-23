@@ -35,8 +35,8 @@ Source: "{#Stage}\WebView2Setup.exe"; DestDir: "{tmp}"; Flags: dontcopy
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"; Flags: unchecked
 [Icons]
-Name: "{group}\TaskLens"; Filename: "{app}\tasklens.exe"
-Name: "{autodesktop}\TaskLens"; Filename: "{app}\tasklens.exe"; Tasks: desktopicon
+Name: "{group}\TaskLens"; Filename: "{app}\tasklens.exe"; AppUserModelID: "app.tasklens.desktop"
+Name: "{autodesktop}\TaskLens"; Filename: "{app}\tasklens.exe"; Tasks: desktopicon; AppUserModelID: "app.tasklens.desktop"
 [Code]
 function NeedsWebView2: Boolean;
 var Version: String;
