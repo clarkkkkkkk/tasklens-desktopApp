@@ -477,7 +477,7 @@ try {
         for (const action of saved) {
           assert.equal(action.source.type, 'voice');
           assert.equal(action.source.extractionMode, 'local');
-          assert.match(action.source.transcript.text, /exam|math/i);
+          assert.match(action.source.transcript.fullText, /exam|math/i);
           const segments = new Set(action.source.transcript.segments.map((s) => s.id));
           for (const evidence of action.evidence || [])
             for (const id of evidence.segmentIds)
