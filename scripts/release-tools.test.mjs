@@ -24,6 +24,12 @@ test('installer parts reassemble byte-for-byte, reject tampering, and preserve e
     assert.deepEqual(await readFile(joined), original);
     await assert.rejects(joinArtifact(manifestFile, path.join(dir, 'joined')), /EEXIST/);
     assert.deepEqual(await readFile(joined), original);
+    const firstPart = path.join(dir, 'parts', manifest.parts[0].file);
+    const firstBytes = await readFile(firstPart);
+    await rm(firstPart);
+    await assert.rejects(joinArtifact(manifestFile, path.join(dir, 'missing')), /ENOENT/);
+    await assert.rejects(access(path.join(dir, 'missing', manifest.artifact.file)));
+    await writeFile(firstPart, firstBytes);
     await writeFile(path.join(dir, 'parts', manifest.parts[0].file), Buffer.alloc(11));
     await assert.rejects(joinArtifact(manifestFile, path.join(dir, 'broken')), /checksum/);
     await assert.rejects(access(path.join(dir, 'broken', manifest.artifact.file)));

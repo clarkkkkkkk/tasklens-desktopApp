@@ -2,6 +2,15 @@
 
 Candidate: `codex/production-release-preparation` at `94fcbfc` (2026-10-23), which contains main through `5ca1886`. **NOT READY.** PASS means an executed check on the stated commit or host; NOT RUN is not acceptance; BLOCKED names what is missing. Earlier audit results (base `374f692`, packages from `f0f1c60`) are kept where noted and are not substituted for current evidence. Handoff notes: [RELEASE_HANDOFF_2026-10-23](docs/RELEASE_HANDOFF_2026-10-23.md).
 
+
+## Current CI follow-up (2026-10-24)
+
+Published main advanced to `112611e1007407ccbf062fdcf331aa0dc3aa9266`. The historical table below retains its original evidence. Main's quality run [39986662043](https://github.com/clarkkkkkkk/tasklens-desktopApp/actions/runs/39986662043) passed 110 browser tests and failed one accessibility assertion: the now-scrollable tour body at 600×640 could not receive keyboard focus. A focused follow-up adds a named, keyboard-focusable region and includes it in the dialog focus trap; it retains all geometry and Axe checks. The original Windows static-runtime fix passed the earlier native workflow at `e7b9473` ([39953472590](https://github.com/clarkkkkkkk/tasklens-desktopApp/actions/runs/39953472590)); that result is not final-commit installer acceptance.
+
+Follow-up exact-commit quality/security and desktop workflows must pass before approval. No final installers, public asset URLs, downloaded-asset hash verification, or installed-platform acceptance are claimed. A prospective `v0.1.0-beta.1` release must remain draft until its explicitly supported scope passes. Current packaging manifests still identify application version 0.1.0. See [release distribution](docs/RELEASING.md).
+
+## Historical preparation gates
+
 | Gate                                                  | Status            | Evidence / next action                                                                                                                                                                                                                                                                           |
 | ----------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Git history secret scan                               | PASS              | Gitleaks 8.30.1 (checksum-pinned), `--all --full-history`, 50 commits across all local branches, zero findings (2026-10-23)                                                                                                                                                                      |

@@ -100,20 +100,20 @@ export function GuidedTour({
           onMove(event.key === 'ArrowRight' ? 1 : -1);
         }
         if (event.key === 'Tab') {
-          const buttons = Array.from(
-            dialog.current!.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'),
+          const controls = Array.from(
+            dialog.current!.querySelectorAll<HTMLElement>('button:not(:disabled), [tabindex="0"]'),
           );
-          const first = buttons[0],
-            last = buttons[buttons.length - 1];
+          const first = controls[0],
+            last = controls[controls.length - 1];
           if (
             event.shiftKey &&
             (document.activeElement === first || document.activeElement?.tagName === 'H2')
           ) {
             event.preventDefault();
-            last.focus();
+            last.focus({ preventScroll: true });
           } else if (!event.shiftKey && document.activeElement === last) {
             event.preventDefault();
-            first.focus();
+            first.focus({ preventScroll: true });
           }
         }
       }}

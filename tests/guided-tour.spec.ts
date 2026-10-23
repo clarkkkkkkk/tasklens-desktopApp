@@ -125,6 +125,45 @@ for (const width of [1440, 900, 600]) {
   });
 }
 
+test('wrapped tour content stays clear of Source Trace and restores height after resize', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 600, height: 640 });
+  await page.goto('/tests/groq-harness.html?offline');
+  // Exercise larger content metrics deterministically, independent of CI font loading.
+  await page.addStyleTag({ content: '.tour-card-content { padding-bottom: 80px; }' });
+  await replay(page);
+  for (let index = 0; index < 3; index++) await button(page, 'Next').click();
+  await expect(tour(page)).toHaveAttribute('data-step', 'review-source');
+  await verifyGeometry(page);
+  await expect(button(page, 'Next')).toBeInViewport();
+  const constrained = await page.locator('.tour-card').evaluate((el) => el.clientHeight);
+  await expect
+    .poll(() =>
+      page.locator('.tour-card-content').evaluate((el) => el.scrollHeight > el.clientHeight),
+    )
+    .toBe(true);
+  const details = page.getByRole('region', { name: 'Tour step details' });
+  // From the last control, Tab must reach the scroll region within the focus trap.
+  await button(page, 'Next').focus();
+  await page.keyboard.press('Tab');
+  await expect(details).toBeFocused();
+  await page.keyboard.press('PageDown');
+  await expect.poll(() => details.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await expect(button(page, 'Skip tour')).toBeInViewport();
+  await page.setViewportSize({ width: 1440, height: 920 });
+  await verifyGeometry(page);
+  await expect
+    .poll(() => page.locator('.tour-card').evaluate((el) => el.clientHeight))
+    .toBeGreaterThan(constrained);
+  await expect
+    .poll(() =>
+      page.locator('.tour-card-content').evaluate((el) => el.scrollHeight - el.clientHeight),
+    )
+    .toBeLessThanOrEqual(1);
+});
+
 test('onboarding skip and existing upgrades do not auto-start; replay Escape restores Settings and drafts', async ({
   page,
 }) => {
