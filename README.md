@@ -1,4 +1,4 @@
-# TaskLens
+<h1><img src="TaskLens.png" alt="TaskLens logo" width="36" height="36" align="middle" /> TaskLens</h1>
 
 **Turn information into action. Privately.**
 
