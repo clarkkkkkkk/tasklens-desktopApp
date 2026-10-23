@@ -1,15 +1,31 @@
-# Local data security
+# Security policy
 
-TaskLens performs its implemented AI inference locally and has no automatic cloud fallback. Reminder notifications are separately opt-in. Generic notifications contain no task title by default; enabling titles is a distinct device privacy preference. Notes, source images, OCR, evidence and transcripts are never included in notification payloads.
+TaskLens is a pre-release desktop application. Current security evidence and unresolved gates are in [SECURITY_AUDIT.md](SECURITY_AUDIT.md) and [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md). No third-party penetration-test certification or vulnerability-free guarantee is implied.
 
-Current task data remains in webview localStorage under `tasklens:data:v1`. The new native SQLite file at `app_data_dir()/storage/tasklens.sqlite3` is a **delivery journal only** until the canonical-storage milestone is completed. The journal, task storage and JSON exports are **unencrypted**. Backups contain private data; keep them in a trusted location. Permissions do not protect against malware running as the same user.
+## Report a vulnerability
 
-The journal worker uses fixed parameterized SQL and exposes only typed main-window commands. No arbitrary SQL, filesystem path, executable argument or free-form notification-body command is exposed. Unix journal directories/files use 0700/0600; symlinked database files and newer schema versions fail closed. Native storage errors do not turn unreadable task data into an empty workspace. Windows user ACL enforcement remains pending.
+Do not post credentials, private screenshots, task backups, transcripts or exploit details in a public issue. Use GitHub private vulnerability reporting **if the owner enables it**. At audit time it was disabled. Otherwise open an issue only requesting a confidential maintainer contact, without sensitive details. No private reporting address is invented here. Maintainers should enable private reporting and acknowledge reports before agreeing on disclosure.
 
-Claims are committed before notification submission. A crash can occur after the OS accepts a request and before the journal records it; interrupted claims become unknown and are not automatically retried. OS acceptance is not a guarantee of banner visibility or user acknowledgment. A failed task/reminder reconciliation leaves delivery paused and task-save success is reported separately. SQLite is not yet the task authority and cross-store writes are not described as a database transaction.
+There is no published supported-release series yet. Report candidate issues with the commit, platform, sanitized reproduction and impact. Security fixes should be validated on each affected native platform before a release is called supported.
 
-## Required encryption follow-up
+## Threat model and protections
 
-A separate design must specify SQLCipher distribution and licensing, OS-backed key storage on Linux/Windows/macOS, key recovery and loss behavior, authenticated encrypted export envelopes, rotation, and a recoverable verified migration. Plaintext leftovers, temporary files, WAL/journals and recovery snapshots must be addressed. Do not claim encryption until these paths and failure cases have been tested.
+- Local mode is the default. Tesseract OCR, Whisper transcription and bundled Qwen inference stay local. Optional Groq Cloud sends minimum recognized text/transcripts only after explicit provider selection and device consent. No automatic cloud fallback, telemetry, cloud sync or login backend is included.
+- Rust owns authenticated Groq requests. The fixed HTTPS endpoint uses normal TLS, redirects are disabled, and native gates recheck mode/consent/credentials/budgets before requests. Actual Groq limits remain authoritative over advisory application counters.
+- API keys never belong in source, logs, task backups, JavaScript localStorage or `VITE_` environment variables. The input clears after submission; native status returns no key/fragment/header. Secure-store failures use memory-only credentials. Disconnect cancels work and reports incomplete deletion rather than silently retaining usable credentials.
+- Windows Credential Manager and Fedora Secret Service are the supported persistent backends. Acceptance application identities use a separate credential namespace; tests must never borrow a user's production key. Real Groq tests require an explicitly configured test credential and are not ordinary CI.
+- Main-window capabilities name permitted IPC commands. No general shell, arbitrary remote URL/header, SQL or filesystem plugin is exposed. React renders source/model content as text; CSP blocks remote scripts and direct Groq access. Native file/image/audio validation and process/time/output bounds provide additional protection, not immunity to third-party parser defects.
+- Unix OCR/audio job directories are private, generated natively and cleaned on completion/cancellation/startup. Sidecars use argument arrays. Local inference transport is loopback-only; Ollama must be treated as a trusted local service when enabled.
+- Diagnostics are opt-in metadata and bounded in memory. Raw source text, remote bodies and authorization values must not be logged or uploaded as CI artifacts. Browser/native fixtures must be synthetic or clearly licensed public material.
 
-See [native reliability status](docs/NATIVE_RELIABILITY.md) for the incomplete acceptance gates. Do not commit real task snapshots, private screenshots/transcripts, microphone identifiers, credentials, model weights or native acceptance profiles.
+## Data at rest and backups
+
+Tasks, screenshot thumbnails, evidence, locally generated transcripts and exported JSON are **unencrypted**. Webview localStorage (`tasklens:data:v1`) remains task authority. `app_data_dir()/storage/tasklens.sqlite3` is only a reminder delivery journal. Its parameterized SQL, Unix 0700/0600 permissions and scheduling fences do not turn it into encrypted task storage. Native consent/usage metadata is outside task backups. Same-user malware and OS administrators can still read application data.
+
+Keep backups in trusted storage. Backup import, authenticated encrypted exports, SQLCipher task migration, autostart and automatic updates are unfinished. Windows user-ACL behavior, signing and fresh-install acceptance need actual Windows verification. OS submission of a reminder is not proof that a banner was displayed.
+
+## Repository and release practices
+
+Run full-history Gitleaks with complete redaction, a current working-tree/bundle scan, `npm audit` and `cargo audit`. Review informational/unsoundness warnings, not only the vulnerability count. Do not suppress advisories broadly. Rotate any exposed real credential immediately; deleting the current file does not revoke it. Shared Git history must not be rewritten without owner approval.
+
+CI uses read-only repository permissions, pinned action revisions and no real service key. Artifacts must contain only intended public build inputs/outputs. Keep profiles, `.env` files, raw diagnostic responses and personal content out of uploads. Release installers need current source identity, asset/license verification, checksums, actual platform acceptance and owner publication approval. Splitting a complete installer for transport must preserve and verify its original checksum.

@@ -1,0 +1,28 @@
+name: Bug report
+description: Report a reproducible TaskLens problem using synthetic data.
+body:
+  - type: markdown
+    attributes:
+      value: 'Do not include API keys, private screenshots/transcripts, task backups or raw logs. Report security issues using SECURITY.md.'
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit and installation format
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Operating system, architecture and available memory
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Synthetic reproduction, expected result and actual result
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence and whether this was native, browser, mock or real inference

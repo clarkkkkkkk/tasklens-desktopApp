@@ -1,3 +1,5 @@
+> Current privacy boundary: Whisper transcription stays local. Extraction uses the selected Local AI or explicitly consented Groq BYOK provider. Current native verification limitations are recorded in [RELEASE_AUDIT.md](RELEASE_AUDIT.md). Historical measurements below are not acceptance of the current release.
+
 # Local voice capture
 
 TaskLens captures information, transcribes it locally, extracts structured actions locally, and asks the user to review and save each action. It does not listen in the background or provide conversational assistance.
@@ -34,7 +36,7 @@ Raw recordings and converted import copies are temporary. Transcription success/
 
 Each job has an opaque identifier and cancellation flag. Cancellation stops capture, interrupts inference and discards late UI results. Navigation during processing requires stop/discard confirmation. Startup cleans orphaned temporary jobs; a single-instance guard prevents another TaskLens instance from removing active jobs.
 
-Speech and extraction share a native inference gate. TaskLens stops its reused loopback-only llama-server before loading Whisper; Whisper exits before extraction restarts. Neither model is loaded during asset preparation. There is no remote fallback. Build-time preparation downloads verified pinned assets; installed inference uses local files, IPC and the private loopback extraction server only. Source content is never shell-interpolated or written to application logs.
+Speech and extraction share a native inference gate. TaskLens stops its reused loopback-only llama-server before loading Whisper; Whisper exits before extraction restarts. Neither model is loaded during asset preparation. There is no remote fallback. Build-time preparation downloads verified pinned assets; installed Local AI uses local files, IPC and the private loopback extraction server. Explicit Groq mode sends the locally generated transcript to Groq after consent; voice audio remains local. Source content is never shell-interpolated or written to application logs.
 
 Transcripts are bounded at 100,000 characters/3,000 segments. The extraction runtime uses an 8,192-token context with context shifting disabled; prompts that exceed it fail instead of discarding earlier content. Initial extraction accepts at most 20,000 UTF-8 bytes of source text and at most 20 actions. Longer transcripts remain inspectable/exportable and require shorter passages. Persistent transcripts share the existing localStorage quota; storage failures keep edits available for retry/export.
 
