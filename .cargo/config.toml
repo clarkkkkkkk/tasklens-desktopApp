@@ -1,0 +1,4 @@
+# The Windows installer must not require a separately installed Visual C++ runtime.
+# Native sidecars use the matching static /MT recipe in build-local-runtimes.mjs.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

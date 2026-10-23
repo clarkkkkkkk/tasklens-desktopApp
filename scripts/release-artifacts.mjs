@@ -59,7 +59,9 @@ export async function verifyInventory(directory) {
     report.schemaVersion !== 1 ||
     report.channel !== 'prerelease' ||
     !Array.isArray(report.artifacts) ||
-    !report.artifacts.length
+    !report.artifacts.length ||
+    !/^[a-f0-9]{40}$/.test(report.commit) ||
+    !/^[a-f0-9]{40}$/.test(report.sourceTree)
   )
     throw new Error('Invalid release inventory');
   const seen = new Set();
@@ -89,6 +91,25 @@ export async function verifyInventory(directory) {
     )
       throw new Error(`Installer integrity failure: ${entry.filename}`);
   }
+  const first = report.artifacts[0];
+  const expected = releaseNames(
+    report.version,
+    first.platform,
+    first.architecture === 'x86_64' ? 'x64' : first.architecture,
+  );
+  if (
+    report.artifacts.length !== expected.length ||
+    expected.some((name) => !seen.has(name)) ||
+    report.artifacts.some(
+      (entry) => entry.platform !== first.platform || entry.architecture !== first.architecture,
+    )
+  )
+    throw new Error('Incomplete or mixed installer set');
+  const checksums = await readFile(path.join(directory, 'SHA256SUMS'), 'utf8');
+  if (
+    checksums !== report.artifacts.map((entry) => `${entry.sha256}  ${entry.filename}\n`).join('')
+  )
+    throw new Error('Checksum file differs from release inventory');
   return report;
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {

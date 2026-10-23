@@ -1,4 +1,5 @@
 import { assertReleaseEnvironment } from './release-policy.mjs';
+import { auditWindowsBinary } from './pe-dependencies.mjs';
 import { inventory, releaseNames } from './release-artifacts.mjs';
 import { execFileSync } from 'node:child_process';
 import {
@@ -76,6 +77,7 @@ if (process.platform === 'win32') {
   const stage = path.join(release, 'offline-stage');
   rmSync(stage, { recursive: true, force: true });
   mkdirSync(stage, { recursive: true });
+  auditWindowsBinary(path.join(release, 'tasklens.exe'));
   copyFileSync(path.join(release, 'tasklens.exe'), path.join(stage, 'tasklens.exe'));
   for (const name of [
     'llama-server',

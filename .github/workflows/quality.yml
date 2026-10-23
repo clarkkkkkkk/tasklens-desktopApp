@@ -37,6 +37,7 @@ jobs:
           echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $RUNNER_TEMP/gitleaks.tgz" | sha256sum -c -
           tar -xzf "$RUNNER_TEMP/gitleaks.tgz" -C "$RUNNER_TEMP" gitleaks
           "$RUNNER_TEMP/gitleaks" git --log-opts='--all --full-history' --redact=100 --no-banner .
+          node scripts/scan-release-secrets.mjs "$RUNNER_TEMP/gitleaks"
           "$RUNNER_TEMP/gitleaks" dir --redact=100 --no-banner --config .gitleaks.toml dist
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e

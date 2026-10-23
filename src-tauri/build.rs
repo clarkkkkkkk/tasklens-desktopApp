@@ -21,7 +21,26 @@ fn main() {
             .map(|s| !s.is_empty())
             .unwrap_or(true)
     );
-    println!("cargo:rerun-if-changed=../.git/HEAD");
+    // Resolve Git paths for normal checkouts and linked worktrees. Watching HEAD alone
+    // misses new commits on the same branch and can embed a stale release identity.
+    for name in [
+        Some("HEAD".to_string()),
+        git(&["symbolic-ref", "-q", "HEAD"]),
+    ]
+    .into_iter()
+    .flatten()
+    {
+        if let Some(path) = git(&["rev-parse", "--git-path", &name]) {
+            if std::path::Path::new(&path).exists() {
+                println!("cargo:rerun-if-changed={path}");
+            }
+        }
+    }
+    if let Some(path) = git(&["rev-parse", "--git-path", "packed-refs"]) {
+        if std::path::Path::new(&path).exists() {
+            println!("cargo:rerun-if-changed={path}");
+        }
+    }
     println!("cargo:rerun-if-changed=src");
     tauri_build::build()
 }

@@ -55,7 +55,17 @@ test('release inventory requires every target installer and detects post-build m
     assert.equal(report.artifacts.length, 3);
     assert.ok(report.artifacts.every((a) => a.downloadUrl === null && !a.downloadVerified));
     await writeFile(path.join(dir, 'release-assets.json'), JSON.stringify(report));
+    await writeFile(
+      path.join(dir, 'SHA256SUMS'),
+      report.artifacts.map((a) => `${a.sha256}  ${a.filename}\n`).join(''),
+    );
     await verifyInventory(dir);
+    await writeFile(
+      path.join(dir, 'release-assets.json'),
+      JSON.stringify({ ...report, artifacts: report.artifacts.slice(0, 1) }),
+    );
+    await assert.rejects(verifyInventory(dir), /Incomplete/);
+    await writeFile(path.join(dir, 'release-assets.json'), JSON.stringify(report));
     await writeFile(path.join(dir, report.artifacts[0].filename), 'tampered-package');
     await assert.rejects(verifyInventory(dir), /integrity/);
     report.artifacts[0].filename = '../outside.rpm';
