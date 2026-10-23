@@ -1,66 +1,188 @@
-name: Offline desktop builds
+name: Desktop validation and candidate packaging
 on:
-  workflow_dispatch:
   pull_request:
-    paths: ['src-tauri/**', 'src/services/**', 'src/features/**', 'scripts/**', 'package*.json', '.github/workflows/native-voice.yml']
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Build all offline installer candidates (requires Windows packaging variables)'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: desktop-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+defaults:
+  run:
+    shell: bash
+env:
+  CARGO_BUILD_JOBS: 2
+  TASKLENS_BUILD_JOBS: 2
 jobs:
-  build:
+  static:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run format:check
+      - run: npm run test:assets && npm run test:release
+      - run: npm audit --audit-level=moderate
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: 1.99.0
+          components: rustfmt
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+      - run: cargo install cargo-audit --version 0.22.2 --locked
+      - run: cargo audit --file src-tauri/Cargo.lock
+  frontend:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+  browser:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+  native-assets:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-24.04
-            target: x86_64-unknown-linux-gnu
-          - os: windows-2022
-            target: x86_64-pc-windows-msvc
-          - os: macos-14
-            target: aarch64-apple-darwin
+        os: [ubuntu-24.04, windows-2022, macos-14, macos-15-intel]
     runs-on: ${{ matrix.os }}
-    env:
-      CARGO_BUILD_JOBS: 2
-      TASKLENS_BUILD_JOBS: 2
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: 22.23.2
+          node-version-file: .node-version
           cache: npm
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
         with:
           toolchain: 1.99.0
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libdbus-1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
-      - uses: actions/cache@v4
-        with:
-          path: |
-            src-tauri/resources/models
-            src-tauri/resources/tessdata
-            .local-ai/downloads
-          key: offline-assets-${{ hashFiles('src-tauri/resources/models.json') }}
       - run: npm ci
       - run: npm run prepare:models
       - run: npm run build:runtimes
       - run: npm run prepare:notices
       - run: npm run verify:assets
-      - run: npm run check
-      - run: npm test
-      - run: npm run test:assets
-      - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
-      - if: runner.os == 'Linux'
-        run: npm run tauri -- build --target ${{ matrix.target }} --bundles rpm,appimage
-      - if: runner.os == 'macOS'
-        run: npm run tauri -- build --target ${{ matrix.target }} --bundles app,dmg
-      - if: runner.os == 'Windows'
-        run: npm run tauri -- build --target ${{ matrix.target }} --no-bundle
-      # Full Windows installer requires a verified offline WebView2 installer and Inno Setup
-      # 6.5.2+, as documented in LOCAL_AI.md. This job validates native application staging.
-      - uses: actions/upload-artifact@v4
+      # tar preserves sidecar executable modes across Actions artifact transport.
+      - run: tar -cf native-assets.tar src-tauri/binaries src-tauri/resources/models src-tauri/resources/tessdata src-tauri/resources/notices
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: TaskLens-offline-${{ matrix.target }}
-          path: |
-            src-tauri/target/${{ matrix.target }}/release/bundle/
-            src-tauri/target/${{ matrix.target }}/release/tasklens.exe
-            src-tauri/target/${{ matrix.target }}/release/tasklens-*.exe
-            src-tauri/target/${{ matrix.target }}/release/resources/
-            src-tauri/resources/notices/runtime-build.json
+          name: native-assets-${{ matrix.os }}
+          path: native-assets.tar
+          compression-level: 0
+          retention-days: 3
+  rust:
+    needs: native-assets
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022, macos-14, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: 1.99.0
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libdbus-1-dev libayatana-appindicator3-dev librsvg2-dev
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: native-assets-${{ matrix.os }}
+          path: ${{ runner.temp }}/native
+      - run: tar -xf "$RUNNER_TEMP/native/native-assets.tar"
+      - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
+  packaging:
+    if: github.event_name == 'workflow_dispatch' && inputs.package
+    needs: [static, frontend, browser, rust, native-assets]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022, macos-14, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: 1.99.0
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev libdbus-1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - run: npm ci
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: native-assets-${{ matrix.os }}
+          path: ${{ runner.temp }}/native
+      - run: tar -xf "$RUNNER_TEMP/native/native-assets.tar"
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          TASKLENS_WEBVIEW2_URL: ${{ vars.TASKLENS_WEBVIEW2_URL }}
+          TASKLENS_WEBVIEW2_SHA256: ${{ vars.TASKLENS_WEBVIEW2_SHA256 }}
+          TASKLENS_INNO_URL: ${{ vars.TASKLENS_INNO_URL }}
+          TASKLENS_INNO_SHA256: ${{ vars.TASKLENS_INNO_SHA256 }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($kind in @('WEBVIEW2', 'INNO')) {
+            $url = [Environment]::GetEnvironmentVariable("TASKLENS_${kind}_URL")
+            $hash = [Environment]::GetEnvironmentVariable("TASKLENS_${kind}_SHA256")
+            if (-not $url -or -not $url.StartsWith('https://') -or $hash -notmatch '^[a-fA-F0-9]{64}$') { throw "BLOCKED: configure verified $kind URL and SHA256 variables" }
+            $file = Join-Path $env:RUNNER_TEMP "$kind.exe"
+            Invoke-WebRequest -Uri $url -OutFile $file
+            if ((Get-FileHash $file -Algorithm SHA256).Hash -ne $hash) { throw "$kind checksum mismatch" }
+          }
+          & ./scripts/verify-webview2.ps1 -Path "$env:RUNNER_TEMP/WEBVIEW2.exe"
+          $installer = Start-Process -FilePath "$env:RUNNER_TEMP/INNO.exe" -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$env:RUNNER_TEMP/Inno" -Wait -PassThru
+          if ($installer.ExitCode -ne 0) { throw 'Inno Setup installation failed' }
+          "TASKLENS_WEBVIEW2_INSTALLER=$env:RUNNER_TEMP/WEBVIEW2.exe" >> $env:GITHUB_ENV
+          "TASKLENS_WEBVIEW2_SHA256=$env:TASKLENS_WEBVIEW2_SHA256" >> $env:GITHUB_ENV
+          "TASKLENS_ISCC=$env:RUNNER_TEMP/Inno/ISCC.exe" >> $env:GITHUB_ENV
+      - run: npm run release:desktop -- --prepared
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: candidate-${{ matrix.os }}
+          path: src-tauri/target/release/distribution/
+          compression-level: 0
+          retention-days: 7
           if-no-files-found: error
+  artifact-verification:
+    needs: packaging
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .node-version
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: candidate-*
+          path: ${{ runner.temp }}/candidates
+      - run: |
+          for directory in "$RUNNER_TEMP"/candidates/candidate-*; do
+            node scripts/release-artifacts.mjs "$directory"
+          done
+      # Publication is deliberately separate; follow docs/release/RELEASE_CHECKLIST.md.

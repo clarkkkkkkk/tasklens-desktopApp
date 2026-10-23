@@ -34,8 +34,9 @@ fn main() {
         .manage(assets::Initialization::default())
         .manage(local_ai::server::Runtime::default())
         .setup(|app| {
-            app.manage(ai::groq::Groq::new(
+            app.manage(ai::groq::Groq::for_profile(
                 platform::app_data(app.handle())?.join("groq-usage.json"),
+                &app.config().identifier,
             )?);
             ai::groq::watch_connectivity(app.handle().clone());
             reliability::initialize(app.handle());

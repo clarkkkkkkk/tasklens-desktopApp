@@ -126,9 +126,10 @@ export function targetTriple() {
     'linux-x64': 'x86_64-unknown-linux-gnu',
     'win32-x64': 'x86_64-pc-windows-msvc',
     'darwin-arm64': 'aarch64-apple-darwin',
+    'darwin-x64': 'x86_64-apple-darwin',
   };
   const triple = triples[`${process.platform}-${process.arch}`];
-  if (!triple) throw new Error('Supported release hosts: Linux x64, Windows x64, macOS arm64');
+  if (!triple) throw new Error('Supported release hosts: Linux x64, Windows x64, macOS arm64/x64');
   return triple;
 }
 export const sidecar = (name) =>

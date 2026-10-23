@@ -82,15 +82,20 @@ export function AIRoutingPanel({
   settings,
   onUpdate,
   pending,
+  active = true,
 }: {
   settings: Settings;
   onUpdate: (next: Settings) => Promise<void>;
   pending: boolean;
+  active?: boolean;
 }) {
   const { services } = useApp();
   const [taskId, setTaskId] = useState('screenshot');
   const task = sampleTasks.find((t) => t.id === taskId)!;
-  const { snapshot, decision, policy, loading, error, refresh } = useAIRouting(task.signals);
+  const { snapshot, decision, policy, loading, error, refresh } = useAIRouting(
+    task.signals,
+    active,
+  );
   const ai = settings.ai;
   const update = (changes: Partial<Settings['ai']>) =>
     void onUpdate({ ...settings, ai: { ...ai, ...changes } });

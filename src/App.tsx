@@ -10,6 +10,9 @@ import { BrandHandoff } from './components/motion/BrandHandoff';
 import { reducedMotion } from './components/motion/motion';
 import { OnboardingFlow } from './features/onboarding/OnboardingFlow';
 import { CURRENT_ONBOARDING_VERSION } from './features/onboarding/onboarding.constants';
+import { GuidedTour } from './features/guided-tour/GuidedTour';
+import { useGuidedTour } from './features/guided-tour/useGuidedTour';
+import { useTourReadiness } from './features/guided-tour/useTourReadiness';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Download, RefreshCw } from './components/icons';
 import { useApp } from './app/context';
@@ -69,6 +72,11 @@ export default function App() {
   const [brandHandoff, setBrandHandoff] = useState<{ firstRun: boolean } | null>(null);
   const [bundle, setBundle] = useState<ExtractedAction[] | null>(null);
   const [voiceBusy, setVoiceBusy] = useState(false);
+  const [screenshotBusy, setScreenshotBusy] = useState(false);
+  const [settingsMounted, setSettingsMounted] = useState(false);
+  const guidedReplayScroll = useRef(0);
+  const guidedReplayOpener = useRef<HTMLElement | null>(null);
+  const guidedRestore = useRef<{ settings: boolean } | null>(null);
   const voiceCancel = useRef<(() => Promise<void>) | null>(null);
   const [pendingView, setPendingView] = useState<View | null>(null);
   const onVoiceGuard = useCallback((cancel: (() => Promise<void>) | null) => {
@@ -116,14 +124,60 @@ export default function App() {
     !loadError &&
     snapshot.settings.onboardingCompletedVersion < CURRENT_ONBOARDING_VERSION;
   const touring = !loadError && (replay || needsOnboarding || finishingTour);
+  const settingsBusy = useTourReadiness();
+  const guidedBlocked = !!(
+    loading ||
+    loadError ||
+    touring ||
+    brandHandoff ||
+    setupOpen ||
+    searchOpen ||
+    selection ||
+    dirty ||
+    voiceBusy ||
+    screenshotBusy ||
+    bundle ||
+    pendingView ||
+    settingsBusy
+  );
+  const guided = useGuidedTour({
+    blocked: guidedBlocked,
+    navigate: setView,
+    announce,
+    onDismiss: (origin, finished) => {
+      const restoreSettings = origin === 'replay' && !finished;
+      guidedRestore.current = { settings: restoreSettings };
+      setView(restoreSettings ? 'settings' : 'inbox');
+      if (origin === 'first-run') setCaptureHint(true);
+    },
+  });
+  const queueGuidedTour = guided.queueFirstRun;
+  useEffect(() => {
+    if (view === 'settings') setSettingsMounted(true);
+  }, [view]);
   useLayoutEffect(() => {
     pageContent.current?.scrollTo(0, 0);
   }, [view]);
+  useLayoutEffect(() => {
+    if (guided.active || !guidedRestore.current) return;
+    const restore = guidedRestore.current;
+    guidedRestore.current = null;
+    // Restore after the destination commit and its normal view scroll reset.
+    const timer = window.setTimeout(() => {
+      if (document.querySelector('dialog[open]')) return;
+      if (restore.settings) {
+        if (pageContent.current) pageContent.current.scrollTop = guidedReplayScroll.current;
+        guidedReplayOpener.current?.focus({ preventScroll: true });
+      } else document.getElementById('main-content')?.focus({ preventScroll: true });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [guided.active, view]);
   const finishBrandHandoff = useCallback(() => {
-    pendingBrandFocus.current = true;
+    const queued = brandHandoff?.firstRun ? queueGuidedTour() : false;
+    pendingBrandFocus.current = !queued;
     setBrandHandoff(null);
-    if (brandHandoff?.firstRun) setCaptureHint(true);
-  }, [brandHandoff]);
+    if (brandHandoff?.firstRun && !queued) setCaptureHint(true);
+  }, [brandHandoff, queueGuidedTour]);
   useLayoutEffect(() => {
     if (!brandHandoff && pendingBrandFocus.current) {
       pendingBrandFocus.current = false;
@@ -161,7 +215,20 @@ export default function App() {
     [dirty, announce],
   );
   useEffect(() => {
-    if (!isTauri() || loading || dirty || voiceBusy || bundle || touring || setupOpen) return;
+    if (
+      !isTauri() ||
+      loading ||
+      dirty ||
+      voiceBusy ||
+      screenshotBusy ||
+      bundle ||
+      touring ||
+      brandHandoff ||
+      guided.active ||
+      guided.pending ||
+      setupOpen
+    )
+      return;
     let disposed = false;
     let cleanup = () => {};
     const consume = async () => {
@@ -188,7 +255,21 @@ export default function App() {
       disposed = true;
       cleanup();
     };
-  }, [loading, dirty, voiceBusy, bundle, touring, setupOpen, snapshot.actions, onOpen, announce]);
+  }, [
+    loading,
+    dirty,
+    voiceBusy,
+    screenshotBusy,
+    bundle,
+    touring,
+    brandHandoff,
+    guided.active,
+    guided.pending,
+    setupOpen,
+    snapshot.actions,
+    onOpen,
+    announce,
+  ]);
   const onClose = useCallback(() => {
     pendingCloseFocus.current = ++focusVersion.current;
     setSelection(null);
@@ -220,7 +301,7 @@ export default function App() {
   const showInbox = view === 'inbox';
   const resultDialogOpen = floatingResult && !!selected;
   useEffect(() => {
-    if (touring || loading || loadError) return;
+    if (touring || guided.active || guided.pending || loading || loadError) return;
     const handler = (event: KeyboardEvent) => {
       if (
         event.ctrlKey &&
@@ -244,12 +325,25 @@ export default function App() {
       }
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
-        if (!brandHandoff && !voiceBusy && !bundle && !setupOpen) setSearchOpen(true);
+        if (!brandHandoff && !voiceBusy && !screenshotBusy && !bundle && !setupOpen)
+          setSearchOpen(true);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [touring, brandHandoff, voiceBusy, bundle, setupOpen, loading, loadError, toggleSidebar]);
+  }, [
+    touring,
+    guided.active,
+    guided.pending,
+    brandHandoff,
+    voiceBusy,
+    screenshotBusy,
+    bundle,
+    setupOpen,
+    loading,
+    loadError,
+    toggleSidebar,
+  ]);
   async function backup() {
     try {
       downloadText(await services.repository.exportRaw(), 'tasklens-recovery.json');
@@ -268,6 +362,7 @@ export default function App() {
           onFinishingChange={setFinishingTour}
           onExit={exitReplay}
           onFinish={async (reason) => {
+            const firstCompletion = reason === 'complete' && !replay;
             const showBrand = reason === 'complete' && !reducedMotion();
             const tour = document.querySelector<HTMLElement>('.onboarding');
             if (tour) {
@@ -279,11 +374,13 @@ export default function App() {
             setView('inbox');
             setReplay(false);
             if (!showBrand) {
-              if (!replay) setCaptureHint(true);
-              window.setTimeout(
-                () => document.getElementById('main-content')?.focus({ preventScroll: true }),
-                0,
-              );
+              if (!firstCompletion || !queueGuidedTour()) {
+                if (!replay) setCaptureHint(true);
+                window.setTimeout(
+                  () => document.getElementById('main-content')?.focus({ preventScroll: true }),
+                  0,
+                );
+              }
             }
           }}
         />
@@ -303,6 +400,7 @@ export default function App() {
           onToggle={toggleSidebar}
           view={view}
           onNavigate={(v) => {
+            if (guided.active || guided.pending) return;
             if (v === requestedView.current) return;
             if (voiceCancel.current) {
               setPendingView(v);
@@ -322,11 +420,13 @@ export default function App() {
         <div className="app-body">
           <TopBar
             onSearch={() => {
-              if (!voiceBusy && !setupOpen) setSearchOpen(true);
+              if (!guided.active && !voiceBusy && !screenshotBusy && !setupOpen)
+                setSearchOpen(true);
             }}
             searchOpen={searchOpen}
             onNew={() => {
-              if (!voiceBusy && !setupOpen) onOpen(newAction());
+              if (!guided.active && !voiceBusy && !screenshotBusy && !setupOpen)
+                onOpen(newAction());
             }}
           />
           <main
@@ -360,6 +460,7 @@ export default function App() {
                       setupOpen ||
                       resultDialogOpen ||
                       searchOpen ||
+                      guided.active ||
                       !!brandHandoff ||
                       voiceBusy ||
                       !!bundle
@@ -368,6 +469,7 @@ export default function App() {
                     onCaptureInteraction={() => setCaptureHint(false)}
                     locked={dirty || !!bundle}
                     onVoiceGuard={onVoiceGuard}
+                    onCaptureBusyChange={setScreenshotBusy}
                     onBundle={setBundle}
                     onOpenSettings={() => {
                       if (dirty || voiceCancel.current) return;
@@ -381,23 +483,33 @@ export default function App() {
                         onClose();
                     }}
                   />
+                  {(settingsMounted || view === 'settings') && (
+                    <SettingsView
+                      active={view === 'settings'}
+                      tourActive={guided.active}
+                      guidedReplayDisabled={guidedBlocked || guided.pending}
+                      onReplayGuidedTour={() => {
+                        if (guidedBlocked || guided.pending) return;
+                        guidedReplayScroll.current = pageContent.current?.scrollTop ?? 0;
+                        guidedReplayOpener.current = document.activeElement as HTMLElement;
+                        setCaptureHint(false);
+                        guided.replay();
+                      }}
+                      onReplay={() => {
+                        if (dirty) {
+                          announce('Save or close your current edits before replaying onboarding.');
+                          return;
+                        }
+                        replayOpener.current = document.activeElement as HTMLElement;
+                        setSelection(null);
+                        setSearchOpen(false);
+                        setReplay(true);
+                      }}
+                    />
+                  )}
                   {!showInbox &&
-                    (view === 'settings' ? (
-                      <SettingsView
-                        onReplay={() => {
-                          if (dirty) {
-                            announce(
-                              'Save or close your current edits before replaying onboarding.',
-                            );
-                            return;
-                          }
-                          replayOpener.current = document.activeElement as HTMLElement;
-                          setSelection(null);
-                          setSearchOpen(false);
-                          setReplay(true);
-                        }}
-                      />
-                    ) : view === 'calendar' ? (
+                    view !== 'settings' &&
+                    (view === 'calendar' ? (
                       <CalendarView
                         key={calendarDate || 'current'}
                         initialDate={calendarDate}
@@ -469,6 +581,15 @@ export default function App() {
         )}
         <MotionToast message={notice} tone={noticeTone} />
       </div>
+      {guided.active && (
+        <GuidedTour
+          step={guided.step}
+          index={guided.index}
+          count={guided.count}
+          onMove={guided.move}
+          onDismiss={guided.dismiss}
+        />
+      )}
     </>
   );
 }

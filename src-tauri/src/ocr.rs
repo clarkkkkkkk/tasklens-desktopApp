@@ -326,6 +326,31 @@ fn recognize_bytes_traced(
     }))
 }
 
+// OCR inputs and TSV output contain private source content. Create the parent privately,
+// reject symlinked job roots, and let TempDir clean every normal return path.
+fn private_job_root(path: &Path) -> Result<(), String> {
+    if fs::symlink_metadata(path).is_ok_and(|m| m.file_type().is_symlink() || !m.is_dir()) {
+        return Err(platform::GENERIC_ERROR.into());
+    }
+    let mut builder = fs::DirBuilder::new();
+    builder.recursive(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        builder.mode(0o700);
+    }
+    builder
+        .create(path)
+        .map_err(|_| platform::GENERIC_ERROR.to_string())?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(path, fs::Permissions::from_mode(0o700))
+            .map_err(|_| platform::GENERIC_ERROR.to_string())?;
+    }
+    Ok(())
+}
+
 fn recognize(
     app: &tauri::AppHandle,
     id: &str,
@@ -347,12 +372,16 @@ fn recognize(
             )
         }
     };
-    let folder = platform::app_data(app)?.join("ocr-jobs").join(id);
-    fs::create_dir_all(&folder).map_err(|_| platform::GENERIC_ERROR.to_string())?;
+    let root = platform::app_data(app)?.join("ocr-jobs");
+    private_job_root(&root)?;
+    let folder = tempfile::Builder::new()
+        .prefix("ocr-")
+        .tempdir_in(&root)
+        .map_err(|_| platform::GENERIC_ERROR.to_string())?;
     let result = recognize_bytes_traced(
         &engine,
         &bytes,
-        &folder,
+        folder.path(),
         &job.cancel,
         |stage| {
             let _ = app.emit("local-ai-progress", json!({"jobId": id, "stage": stage}));
@@ -360,7 +389,6 @@ fn recognize(
         Some(trace),
         Some(id),
     );
-    let _ = fs::remove_dir_all(&folder);
     result
 }
 
@@ -482,6 +510,27 @@ pub fn initialize(app: &tauri::AppHandle) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(unix)]
+    #[test]
+    fn ocr_job_root_is_private_and_rejects_symlinks() {
+        use std::os::unix::fs::{symlink, PermissionsExt};
+        let base = tempfile::tempdir().unwrap();
+        let root = base.path().join("ocr-jobs");
+        private_job_root(&root).unwrap();
+        assert_eq!(
+            fs::metadata(&root).unwrap().permissions().mode() & 0o777,
+            0o700
+        );
+        fs::set_permissions(&root, fs::Permissions::from_mode(0o755)).unwrap();
+        private_job_root(&root).unwrap();
+        assert_eq!(
+            fs::metadata(&root).unwrap().permissions().mode() & 0o777,
+            0o700
+        );
+        let linked = base.path().join("linked");
+        symlink(&root, &linked).unwrap();
+        assert!(private_job_root(&linked).is_err());
+    }
     const TSV: &str = "level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext
 1\t1\t0\t0\t0\t0\t0\t0\t1600\t900\t-1\t
 4\t1\t1\t1\t1\t0\t100\t40\t400\t30\t-1\t

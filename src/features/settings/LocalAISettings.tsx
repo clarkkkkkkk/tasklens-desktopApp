@@ -93,7 +93,11 @@ export function LocalAISettings({
     void onUpdate({ ...settings, localAI: { ...local, ...changes } });
 
   return (
-    <section className="settings-section" aria-labelledby="local-ai-heading">
+    <section
+      className="settings-section"
+      aria-labelledby="local-ai-heading"
+      data-tour-busy={!!busy}
+    >
       <h2 id="local-ai-heading">
         <Sparkles size={18} />
         Local AI

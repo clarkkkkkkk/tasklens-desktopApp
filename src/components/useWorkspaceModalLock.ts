@@ -12,7 +12,7 @@ export function useWorkspaceModalLock() {
       locked = null;
     };
     const update = () => {
-      if (!document.querySelector('dialog[open]')) {
+      if (!document.querySelector('dialog[open]:not([data-guided-tour])')) {
         unlock();
         return;
       }
