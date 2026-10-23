@@ -12,6 +12,8 @@ export interface Size {
 }
 const clearance = 12;
 const gap = 16;
+/** Header, progress and controls stay usable with a short scrolling body. */
+const minimumCardHeight = 160;
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(n, max));
 export function overlaps(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
@@ -52,7 +54,19 @@ export function placeCard(
       : [preferred, 'right', 'left', 'below', 'above'].map(
           (side) => candidates[side as TourPlacement],
         );
-  return order.find((candidate) => !overlaps(candidate, target)) ?? bottom;
+  const placed = order.find((candidate) => !overlaps(candidate, target));
+  if (placed) return placed;
+  // No side fits at full height (short windows): shrink into the larger free band; content scrolls.
+  const above = target.y - gap - clearance;
+  const below = viewport.height - (target.y + target.height) - gap - clearance;
+  const band = Math.max(above, below);
+  if (band < minimumCardHeight) return bottom;
+  return {
+    x: candidates.below.x,
+    y: above >= below ? clearance : target.y + target.height + gap,
+    width,
+    height: band,
+  };
 }
 
 /** Clip to visible scroll containers so the outline never highlights hidden content. */

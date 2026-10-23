@@ -30,6 +30,15 @@ describe('tour placement', () => {
       }
     }
   });
+  it('shrinks the card into the larger free band when no side fits (CI 600x640 review step)', () => {
+    const viewport = { width: 600, height: 640 };
+    const target = { x: 12, y: 338.578125, width: 561, height: 105.28125 };
+    const card = placeCard(target, { width: 440, height: 344.25 }, viewport);
+    expect(overlaps(card, target)).toBe(false);
+    expect(card.y).toBeGreaterThanOrEqual(12);
+    expect(card.y + card.height).toBeLessThanOrEqual(target.y - 16);
+    expect(card.height).toBeCloseTo(target.y - 16 - 12);
+  });
   it('centers safely without a target and constrains tiny windows', () => {
     expect(placeCard(null, { width: 440, height: 320 }, { width: 900, height: 640 })).toEqual({
       x: 230,

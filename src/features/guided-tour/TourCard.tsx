@@ -33,7 +33,7 @@ export function TourCard({
       ref={cardRef}
       className="tour-card"
       data-ready={ready}
-      style={{ left: position.x, top: position.y }}
+      style={{ left: position.x, top: position.y, maxHeight: position.height }}
     >
       <header className="tour-card-header">
         <span>Guided tour</span>
