@@ -96,3 +96,11 @@ The full browser run completed with **68 passed / 29 failed** in 21.1 minutes un
 During completion, main advanced to guided-tour commit `a37d2df`. It was merged without conflicts to preserve already published collaborator work and permit a normal main push. The separate release-preparation branch remains excluded. Initial audit/native/package evidence above applies to f0f1c60; the later guided-tour frontend is outside that package's acceptance. Final integrated installers and full native workflows require revalidation.
 
 After integrating published main, TypeScript, ESLint, formatting and **144 unit tests** passed (2 opt-in skipped). New audit RPM inventory was verified to contain both models, eng/ceb/tgl trained data, native runtimes and notices. The final history scan examined 47 commits with scanned changes and found zero leaks; the production frontend scan also found zero leaks. CI for the final pushed commit remains a separate gate; these local checks do not replace it.
+
+## Exact-commit CI result
+
+[Quality run 39941856615](https://github.com/clarkkkkkkk/tasklens-desktopApp/actions/runs/39941856615) tested pushed commit `7862ba64343864cb2453ad2f8f32cc33628f9d61`. Rust security, frontend checks, unit/release/asset tests, npm audit, production build and history/bundle scans passed. Playwright recorded **110 passed / 1 failed** in 3.6 minutes. The failing case checks guided-tour target/card geometry at 600 px. This confirms an unresolved narrow-window verification issue in the newly integrated tour; it must not be dismissed as the earlier alternate-port problem. Local diagnostic traversal of all 12 steps did not reproduce overlap. Native matrix run 39941856575 was still in progress when this evidence was written. No fully successful exact-commit workflow is claimed here. Later README-only commits require their own CI result.
+
+README screenshots were refreshed from current application components with synthetic data and labelled browser-preview provenance. They are not substituted for the pending native demo video.
+
+The 600 px guided-tour browser case subsequently passed a targeted local rerun (all 12 steps plus accessibility checks, 31.6 seconds). This establishes intermittency; it does not erase the failed CI run or establish a fix. The README follow-up changes documentation and screenshots only.

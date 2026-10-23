@@ -96,5 +96,22 @@
       "unitPassed": 144,
       "unitSkipped": 2
     }
+  },
+  "ci": {
+    "commit": "7862ba64343864cb2453ad2f8f32cc33628f9d61",
+    "qualityRun": 39941856615,
+    "result": "failed",
+    "browserPassed": 110,
+    "browserFailed": 1,
+    "failedCase": "guided-tour all 12 steps geometry at 600px",
+    "rustSecurity": "passed",
+    "frontendBeforeBrowser": "passed",
+    "nativeMatrixRun": 39941856575,
+    "nativeMatrixStatus": "in progress at evidence snapshot",
+    "localTour600Rerun": {
+      "result": "passed",
+      "durationSeconds": 31.6,
+      "fixClaimed": false
+    }
   }
 }

@@ -4,9 +4,21 @@
 
 TaskLens turns screenshots, typed text and locally transcribed voice into editable tasks, events and deadlines. **Capture → Extract → Review → Confirm → Save → Workspace.** Source Trace helps users compare suggestions with their source before confirming them.
 
-![TaskLens Inbox](docs/screenshots/inbox.png)
+![Current TaskLens Inbox with screenshot capture, voice and text controls, and workspace navigation](docs/screenshots/inbox.png)
+
+_Current application UI rendered in Chromium with a fresh synthetic demo profile. These screenshots show the interface and labelled sample workflow; they are not native inference or installer evidence._
 
 **Release status: pre-release candidate, not an approved production release.** Read [the release audit](RELEASE_AUDIT.md), [verification gates](RELEASE_CHECKLIST.md) and [security audit](SECURITY_AUDIT.md). A working sample is not evidence that real AI inference succeeded.
+
+## The TaskLens application
+
+TaskLens brings capture, review and planning into one desktop workspace:
+
+- **Capture:** paste or drop screenshots, type information, record a voice note, or import audio.
+- **Choose processing:** use Local AI or explicitly connect Groq Cloud with your own key. Guided setup explains the privacy boundary before online extraction.
+- **Review before saving:** check source evidence, edit extracted details, resolve uncertain fields, and review multiple activities individually.
+- **Plan locally:** use Today, Upcoming, Calendar, All Tasks, Needs Review and workspace search. Native reminder delivery requires explicit activation.
+- **Make the workspace yours:** collapse the sidebar, use keyboard shortcuts, and replay the 12-step guided tour from Settings.
 
 ## Processing and privacy
 
@@ -56,6 +68,37 @@ No signed public release or approved demonstration video is linked yet. See the 
 5. Find saved items in Today, Upcoming, Calendar, All Tasks or search. Create a task manually with New item at any time.
 
 Ctrl/Cmd K opens search. Ctrl+Shift+Space toggles the persistent sidebar; icon navigation has labels/tooltips. Settings contains AI mode/key management, notifications, appearance, data export and expandable advanced diagnostics. Native reminders require separate activation; OS submission does not prove banner visibility. Autostart, encrypted storage and backup import are unfinished.
+
+## Inside TaskLens
+
+<details>
+<summary>Review a captured announcement</summary>
+
+![TaskLens sample event review with unresolved details and explicit confirmation](docs/screenshots/review.png)
+
+The built-in sample is clearly marked “not AI analysis.” Extracted suggestions stay in Needs Review until the user confirms them.
+
+</details>
+
+<details>
+<summary>See a saved event in Calendar</summary>
+
+![TaskLens Calendar displaying the confirmed synthetic Pictorial event](docs/screenshots/calendar.png)
+
+The example uses the synthetic October 8, 2026 announcement, with the demo clock fixed to that date.
+
+</details>
+
+<details>
+<summary>Manage processing and the Groq connection in Settings</summary>
+
+![TaskLens Settings showing guided-tour replay, Local AI, Groq Cloud and connection controls](docs/screenshots/settings.png)
+
+Browser previews disable native credential actions. The Tauri desktop application provides the native connection and verification controls. No key is shown or stored in these images.
+
+</details>
+
+Screenshot provenance: [capture notes](docs/screenshots/README.md). [Latest main CI](https://github.com/clarkkkkkkk/tasklens-desktopApp/actions).
 
 ## Checks and packaging
 
