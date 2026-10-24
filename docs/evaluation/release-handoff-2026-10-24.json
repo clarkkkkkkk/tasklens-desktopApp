@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-24",
+  "timezone": "Asia/Manila",
+  "sourceCommit": "dfef55578349ed74d41ede73355d140dcbf57524",
+  "status": "NOT READY",
+  "sourcePush": "PASS: main push confirmed",
+  "website": {
+    "sourceCommit": "98e6cc1",
+    "url": "https://www.tasklens.site/download",
+    "deployment": "PASS",
+    "scope": "HTTPS content and Vercel success; not desktop acceptance"
+  },
+  "productionCompilation": "PASS",
+  "installerPackaging": "BLOCKED: interrupted during RPM creation; no final dfef555 distribution inventory",
+  "stagedNative": {
+    "binarySha256": "a60477b43e8a959d2f1fe368d31fdf6ad86a8955d7af3b04712ec6f3b859bf85",
+    "firstLaunch": "PASS",
+    "ocr": "PASS",
+    "screenshotExtraction": "FAIL: native model response timeout",
+    "remainingWorkflow": "NOT RUN after failure",
+    "scope": "staged production binary with unchanged pinned resources, private XDG/D-Bus and no external network; not fresh installation"
+  },
+  "ci": {
+    "qualityRun": 40078422617,
+    "firstAttempt": "FAIL: browser111 passed,1 failed",
+    "failedTest": "inbox-result: screenshot result dialog visibility",
+    "rerun": "NOT RUN to verified completion",
+    "nativeRun": 40078422663,
+    "latestResult": "BLOCKED: current API state could not be retrieved reliably"
+  },
+  "release": {
+    "tag": "v0.1.0-beta.1",
+    "lastVerifiedDraft": true,
+    "lastVerifiedTarget": "0d678fca743fa62f253389d666528ae4f3d20352",
+    "publicInstallersPublishedByThisWork": false,
+    "assetUpload": "NOT RUN: candidate failed acceptance"
+  },
+  "blockers": [
+    "Offline native screenshot extraction timeout on available i5/16GB host",
+    "Intermittent screenshot modal visibility CI failure",
+    "Fedora-built sidecars require GLIBC_2.43 and fail Ubuntu24.04",
+    "Final installer generation interrupted; Windows/macOS package and clean-machine acceptance incomplete",
+    "Authorized live Groq key and native permission/upgrade acceptance unavailable",
+    "Eight upstream Cargo warnings including GLib unsoundness remain open"
+  ]
+}
