@@ -17,13 +17,17 @@ Date: 2026-10-24 (Asia/Manila). Baseline: `374f692afe22de55bb80472035006e67919dd
 
 ## Executed automated evidence
 
-- Gitleaks 8.30.1 binary downloaded from its official release and verified against upstream SHA-256 checksums. `gitleaks git --redact --report-format json --report-path ... --log-opts='--all'` scanned 37 commits and approximately 2.95 MB with no leaks found at the initial baseline. Repeat before source push, including newly fetched history.
-- `npm audit --json`: initial report had two moderate development dependency entries; after Vitest 4.1.12, zero reported vulnerabilities. A clean audit is time-bound and does not certify application security.
-- `cargo-audit 0.22.2 audit --file src-tauri/Cargo.lock --json`: zero vulnerability entries, seven unmaintained-package entries and one GLib unsoundness entry. These warnings are not suppressed.
-- `npm run verify:assets`: all manifest-pinned models, language data, notices and native runtime provenance passed on Fedora. Verified payload: 3,062,001,808 bytes before TaskLens/system WebView and supplemental dependency notices.
-- Working-tree, final frontend and extracted artifact scans must be recorded with final candidate evidence before release approval. Reports contain redaction, never discovered credential values.
+- Exact source `0d678fc`: [quality/security CI 40067961958](https://github.com/clarkkkkkkk/tasklens-desktopApp/actions/runs/40067961958) passed full-history, source and production-frontend Gitleaks scans with `--redact=100`. No genuine credential finding was identified. Local history/source scans also completed; raw reports stay ignored.
+- Fresh `npm audit --json` initially identified high-severity Zod `GHSA-mrhx-c7xc-m3w5`. Pinned Zod 4.6.7, nested-default compatibility handling and stored-data regression tests remediate it. Subsequent local and exact-source CI npm audit report **zero vulnerabilities**. Vitest is 4.1.12, preserving its earlier security fix.
+- Exact-source CI Cargo audit 0.22.2 scanned 629 locked crates: **eight upstream warnings**, including seven maintenance entries and GLib `RUSTSEC-2024-0429` unsoundness. The zero vulnerability-entry count does not close those warnings or establish production approval. Application code has no direct `VariantStrIter` usage; transitive reachability has not been disproved.
+- Asset verification passed: **3,062,001,808 pinned payload bytes** before application/system WebView and supplemental notices. Both models remain exact pins; no smaller weights or first-launch downloads were substituted. 850 dependency notices were collected.
+- Extracted RPM Gitleaks scan: **64,547,354 bytes scanned**, one generic-api-key false positive in `usr/lib/TaskLens/resources/notices/dependencies/linux-system-licenses/linux-firmware-whence/WHENCE:3123`. The match is a public firmware symlink filename (`bananapi-m64.txt`), not a credential. The bundled file matches Fedora package `linux-firmware-whence-20260309-1.fc44.noarch`, SHA256 `b763b1df1341d86664e8e881f5214333d5f904c31e8cc58bb5302774f0369630`. No broad scanner exception was added. The 2.497 GB and 487 MB model files were explicitly excluded from regex scanning by the 64 MB limit and are checked by their pinned cryptographic hashes instead.
+- Native transport scripts pass synthetic corruption/missing-part/whole-hash/overwrite checks on Ubuntu, Windows PowerShell and both macOS architectures. Actual uploaded-package download/reconstruction remains a separate gate.
+- Windows packaging inputs: immutable Inno 6.5.2 executable SHA256 `8582879760b6e0e42e00f2e28ce904afac0d739941a130d3da3573c3cbf2d75b` matched GitHub's immutable official release digest. The Microsoft standalone x64 WebView2 installer SHA256 is `9b0142e22e8daa92855d746ae4d1e9eeef561ccaf67d1dd452165c4af3df3191`; its official immutable download URL/hash are configured as public repository variables. Microsoft Authenticode verification is required on the Windows packaging runner and is not inferred from a Linux download/hash.
 
-Raw logs remain in ignored `.local-ai/release-audit/`; only sanitized summaries belong in Git. No real Groq key was requested, read, transmitted or bundled for this audit. Native credential tests use an isolated synthetic service identifier and must not touch the production account.
+Raw logs are in ignored `.local-ai/release-audit/`; committed summaries contain no API key values. No real Groq key was supplied, read from the production account, transmitted or bundled. The extracted native test uses private XDG directories and private D-Bus; Secret Service fails closed inside that namespace, so it is not proof of successful production credential persistence.
+
+The confirmed Fedora-build/Ubuntu GLIBC mismatch is an availability/distribution blocker. Do not publish those files as Ubuntu-compatible packages. Public installer publication remains blocked even though the website instructions were deployed and verified independently.
 
 ## Reviewed controls and changes
 
@@ -36,6 +40,12 @@ Raw logs remain in ignored `.local-ai/release-audit/`; only sanitized summaries 
 - macOS sidecar verification checks native architecture and system-only dynamic-library dependencies. Developer ID builds require codesign/Gatekeeper/stapled-ticket checks; a Linux source edit does not establish those passes.
 - CI uses pinned action commits, read-only contents permission and committed lockfiles. PR jobs contain no Groq or signing secrets. Packaging is manual; no push-triggered publication exists.
 - Installer staging clears generated paths only. App identity, localStorage keys, user model overrides, journal and personal files are preserved. No update/uninstall data deletion is introduced.
+
+## Native and transport availability blockers
+
+Real native tests found wrong exam classification and a missing required screenshot arrival. Conservative bounded repair checks now reject those omissions for repair rather than silently rewriting fields; new real-model/package acceptance is pending. The old compiled candidate is not release-approved.
+
+Manual installer CI failed on a truncated macOS ARM native-input tar. The handoff now uses approximately 1 GiB parts with complete SHA-256 reconstruction checks and asset verification after extraction. A new CI run must pass; no transport error is suppressed or converted into an installer pass.
 
 ## Approval policy
 

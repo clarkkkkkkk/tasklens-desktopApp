@@ -3,7 +3,6 @@ import { mkdir, link, writeFile, lstat } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { verifyInventory, sha256, GITHUB_ASSET_LIMIT } from './release-artifacts.mjs';
-import { verifyParts } from './release-parts.mjs';
 
 export async function prepareRelease(output, directories) {
   if (!directories.length) throw new Error('Provide at least one verified candidate directory');
@@ -24,12 +23,14 @@ export async function prepareRelease(output, directories) {
   const uploads = new Map();
   const artifacts = [];
   const installerSums = [];
-  async function add(file) {
+  async function add(file, verified) {
     const filename = path.basename(file);
     const info = await lstat(file);
     if (!info.isFile() || info.size < 1 || info.size >= GITHUB_ASSET_LIMIT)
       throw new Error('Invalid or oversized GitHub asset');
-    const hash = await sha256(file);
+    if (verified && info.size !== verified.bytes)
+      throw new Error('Verified file size changed before staging');
+    const hash = verified ? verified.sha256 : await sha256(file);
     const existing = uploads.get(filename);
     if (existing) {
       if (existing.bytes !== info.size || existing.sha256 !== hash)
@@ -53,20 +54,21 @@ export async function prepareRelease(output, directories) {
         throw new Error('Duplicate platform installer');
       const artifact = { ...entry, parts: [], partsManifest: null };
       installerSums.push(`${entry.sha256}  ${entry.filename}`);
-      if (entry.bytes < GITHUB_ASSET_LIMIT) await add(path.join(directory, entry.filename));
+      if (entry.bytes < GITHUB_ASSET_LIMIT) await add(path.join(directory, entry.filename), entry);
       else {
         const manifestPath = path.join(directory, ...entry.partsManifest.split('/'));
-        const parts = await verifyParts(manifestPath);
+        const parts = report.verifiedParts.get(entry.filename);
         await add(manifestPath);
         artifact.partsManifest = path.basename(manifestPath);
         for (const part of parts.parts) {
-          await add(path.join(path.dirname(manifestPath), part.file));
+          await add(path.join(path.dirname(manifestPath), part.file), part);
           artifact.parts.push({ ...part, downloadUrl: null, downloadVerified: false });
         }
       }
       artifacts.push(artifact);
     }
-    for (const file of report.supportFiles || []) await add(path.join(directory, file.filename));
+    for (const file of report.supportFiles || [])
+      await add(path.join(directory, file.filename), file);
   }
   const sums = [...installerSums];
   for (const entry of uploads.values())

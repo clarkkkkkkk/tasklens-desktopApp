@@ -92,6 +92,21 @@ async function launch() {
   }
   throw new Error('Native window did not initialize');
 }
+async function closeActiveReview() {
+  await sync(
+    `const d=document.querySelector('dialog[open]');if(!d)return true;const b=d.querySelector('button[aria-label="Close details"]')||Array.from(d.querySelectorAll('button')).find(b=>b.textContent.trim()==='Close review');if(!b)throw new Error('Review close control unavailable');b.click();return true;`,
+  );
+  for (let i = 0; i < 100; i++) {
+    if (
+      !(await sync(
+        `return !!document.querySelector('dialog.inbox-result-dialog[open],dialog.bundle-review[open]')`,
+      ))
+    )
+      return;
+    await wait(100);
+  }
+  throw new Error('Saved review did not close');
+}
 async function check(name, fn) {
   const start = performance.now();
   const detail = await fn();
@@ -223,11 +238,23 @@ try {
             assert.equal(action.source.type, 'image');
             assert.equal(action.source.extractionMode, 'local');
             assert.match(action.source.ocr.fullText, /pictorial/i);
+            assert.equal(
+              action.date,
+              undefined,
+              'Ambiguous screenshot date must remain unresolved',
+            );
+            assert.equal(
+              action.time,
+              undefined,
+              'Unannounced screenshot start must remain unresolved',
+            );
+            assert.equal(action.arrivalTime, '13:30', 'Explicit required arrival must be retained');
             const regions = new Set(action.source.ocr.regions.map((r) => r.id));
             for (const evidence of action.evidence || [])
               for (const id of evidence.segmentIds)
                 assert.ok(regions.has(id), 'Source Trace references an absent OCR region');
           }
+          await closeActiveReview();
           return { saved: saved.length, review: reviewText, localSourceEvidence: true };
         },
       );
@@ -269,9 +296,18 @@ try {
           writeFileSync(path.join(out, 'review.png'), Buffer.from(shot, 'base64'));
         }
         await sync(
-          `Array.from(document.querySelectorAll('button')).find(b=>!b.disabled && /Confirm & save|Save draft/.test(b.textContent))?.click(); return true;`,
+          `const modal=document.querySelector('dialog.bundle-review[open],dialog.inbox-result-dialog[open]');if(!modal)throw new Error('Current review unavailable');const buttons=Array.from(modal.querySelectorAll('button'));const save=buttons.find(b=>!b.disabled&&/Confirm & save/.test(b.textContent))||buttons.find(b=>!b.disabled&&/^Save draft$/.test(b.textContent.trim()));if(!save)throw new Error('Save control unavailable');save.click();return true;`,
         );
-        await wait(1000);
+        for (let i = 0; i < 300; i++) {
+          if (
+            await sync(
+              `return JSON.parse(localStorage.getItem('tasklens:data:v1')).actions.some(a=>!arguments[0].includes(a.id))`,
+              [Array.from(previousIds)],
+            )
+          )
+            break;
+          await wait(100);
+        }
         const saved = await sync(
           `return JSON.parse(localStorage.getItem('tasklens:data:v1')).actions`,
         );

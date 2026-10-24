@@ -8,17 +8,19 @@ This preparation adds consistent installer names/checksum manifests, DEB packagi
 
 ## Downloads
 
-No public download locations have been verified. Do not publish this draft with fabricated links. Attach the final manifest/checksums and platform artifacts, or approved large-file host links, only after complete download verification. Use the artifact inventory produced by the approved build.
+No public download locations have been verified. Do not publish this draft with fabricated links. Attach the final manifest/checksums, notices, reconstruction scripts and GitHub-sized parts only after byte verification. Keep the draft unpublished until native acceptance and downloaded-asset verification pass. Use the artifact inventory produced by the approved build.
 
 ## Limitations
 
 - Native platform coverage is incomplete. Consult PLATFORM_TEST_MATRIX.md for executed results; compilation and package generation alone do not certify runtime support.
 - Windows/macOS signing, Gatekeeper/SmartScreen, real microphone behavior and clean upgrade acceptance require native environments and credentials where applicable.
 - Intel macOS is unverified.
-- Full offline installers exceed GitHub's per-file hosting limit on measured Linux builds; approved large-file hosting is pending.
+- Full offline installers exceed GitHub’s per-file limit. The owner selected GitHub-only numbered parts with native shell/PowerShell reconstruction; no external host is used.
 - Task data, the delivery journal and backups are unencrypted. Tasks remain in localStorage; SQLite is a reminder delivery journal. Backup import and automatic launch-at-startup are unfinished.
 - Reminders are opt-in; OS submission does not guarantee visible notification delivery.
 - Real Groq inference requires the user's key and explicit consent. Live acceptance is blocked without an authorized test key.
 - Security review retains the transitive GLib unsoundness and Cargo maintenance advisories.
 
 See DISTRIBUTION.md for candidate installation instructions and troubleshooting, and PRODUCTION_READINESS.md for the final verdict and evidence. No automatic update channel, Homebrew tap, WinGet manifest or package repository is advertised.
+
+The compiled 0d678fc candidate failed strict native exam classification and omitted a required screenshot arrival. It must not be promoted. Native Whisper WAV transcription and manual-save/restart component checks passed; these do not pass voice-to-task extraction. Rebuild and rerun after the bounded-repair fixes.

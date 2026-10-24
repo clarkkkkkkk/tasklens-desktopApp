@@ -68,6 +68,7 @@ export async function verifyInventory(directory) {
   )
     throw new Error('Invalid release inventory');
   const seen = new Set();
+  const verifiedParts = new Map();
   for (const entry of report.artifacts) {
     if (
       typeof entry.filename !== 'string' ||
@@ -97,6 +98,7 @@ export async function verifyInventory(directory) {
       if (entry.partsManifest !== partsManifestPath(entry.filename))
         throw new Error('Unsafe parts manifest path');
       const parts = await verifyParts(path.join(directory, ...entry.partsManifest.split('/')));
+      verifiedParts.set(entry.filename, parts);
       if (
         parts.artifact.file !== entry.filename ||
         parts.artifact.bytes !== entry.bytes ||
@@ -124,7 +126,7 @@ export async function verifyInventory(directory) {
   for (const entry of report.artifacts) {
     sums.push(`${entry.sha256}  ${entry.filename}\n`);
     if (entry.partsManifest) {
-      const parts = await verifyParts(path.join(directory, ...entry.partsManifest.split('/')));
+      const parts = verifiedParts.get(entry.filename);
       sums.push(...parts.parts.map((part) => `${part.sha256}  ${part.file}\n`));
     }
   }
@@ -145,6 +147,7 @@ export async function verifyInventory(directory) {
   }
   const checksums = await readFile(path.join(directory, 'SHA256SUMS'), 'utf8');
   if (checksums !== sums.join('')) throw new Error('Checksum file differs from release inventory');
+  Object.defineProperty(report, 'verifiedParts', { value: verifiedParts });
   return report;
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {

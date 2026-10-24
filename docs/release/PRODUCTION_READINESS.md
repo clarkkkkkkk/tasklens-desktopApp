@@ -1,63 +1,55 @@
 # TaskLens production readiness
 
-**Status: NOT READY**
+**Status: NOT READY.** Updated 2026-10-24 (Asia/Manila).
 
-Version: **0.1.0 prerelease candidate**. Date: 2026-10-24 (Asia/Manila). The owner authorized source push and requested a GitHub-only draft with verified parts. Publication remains blocked until required security, checksum and platform acceptance pass.
+The owner authorized source pushes, a GitHub-only draft release and the website Download update. Public installer publication remains blocked until required build, security, checksum and advertised-platform acceptance checks pass. No stable release or verified publisher is claimed.
 
-## Baseline and preservation
+## Candidate and preservation
 
-Initial HEAD and live remote main: `374f692afe22de55bb80472035006e67919ddf44` (onboarding refinement). Latest merge in its history: `0bb4b72` (PR #4). Remote collaborator branch `frenzzy` points to `76bebcf23ffaebfef043dab9ff91afa804e5c0df`; its history is already contained in main.
+Compiled candidate: `0d678fca743fa62f253389d666528ae4f3d20352`, tree `aa89e900476ca2a5fd0bc3d2cbf7b52a2003fbb2`. Application/package/Tauri versions remain **0.1.0**. The prospective `v0.1.0-beta.1` draft is a prerelease designation, not a stable support claim. Final public version/tag metadata must be reviewed before publication.
 
-The initial worktree contained runtime/security fixes and guided-tour changes. The user selected inclusion of all of them. A binary patch, untracked archive, status and live remote-ref snapshot were saved outside the repository before creating `codex/production-release-preparation`. Other active chats subsequently edited the shared checkout; the combined candidate was copied into a managed isolated worktree on `codex/production-release-candidate` to prevent further build interference. No contributor work was reset or discarded.
+The initial baseline was `374f692afe22de55bb80472035006e67919ddf44`; latest merge then was `0bb4b72`. Collaborator `frenzzy` (`76bebcf`) was already integrated. The complete dirty baseline was backed up outside Git, including a binary patch, untracked archive, status and remote refs. Both developers' changes were preserved on a release branch. Work moved into an isolated managed checkout when other chats continued editing the original checkout. Published main through `19e41bf` was merged at `7c05610`; the combined candidate was pushed normally, without reset, force push or history rewriting.
 
-The recovery snapshot is local-only at `/home/clark/tasklens-release-baseline-20261023/`. It is not part of a public release. Final artifact manifests identify their exact source commit and Git tree; later documentation-only commits must not be confused with the compiled candidate.
+Qwen3-4B, Whisper Small, OCR resources, optional Groq BYOK, application identity, storage keys, logo and UI remain intact. Release work adds packaging/verification, macOS Keychain, Windows metadata/signing support and security fixes. The Zod 4.6.7 security migration preserves stored settings and legacy questions, with regression coverage. Later report/tooling commits do not change the recorded compiled candidate identity.
 
-## Implemented release preparation
+## Completed evidence
 
-- Extend the existing Tauri/Inno infrastructure: RPM, DEB, AppImage, Windows EXE and per-architecture DMG names; clean generated staging; strict matching versions; exact expected output set; manifest and SHA-256 generation; automatic GitHub-sized parts and no automatic publication.
-- Preserve Qwen3-4B, Whisper Small, OCR languages, local-first defaults, optional Groq consent, existing design and storage identity.
-- Add Windows publisher metadata, optional desktop shortcut, offline WebView2 signature/hash checks, explicit installation failure handling and optional Authenticode setup/uninstaller/application signing.
-- Add macOS Intel mapping/sidecar overlay, native architecture checks and Keychain credential backend. Native macOS validation is blocked by missing hosts.
-- Prepare separate static, frontend, browser, native preparation, Rust, packaging and artifact verification jobs with pinned actions/toolchains. Manual packaging remains distinct from publication.
-- Preserve collaborator security fixes, guided tour, production environment guard and patched Vitest dependency. Use the existing split utilities for the owner-selected GitHub-only flow and provide system shell/PowerShell reconstruction.
+| Check                                                                                                          | Result and scope                                                                                                                                                                                                                                      |
+| -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Quality/security CI 40067961958](https://github.com/clarkkkkkkk/tasklens-desktopApp/actions/runs/40067961958) | PASS on exact candidate: TypeScript, ESLint, Prettier, docs, build, 146 Vitest tests (2 opt-in skipped), 112 Playwright tests, release/asset tests, npm audit and redacted history/source/frontend scans                                              |
+| [Native CI 40067961937](https://github.com/clarkkkkkkk/tasklens-desktopApp/actions/runs/40067961937)           | PASS: native assets and Rust tests on Ubuntu x64, Windows x64, macOS ARM64 and Intel; Windows 75 passed, others 76 passed, 8 ignored per target. These are compilation/tests, not installed-app acceptance                                            |
+| Native reconstruction regression tests                                                                         | PASS on Windows PowerShell, Ubuntu shell and both macOS shells, using synthetic parts: byte identity, corruption, missing part, wrong whole hash, refusing overwrite and paths containing spaces/non-ASCII characters                                 |
+| Local automated checks                                                                                         | PASS: check, format, docs, 146 unit tests + 2 skipped, 4 release tests, 3 asset tests; Cargo formatting and earlier Linux Rust tests passed                                                                                                           |
+| Local system-Chrome full suite                                                                                 | FAIL: 110 passed, 2 failed, 17.1 minutes; audio-import review visibility and guided-tour navigation. Focused rerun PASS: 2/2, 47.2 seconds. This does not erase the original failures; CI's independent full suite passed                             |
+| Offline asset integrity                                                                                        | PASS: 3,062,001,808 pinned bytes before application/system WebView and supplemental notices; 850 dependency notices collected                                                                                                                         |
+| Fedora production compilation                                                                                  | PASS: optimized Tauri build in 5m09s, exact compiled candidate                                                                                                                                                                                        |
+| Fedora packaging                                                                                               | PASS: complete RPM, DEB and AppImage generated, then approximately 1 GiB parts; see [inventory](../evaluation/linux-release-candidate-2026-10-24.json)                                                                                                |
+| Fedora headless container package smoke                                                                        | PASS: DNF install, RPM file verification, no unresolved main-program libraries, five sidecar help commands, eng/ceb/tgl discovery, launcher/notices, uninstall and preserved local-data sentinel                                                      |
+| Isolated Fedora native app                                                                                     | PASS: first-launch readiness, model validation without imports, real OCR and screenshot → local Qwen → evidence review → draft save. Full acceptance remains incomplete; see matrix                                                                   |
+| Ubuntu 24.04 sidecar preflight of Fedora build                                                                 | FAIL: all five sidecars require `GLIBC_2.43`, unavailable on Ubuntu 24.04. A successful Fedora-built DEB is not Ubuntu compatibility                                                                                                                  |
+| Security                                                                                                       | npm audit zero vulnerabilities after Zod patch; Cargo audit has eight upstream warnings, including GLib unsoundness. Artifact scan has one reviewed public-license false positive; no genuine credential identified                                   |
+| Website                                                                                                        | PASS: website source `98e6cc1` pushed to its main, 15 unit tests/typecheck/lint/build passed, Vercel status success, HTTPS 200 at `https://www.tasklens.site/download` contains GitHub-only reconstruction instructions and no public-installer claim |
 
-## Evidence register
+Raw logs remain ignored under `.local-ai/release-audit/`. Sanitized, committed evidence is linked above. Tests interrupted by a later failing assertion are not counted as passed. Containers and browser tests do not establish microphone, desktop notifications, SmartScreen or Gatekeeper acceptance.
 
-The audit commands below were actually invoked. Initial shared-checkout failures are retained rather than converted into passes. Final isolated results and artifact inventory are recorded as they complete.
+## Native defects found after source CI
 
-| Command / check                                                                                           | Result and boundary                                                                                             |
-| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `git status --short --branch`, `git log`, `git ls-remote --heads origin`, collaborator history comparison | PASS: baseline/remote refs inspected; work preserved                                                            |
-| `npm ci`                                                                                                  | PASS after dependency update; initial checks raced another chat's installation and reported missing executables |
-| `npm run check`                                                                                           | PASS on shared candidate; repeat in isolated candidate pending                                                  |
-| `npm run format:check`                                                                                    | PASS on shared candidate after focused formatting; isolated rerun pending                                       |
-| `npm test`                                                                                                | PASS: 144 passed, 2 opt-in tests skipped; isolated rerun pending                                                |
-| `npm run test:assets`                                                                                     | PASS: preparation tests; see ignored command logs                                                               |
-| `npm run test:release`                                                                                    | PASS: 3 tests, including tampering/missing installer/path traversal checks                                      |
-| `cargo fmt --manifest-path src-tauri/Cargo.toml --check`                                                  | PASS after formatting                                                                                           |
-| `cargo test --locked --manifest-path src-tauri/Cargo.toml`                                                | PASS: 76 passed, 8 explicitly ignored native/real-inference tests                                               |
-| `cargo check --manifest-path src-tauri/Cargo.toml`                                                        | PASS; Keychain dependency lock entries resolved, Linux compilation only                                         |
-| `npm run verify:assets`                                                                                   | PASS on Fedora: 3,062,001,808 pinned payload bytes; does not prove inference quality                            |
-| `npm run prepare:notices`                                                                                 | PASS in isolated worktree: 850 dependency notices collected, including new Keychain dependencies                |
-| `npm run test:e2e` (shared checkout)                                                                      | Interrupted after timeouts during concurrent rebuilds; no suite PASS claimed                                    |
-| `TASKLENS_TEST_PORT=1437 npm run test:e2e -- --workers=1`                                                 | NOT RUN to completion yet; isolated candidate rerun                                                             |
-| `npm audit --json`                                                                                        | PASS after Vitest patch: zero vulnerabilities                                                                   |
-| `cargo-audit audit --file src-tauri/Cargo.lock --json`                                                    | Zero vulnerability entries; OPEN unsoundness/maintenance warnings                                               |
-| `gitleaks git --redact ... --log-opts='--all'`                                                            | PASS: initial 37-commit history scan; final scan pending                                                        |
-| Clean-machine native acceptance                                                                           | BLOCKED except available isolated Fedora tests; see platform matrix                                             |
-| Hosting/download verification                                                                             | BLOCKED: approved large-file host not selected                                                                  |
-| Signing/notarization/real Groq                                                                            | BLOCKED: native hosts/signing credentials/authorized test key unavailable                                       |
+The first screenshot run saved a structurally valid local draft. The corrected sequence then proved two semantic defects in compiled `0d678fc`: the typed exam was saved as a `deadline` instead of an `event`, and the screenshot omitted its explicitly required 13:30 arrival. Its ambiguous date and unannounced event start correctly remained unresolved. **These defects block promotion of these artifacts.**
 
-A named toolchain installation was initially incomplete while rustup was downloading components; the installed stable toolchain reported the same Rust/Cargo 1.99.0 versions and ran checks. The completed named pin is used for candidate builds. There are no claimed Windows/macOS compilation results from this Fedora host.
+The existing bounded repair guard now detects an explicitly scheduled attendance misclassified as a deadline and an omitted required arrival linked to one event. It requests model repair; it never silently rewrites fields or invents a date/start. Negative cases preserve exam submissions and ambiguous multi-event links. Local unit tests now pass **148 tests, 2 opt-in skipped**. A rebuilt candidate and real-model rerun are still required; unit success is not a native accuracy pass.
 
-## Remaining release blockers
+A component-only native run of `0d678fc` passed real Whisper WAV import/transcription (48.5 seconds), manual task saving and exact stored-envelope equality after a new native process. It deliberately skipped Qwen extraction and does not certify voice-to-task extraction or a real microphone.
 
-1. Complete local and clean-machine native workflows on each advertised platform, including real inference, permissions, upgrades and uninstall.
-2. Build and verify Windows/macOS packages on their actual native hosts; verify baseline CPUs and paths with spaces/non-ASCII characters.
-3. Review the transitive GLib unsoundness advisory and Cargo maintenance warnings; complete final artifact secret/license/dependency inspection.
-4. Verify GitHub draft asset uploads, all downloaded part hashes and native reconstruction before publishing links.
-5. Verify signing/notarization when credentials exist, otherwise explicitly disclose unsigned limitations. Intel remains unverified.
-6. Run real Groq with an authorized key and complete secure-store acceptance on each OS; ordinary CI uses synthetic/mocked tests only.
-7. Require passing CI on the intended commit and owner approval before any public release. No 1.0.0 or stable claim is justified.
+Manual CI `40071624829` failed while extracting the macOS ARM native-input archive (`Truncated tar archive`); packaging was skipped. The revised workflow uses an explicit pax archive, approximately 1 GiB parts, per-part/complete reconstruction verification and model/sidecar verification after extraction. Static, frontend, browser, Rust, native preparation, packaging and artifact verification now have separate jobs. The transport fix requires its own CI run.
 
-See [platform evidence](PLATFORM_TEST_MATRIX.md), [distribution and installation](DISTRIBUTION.md), [security findings](SECURITY_AUDIT.md) and [release checklist](RELEASE_CHECKLIST.md).
+## Remaining blockers
+
+1. Complete native screenshot/text/voice, save/restart, failure recovery, reminders, export, upgrades and clean uninstall on every advertised OS. Current native checks use an extracted RPM and isolated profile, not a clean desktop VM.
+2. Use Ubuntu-built Linux sidecars/application for Ubuntu-compatible distribution and test the resulting packages on both Ubuntu and Fedora. The local Fedora-built DEB/AppImage must not be advertised for Ubuntu.
+3. Rerun installer CI after the failed [manual run 40071624829](https://github.com/clarkkkkkkk/tasklens-desktopApp/actions/runs/40071624829), then complete artifact verification and target-specific installation. Source compilation is already verified separately. Windows public Inno/WebView2 URLs and hashes are configured; Microsoft signature verification runs on Windows. Signing credentials are unavailable.
+4. Review the GLib unsoundness advisory and upstream maintenance warnings. No broad advisory suppression was added.
+5. Upload only verified GitHub-sized draft assets, download all of them again, verify every part, reconstruct complete installers and compare hashes/sizes. Keep public URLs unset until publication and verification. No external hosting is used.
+6. Verify real Groq with an explicitly authorized test key, native credential storage, microphone and OS notifications. No real key was supplied or bundled.
+7. Complete final advertised-platform acceptance and version/signing review before public release. Intel compilation passed; Intel DMG/runtime support is not yet certified.
+
+The [platform matrix](PLATFORM_TEST_MATRIX.md), [distribution guide](DISTRIBUTION.md), [security audit](SECURITY_AUDIT.md) and [release checklist](RELEASE_CHECKLIST.md) retain separate gates. No `v1.0.0`, public installer deployment or cross-platform production-readiness claim is justified.

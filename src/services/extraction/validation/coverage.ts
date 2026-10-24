@@ -41,6 +41,17 @@ export function coverageIssue(context: PromptContext, actions: ExtractedAction[]
     if (cancelled && !/[;!?]|\.\s/.test(unit.text) && titled.some((a) => a.type === 'event'))
       return `The activity in [${unit.id}] is explicitly cancelled. Do not schedule it as an active event; preserve the cancellation as context.`;
     if (
+      !cancelled &&
+      scheduledActions.length === 1 &&
+      scheduledActions[0].type === 'event' &&
+      !scheduledActions[0].arrivalTime &&
+      findTimes(unit.text).filter((t) => t.explicit).length === 1 &&
+      /\b(be there by|must arrive|need to arrive|kinahanglan\s+naa|naa\s+na\s+tanan|dapat\s+nandoon)\b/i.test(
+        unit.text,
+      )
+    )
+      return `The required arrival clock in [${unit.id}] was omitted. Keep the explicitly required arrival in arrival_time, not the event start. A missing date or unannounced event start does not erase an explicit arrival instruction. Do not invent a date or start time.`;
+    if (
       /\b(submit|ipasa|pasa)\b/i.test(unit.text) &&
       /\b(before|due|deadline|by|Friday|Monday|Biyernes|Lunes)\b/i.test(unit.text) &&
       !/\b(meeting|consultation|seminar|exam|quiz)\b/i.test(unit.text) &&
@@ -49,7 +60,12 @@ export function coverageIssue(context: PromptContext, actions: ExtractedAction[]
       return `The submission in [${unit.id}] has a due time. Use a deadline with its stated due date/time, not an unscheduled task.`;
     if (
       /\b(exam|quiz|meeting|consultation)\b/i.test(unit.text) &&
-      /\b(starts?|begins?)\s+at\b/i.test(unit.text) &&
+      (/\b(starts?|begins?)\s+at\b/i.test(unit.text) ||
+        (scheduled &&
+          /\b(at|alas)\s+\d/i.test(unit.text) &&
+          !/\b(submit|submission|due|deadline|finish|complete|ipasa|pasa|hand in|turn in)\b/i.test(
+            unit.text,
+          ))) &&
       titled.length === 1 &&
       titled[0].type !== 'event'
     )

@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "version": "0.1.0",
+  "channel": "prerelease",
+  "commit": "0d678fca743fa62f253389d666528ae4f3d20352",
+  "sourceTree": "aa89e900476ca2a5fd0bc3d2cbf7b52a2003fbb2",
+  "nativeAcceptance": "FAIL",
+  "artifacts": [
+    {
+      "filename": "TaskLens-0.1.0-linux-x86_64.rpm",
+      "platform": "linux",
+      "architecture": "x86_64",
+      "bytes": 3132811485,
+      "sha256": "f597230b8b44e29aaba7f26c0e3a05c761d5960967b8a87a7f7ae06e3b23f4d1",
+      "signing": "unsigned",
+      "githubReleaseEligible": false,
+      "distribution": "github-release-parts",
+      "partsManifest": "parts/TaskLens-0.1.0-linux-x86_64.rpm/TaskLens-0.1.0-linux-x86_64.rpm.parts.json",
+      "downloadUrl": null,
+      "downloadVerified": false
+    },
+    {
+      "filename": "TaskLens-0.1.0-linux-x86_64.deb",
+      "platform": "linux",
+      "architecture": "x86_64",
+      "bytes": 2925298926,
+      "sha256": "b6ffc507b564034fe328dace1b090114fb29c661e88b6ff3824390927200caf9",
+      "signing": "unsigned",
+      "githubReleaseEligible": false,
+      "distribution": "github-release-parts",
+      "partsManifest": "parts/TaskLens-0.1.0-linux-x86_64.deb/TaskLens-0.1.0-linux-x86_64.deb.parts.json",
+      "downloadUrl": null,
+      "downloadVerified": false
+    },
+    {
+      "filename": "TaskLens-0.1.0-linux-x86_64.AppImage",
+      "platform": "linux",
+      "architecture": "x86_64",
+      "bytes": 3024579064,
+      "sha256": "d3f6743a86791c1b4b5137140fe1c9fe3d626bf4e28e7a4188740da083f1ce9a",
+      "signing": "unsigned",
+      "githubReleaseEligible": false,
+      "distribution": "github-release-parts",
+      "partsManifest": "parts/TaskLens-0.1.0-linux-x86_64.AppImage/TaskLens-0.1.0-linux-x86_64.AppImage.parts.json",
+      "downloadUrl": null,
+      "downloadVerified": false
+    }
+  ],
+  "target": "x86_64-unknown-linux-gnu",
+  "supportFiles": [
+    {
+      "filename": "TaskLens-reconstruct.sh",
+      "bytes": 2853,
+      "sha256": "60d33fcf9ca6e94b96fb04a427a98943101d2aa35ee15721ef61a131bece809e"
+    },
+    {
+      "filename": "TaskLens-reconstruct.ps1",
+      "bytes": 3851,
+      "sha256": "fec9195e9813b02ff102c5ae742ae4293241ae1258c8022f3bb97bc191317b40"
+    },
+    {
+      "filename": "THIRD_PARTY_NOTICES.md",
+      "bytes": 9742,
+      "sha256": "7ea7b21fc24a1bfdbb42aea62f1102675765ca906e92776aaf3f6bab0f3d3b95"
+    }
+  ],
+  "buildEnvironment": {
+    "distribution": "Fedora 44",
+    "glibc": "2.43",
+    "node": "22.23.2",
+    "rust": "1.99.0",
+    "cpu": "Intel Core i5-10210U",
+    "ramKiB": 16017944
+  },
+  "compatibility": {
+    "Fedora44": {
+      "packageInstall": "PASS",
+      "fullNativeAcceptance": "BLOCKED"
+    },
+    "Ubuntu24.04": {
+      "sidecarRuntime": "FAIL",
+      "reason": "Fedora-built sidecars require GLIBC_2.43; Ubuntu 24.04 does not supply it"
+    }
+  },
+  "failedChecks": [
+    "Scheduled math exam classified as deadline instead of event",
+    "Required screenshot arrival 13:30 omitted"
+  ],
+  "componentChecks": {
+    "nativeOCR": "PASS",
+    "nativeWhisperWav": "PASS",
+    "manualSaveAndRestart": "PASS",
+    "completeVoiceExtraction": "NOT RUN"
+  }
+}

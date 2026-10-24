@@ -75,11 +75,20 @@ jobs:
       - run: npm run prepare:notices
       - run: npm run verify:assets
       # tar preserves sidecar executable modes across Actions artifact transport.
-      - run: tar -cf native-assets.tar src-tauri/binaries src-tauri/resources/models src-tauri/resources/tessdata src-tauri/resources/notices
+      - name: Archive and split verified native assets
+        env:
+          COPYFILE_DISABLE: '1'
+        run: |
+          archive="$RUNNER_TEMP/native-assets.tar"
+          if [[ "$RUNNER_OS" == "Windows" ]]; then archive="$(cygpath -u "$archive")"; fi
+          tar --format=pax -cf "$archive" src-tauri/binaries src-tauri/resources/models src-tauri/resources/tessdata src-tauri/resources/notices
+          tar -tf "$archive" > /dev/null
+          node scripts/release-parts.mjs split "$RUNNER_TEMP/native-assets.tar" "$RUNNER_TEMP/native-parts"
+          rm "$archive"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: native-assets-${{ matrix.os }}
-          path: native-assets.tar
+          path: ${{ runner.temp }}/native-parts/
           compression-level: 0
           retention-days: 3
   rust:
@@ -102,6 +111,11 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec
         with:
           toolchain: 1.99.0
@@ -113,10 +127,13 @@ jobs:
           path: ${{ runner.temp }}/native
       - name: Extract native assets using a local archive path
         run: |
-          archive="$RUNNER_TEMP/native/native-assets.tar"
+          node scripts/release-parts.mjs join "$RUNNER_TEMP/native/native-assets.tar.parts.json" "$RUNNER_TEMP/native-joined"
+          archive="$RUNNER_TEMP/native-joined/native-assets.tar"
           if [[ "$RUNNER_OS" == "Windows" ]]; then archive="$(cygpath -u "$archive")"; fi
           tar -xf "$archive"
           rm "$archive"
+          rm -r "$RUNNER_TEMP/native"
+      - run: npm run verify:assets
       - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
   packaging:
     timeout-minutes: 120
@@ -160,10 +177,12 @@ jobs:
           path: ${{ runner.temp }}/native
       - name: Extract native assets using a local archive path
         run: |
-          archive="$RUNNER_TEMP/native/native-assets.tar"
+          node scripts/release-parts.mjs join "$RUNNER_TEMP/native/native-assets.tar.parts.json" "$RUNNER_TEMP/native-joined"
+          archive="$RUNNER_TEMP/native-joined/native-assets.tar"
           if [[ "$RUNNER_OS" == "Windows" ]]; then archive="$(cygpath -u "$archive")"; fi
           tar -xf "$archive"
           rm "$archive"
+          rm -r "$RUNNER_TEMP/native"
       - if: runner.os == 'Windows'
         shell: pwsh
         env:

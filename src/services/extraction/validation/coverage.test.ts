@@ -8,6 +8,51 @@ const context = (text: string) => ({
   now: new Date('2026-10-21T07:00:00Z'),
   timezone: 'Asia/Manila',
 });
+it('repairs an omitted required arrival in a separately cited OCR-style unit without inventing a date', () => {
+  const action = {
+    ...newAction(),
+    type: 'event' as const,
+    title: 'Pictorial',
+    location: 'campus',
+    evidence: [
+      { field: 'title' as const, segmentIds: ['t1'], quote: 'pictorial', value: 'Pictorial' },
+      { field: 'location' as const, segmentIds: ['t2'], quote: 'campus', value: 'campus' },
+    ],
+  };
+  const source = context(
+    'Pictorial tomorrow, exact start not final.\nMga 1:30PM kinahanglan naa na tanan sa campus.',
+  );
+  expect(coverageIssue(source, [action])).toMatch(/required arrival.*arrival_time/);
+  expect(coverageIssue(source, [{ ...action, arrivalTime: '13:30' }])).toBeNull();
+  expect(action.date).toBeUndefined();
+  expect(action.time).toBeUndefined();
+  expect(
+    coverageIssue(context('Pictorial.\nTeacher may arrive at 1:30PM on campus.'), [action]),
+  ).toBeNull();
+  expect(coverageIssue(source, [action, { ...action, id: 'separate' }])).toBeNull();
+});
+it('requests repair when an explicitly scheduled exam is classified as a deadline', () => {
+  const text = 'Math exam on October 20, 2026 at 10:00 AM in Room 204. Bring a calculator.';
+  const action = {
+    ...newAction(),
+    type: 'deadline' as const,
+    title: 'Math exam',
+    date: '2026-10-20',
+    time: '10:00',
+    evidence: [
+      { field: 'title' as const, segmentIds: ['t1'], quote: 'Math exam', value: 'Math exam' },
+    ],
+  };
+  expect(coverageIssue(context(text), [action])).toMatch(/attendance.*event/);
+  expect(coverageIssue(context(text), [{ ...action, type: 'event' }])).toBeNull();
+  expect(action.type).toBe('deadline'); // Request bounded repair, never silently rewrite input.
+  expect(
+    coverageIssue(context('Submit exam answers on October 20, 2026 at 10:00 AM.'), [action]),
+  ).toBeNull();
+  expect(
+    coverageIssue(context('Take-home exam due on October 20, 2026 at 10:00 AM.'), [action]),
+  ).toBeNull();
+});
 it('requests repair for an omitted separate activity without inventing it', () => {
   const action = {
     ...newAction(),

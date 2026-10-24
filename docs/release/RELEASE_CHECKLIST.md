@@ -1,44 +1,44 @@
 # Release checklist
 
-Current verdict: **NOT READY**. Publication has not been authorized. A later instruction authorized committing and pushing source to `main`; it did not authorize publishing installers, creating a release or deploying hosting.
+Current verdict: **NOT READY**. The owner requested GitHub-only draft preparation and source/website updates. Public installer publication remains blocked until the required checks pass.
 
-## Source and validation
+## Source and security
 
-- [x] Inspect and preserve baseline `374f692`, working changes and collaborator refs.
-- [x] Save external recovery patch and untracked archive before release edits.
-- [x] Isolate release work from other active chats in a managed worktree.
-- [ ] Reconcile latest remote `main` without rewriting history before the authorized source push.
-- [ ] Record final source commit/tree, versions and dependency lockfiles.
-- [ ] TypeScript, ESLint, formatting, Vitest, browser tests and Rust checks pass on the candidate.
-- [ ] Dependency audits and redacted full-history/working-tree/artifact scans are reviewed.
-- [ ] Resolve or explicitly approve the GLib unsoundness advisory and maintenance findings.
-- [ ] Exact candidate commit has a successful remote CI run; local checks alone do not satisfy this gate.
+- [x] Inspect baseline, collaborator history and dirty changes; preserve recoverable baseline and both developers' work.
+- [x] Create isolated release branch/worktree and merge current published main without rewriting history.
+- [x] Keep application identity, UI/logo, model pins, local-first defaults and optional Groq.
+- [x] Record exact compiled commit/tree and consistent 0.1.0 application versions.
+- [x] Exact-candidate quality and four-platform native compilation CI pass (`0d678fc`).
+- [x] Patch Vitest and Zod; current npm audit has zero vulnerabilities.
+- [x] Redacted history/source/frontend scans; inspect extracted binaries/notices, triage public-license false positive.
+- [ ] Resolve/review open GLib unsoundness and maintenance warnings for production approval.
+- [ ] Complete native credential, consent, network/retry and authorized live Groq acceptance.
 
-## Artifacts and native acceptance
+## Packaging and native acceptance
 
-- [ ] Model/runtime/language-data provenance, format, size and SHA-256 pass.
-- [ ] Actual-platform notices cover bundled runtimes and libraries.
-- [ ] Package RPM, DEB, AppImage, Windows EXE, ARM64 DMG and Intel DMG where feasible.
-- [ ] Verify every final installer hash, size, architecture, dependencies and resource layout.
-- [ ] Windows WebView2 installs offline and handles failure/reboot; signed setup/uninstaller verified if signing is available.
-- [ ] macOS permissions, Developer ID, notarization and clean Gatekeeper behavior verified where available.
-- [ ] Every supported platform completes the fresh-install protocol in PLATFORM_TEST_MATRIX.md.
-- [ ] Upgrade/uninstall tests preserve user data and use disposable profiles.
-- [ ] No unexecuted check is reported PASS; unsupported platforms are absent from public support claims.
+- [x] Fedora candidate RPM, DEB and AppImage generated with models, runtimes, OCR data and notices.
+- [x] Fedora container install/library/sidecar/uninstall/data-sentinel checks pass.
+- [x] Native Fedora screenshot OCR, local extraction, evidence review and draft save pass.
+- [ ] Rebuild after verified exam-classification and required-arrival omissions; rerun strict real-model checks.
+- [ ] Complete all native workflows, restart, export, reminders, failure recovery and upgrade tests.
+- [ ] Replace Fedora-built Linux release inputs with Ubuntu-built candidates and verify both distributions. Fedora sidecars fail Ubuntu 24.04 with missing GLIBC_2.43.
+- [ ] Rerun CI after macOS ARM native-input tar truncation; verify chunk reconstruction and post-extraction hashes.
+- [ ] Complete Windows EXE and both macOS DMG packaging and artifact checks.
+- [ ] Test clean desktop installs, baseline CPUs and target-specific permissions on every advertised platform.
+- [ ] Verify Authenticode/Developer ID/notarization when credentials exist; otherwise disclose unsigned limitations and test the actual OS behavior.
+- [ ] Review prerelease tag versus installer version metadata before publication.
 
-## Distribution and explicit approval
+## GitHub-only delivery
 
-- [ ] Owner selects and approves the large-file host for oversized complete installers.
-- [ ] Owner approves the exact version, commit, platform set, signing limitations and release notes.
-- [ ] Owner explicitly authorizes uploading and publishing (separate from source push).
-- [ ] Upload immutable versioned files, then independently download every artifact and verify full bytes/SHA-256.
-- [ ] Populate machine-readable manifest URLs only after verification.
-- [ ] Confirm all documentation links resolve to the expected verified artifacts.
-- [ ] Publish a prerelease using the approved semantic version tag; do not mark 1.0.0 or stable before acceptance.
-- [ ] Attach checksums, manifest and third-party notices; attach eligible installers or verified official large-file links.
+- [x] Owner selected GitHub Releases exclusively; no external host or Git LFS.
+- [x] Automatically split complete oversized installers into approximately 1 GiB parts; retain original offline installers.
+- [x] Produce complete/per-part SHA-256 inventory and source/signing/architecture manifest.
+- [x] Supply system shell and PowerShell reconstruction scripts; synthetic native regression tests pass on all four CI runners.
+- [x] Prepare draft release targeting compiled source; no public installer publication.
+- [ ] Verify final complete installers and all parts, stage only assets under 2 GiB, upload checksums/manifests/notices/scripts/parts to the same draft.
+- [ ] Download every uploaded draft asset, verify hashes and complete reconstruction on each target platform; record receipts.
+- [ ] Populate real download locations only after the applicable verification; never use Actions artifacts as permanent public links.
+- [x] Update README/RELEASING and website Download guidance; live website deployment verified separately.
+- [ ] Pass every required advertised-platform/security/distribution gate before changing draft to published.
 
-## Publication procedure (manual, not executed)
-
-Publication is intentionally outside ordinary CI and requires an explicit owner action after the above gates. Freeze the candidate commit, build and verify signed installers on the native hosts, review evidence, and choose the approved version tag. A tag must point to that exact tested commit. Use a draft GitHub Release first, inspect its notes/assets/links, then publish only with owner approval. Never publish automatically from a push to main or from a passing compilation job.
-
-No release workflow has write permission by default. The packaging workflow is `workflow_dispatch` with `package=true`, produces internal candidate artifacts, and does not publish. Protected signing infrastructure and external host provisioning remain operational prerequisites, not implied completed features.
+Ordinary CI has read-only repository contents permissions and no real Groq/signing secrets. Packaging is manually dispatched and has no publication step. A passing build does not grant production acceptance. Do not force tags, rewrite history, replace models, execute unverified remote scripts or clear personal profiles to make a gate pass.

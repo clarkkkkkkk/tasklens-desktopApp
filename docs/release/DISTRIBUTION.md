@@ -25,6 +25,12 @@ See [ordinary-user GitHub reconstruction and installation](GITHUB_DOWNLOADS.md).
 
 Names are the packaging contract, not a claim that all artifacts exist. See [the platform matrix](PLATFORM_TEST_MATRIX.md). Public download commands must be generated only after actual published URLs resolve; none are supplied yet.
 
+## Measured local candidate and compatibility
+
+Source `0d678fc` produced RPM **3,132,811,485 bytes**, DEB **2,925,298,926 bytes** and AppImage **3,024,579,064 bytes**. All exceed GitHub's limit and have three verified transport parts each. The [machine-readable inventory](../evaluation/linux-release-candidate-2026-10-24.json) records full hashes and source identity.
+
+These are **Fedora 44 builds**. All five sidecars fail on Ubuntu 24.04 because they require `GLIBC_2.43`. Do not install or advertise this DEB/AppImage as Ubuntu-compatible. Native real-model tests also found classification/arrival omissions, so these artifacts are retained as failed-candidate evidence and must be rebuilt after fixes. Locally verified transport bytes do not override these release blockers. Draft/public download verification has not yet passed.
+
 ## Local candidate installation commands
 
 These are preparation examples for locally supplied, checksum-verified candidate files. They do not download a published release. Obtain `SHA256SUMS` alongside the candidate from the trusted maintainer; check only the file being installed (a platform directory can contain several installers).

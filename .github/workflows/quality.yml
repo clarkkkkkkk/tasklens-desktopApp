@@ -10,6 +10,23 @@ concurrency:
   group: quality-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  static:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run format:check
+      - run: npm run docs:check
+      - run: npm run test:assets && npm run test:release
+      - run: npm audit --audit-level=moderate
   frontend:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -23,12 +40,7 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
-      - run: npm run check
-      - run: npm run format:check
-      - run: npm run docs:check
       - run: npm test
-      - run: npm run test:assets && npm run test:release
-      - run: npm audit --audit-level=moderate
       - run: npm run build
       - name: Redacted full-history and production-bundle secret scans
         shell: bash
@@ -39,9 +51,21 @@ jobs:
           "$RUNNER_TEMP/gitleaks" git --log-opts='--all --full-history' --redact=100 --no-banner .
           node scripts/scan-release-secrets.mjs "$RUNNER_TEMP/gitleaks"
           "$RUNNER_TEMP/gitleaks" dir --redact=100 --no-banner --config .gitleaks.toml dist
+      # Never upload application profiles, task snapshots, audio, keys or raw HTTP logs.
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
-      # Never upload application profiles, task snapshots, audio, keys or raw HTTP logs.
   rust-security:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
