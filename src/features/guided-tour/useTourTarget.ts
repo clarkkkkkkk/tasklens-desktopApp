@@ -26,9 +26,13 @@ export function useTourTarget(step: TourStep, cardRef: RefObject<HTMLDivElement 
       if (cancelled) return;
       const viewport = { width: document.documentElement.clientWidth, height: innerHeight };
       const card = cardRef.current?.getBoundingClientRect();
+      // Natural height, so a card shrunk for a short window grows back when space returns.
+      const content = cardRef.current?.querySelector('.tour-card-content');
+      const natural =
+        card && content ? card.height - content.clientHeight + content.scrollHeight : card?.height;
       const size = {
         width: card?.width || Math.min(440, viewport.width - 24),
-        height: card?.height || 340,
+        height: natural || 340,
       };
       const find = (id?: string) =>
         id

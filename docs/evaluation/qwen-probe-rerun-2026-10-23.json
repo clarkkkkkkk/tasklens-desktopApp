@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-23",
+  "command": "node scripts/native-ai-probe.mjs simple-english",
+  "host": "Fedora 44 x86_64, i5-8265U, 7.4 GiB RAM, ~2.9 GiB available at start, zram swap 2.1 GiB used",
+  "model": "Qwen3-4B-Q4_K_M",
+  "promptVersion": 11,
+  "prefixRestored": false,
+  "supersedes": "release-audit-2026-10-23.json realInference (MODEL_LOAD_FAILED at 206284 ms)",
+  "result": {
+    "modelLoad": "PASS",
+    "nativeInference": "PASS",
+    "schemaValidation": "PASS",
+    "accuracyChecks": "FAIL (6/7)",
+    "failedCheck": "requirement 'paper' omitted; model returned [\"Bring a pencil\"]",
+    "loadMs": 18614,
+    "prefixMs": 111870,
+    "requestMs": 56060,
+    "peakRssKiB": 3942536,
+    "wallClock": "3:35.87"
+  },
+  "interpretation": "Model load failure not reproduced. The probe harness previously gave up after 180 s while production allows 300 s; both now share MODEL_LOAD_BUDGET. The remaining miss is a model accuracy issue, not a runtime failure."
+}

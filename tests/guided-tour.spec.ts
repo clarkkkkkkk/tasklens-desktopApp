@@ -25,26 +25,52 @@ async function verifyGeometry(page: Page) {
   await settleMotion(page);
   await expect(page.locator('.tour-card')).toHaveAttribute('data-ready', 'true');
   await expect(page.locator('[data-tour-target]')).toHaveCount(1);
-  await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const card = document.querySelector('.tour-card')!.getBoundingClientRect();
-        const target = document.querySelector('[data-tour-target]')!.getBoundingClientRect();
-        return (
-          card.left >= 11 &&
-          card.top >= 11 &&
-          card.right <= innerWidth - 11 &&
-          card.bottom <= innerHeight - 11 &&
-          !(
-            card.left < target.right &&
-            card.right > target.left &&
-            card.top < target.bottom &&
-            card.bottom > target.top
-          )
-        );
+  try {
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const card = document.querySelector('.tour-card')!.getBoundingClientRect();
+          const target = document.querySelector('[data-tour-target]')!.getBoundingClientRect();
+          return (
+            card.left >= 11 &&
+            card.top >= 11 &&
+            card.right <= innerWidth - 11 &&
+            card.bottom <= innerHeight - 11 &&
+            !(
+              card.left < target.right &&
+              card.right > target.left &&
+              card.top < target.bottom &&
+              card.bottom > target.top
+            )
+          );
+        }),
+      )
+      .toBe(true);
+  } catch (error) {
+    console.error(
+      'Guided tour geometry at failure:',
+      await page.evaluate(() => {
+        const dialog = document.querySelector('dialog[data-guided-tour]');
+        const card = document.querySelector('.tour-card');
+        const spotlight = document.querySelector('[data-tour-target]');
+        const scroller = document.querySelector('.main-content');
+        return {
+          step: dialog?.getAttribute('data-step'),
+          viewport: { width: innerWidth, height: innerHeight },
+          card: card?.getBoundingClientRect().toJSON(),
+          spotlight: spotlight?.getBoundingClientRect().toJSON(),
+          scrollTop: scroller?.scrollTop,
+          targets: [...document.querySelectorAll('[data-tour]')]
+            .filter((el) => el.getClientRects().length)
+            .map((el) => ({
+              id: el.getAttribute('data-tour'),
+              rect: el.getBoundingClientRect().toJSON(),
+            })),
+        };
       }),
-    )
-    .toBe(true);
+    );
+    throw error;
+  }
 }
 
 test('first-run tour starts after the complete handoff and never repeats on restart', async ({
@@ -98,6 +124,45 @@ for (const width of [1440, 900, 600]) {
     await expect(tour(page)).toHaveCount(0);
   });
 }
+
+test('wrapped tour content stays clear of Source Trace and restores height after resize', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 600, height: 640 });
+  await page.goto('/tests/groq-harness.html?offline');
+  // Exercise larger content metrics deterministically, independent of CI font loading.
+  await page.addStyleTag({ content: '.tour-card-content { padding-bottom: 80px; }' });
+  await replay(page);
+  for (let index = 0; index < 3; index++) await button(page, 'Next').click();
+  await expect(tour(page)).toHaveAttribute('data-step', 'review-source');
+  await verifyGeometry(page);
+  await expect(button(page, 'Next')).toBeInViewport();
+  const constrained = await page.locator('.tour-card').evaluate((el) => el.clientHeight);
+  await expect
+    .poll(() =>
+      page.locator('.tour-card-content').evaluate((el) => el.scrollHeight > el.clientHeight),
+    )
+    .toBe(true);
+  const details = page.getByRole('region', { name: 'Tour step details' });
+  // From the last control, Tab must reach the scroll region within the focus trap.
+  await button(page, 'Next').focus();
+  await page.keyboard.press('Tab');
+  await expect(details).toBeFocused();
+  await page.keyboard.press('PageDown');
+  await expect.poll(() => details.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await expect(button(page, 'Skip tour')).toBeInViewport();
+  await page.setViewportSize({ width: 1440, height: 920 });
+  await verifyGeometry(page);
+  await expect
+    .poll(() => page.locator('.tour-card').evaluate((el) => el.clientHeight))
+    .toBeGreaterThan(constrained);
+  await expect
+    .poll(() =>
+      page.locator('.tour-card-content').evaluate((el) => el.scrollHeight - el.clientHeight),
+    )
+    .toBeLessThanOrEqual(1);
+});
 
 test('onboarding skip and existing upgrades do not auto-start; replay Escape restores Settings and drafts', async ({
   page,

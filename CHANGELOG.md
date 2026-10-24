@@ -1,13 +1,22 @@
 # Changelog
 
-## 0.1.0 — Unreleased prerelease preparation
+## Unreleased — 0.1.0 candidate
 
-- Preserve local Qwen3-4B, Whisper Small, Tesseract and optional consent-controlled Groq BYOK workflows.
-- Include the existing guided workspace tour and bounded native input/HTTP security fixes.
-- Prepare consistently named RPM, DEB, AppImage, Windows offline EXE and architecture-specific macOS DMG packages.
-- Add optional Windows signing, offline WebView2 validation, macOS Keychain support and Intel runtime preparation.
-- Require clean-source packaging and emit SHA-256 manifests with explicit unpublished download locations.
-- Separate validation, native preparation, packaging and artifact checks in CI; retain publication as an approved manual operation.
-- Patch the Vitest development dependency to 4.1.12.
+This is not a published release. GitHub currently has no approved public release/tag evidence in this audit.
 
-This is not a published release. Clean-machine acceptance, approved large-file hosting, signing/notarization and native Windows/macOS verification remain incomplete. See [production readiness](docs/release/PRODUCTION_READINESS.md).
+- Capture screenshots with local Tesseract OCR; locally transcribe supported audio/voice with Whisper; route structured extraction through bundled Qwen/llama.cpp or opt-in local Ollama.
+- Optional Groq BYOK extraction through native HTTPS, secure/session-only credentials, explicit privacy permission, bounded usage and retained-source recovery.
+- Human review, Source Trace, multiple actions, task/calendar/search and local persistence; separately activated native reminders with a delivery journal.
+- Compact Settings, guided Groq connection, safe review completion, first-run onboarding and a persistent collapsible sidebar.
+- Audit fixes: isolated native credential namespaces; private OCR job directories; bounded local-provider response parsing; patched Vitest tooling; production mock/public-secret build rejection.
+- Release preparation: deterministic installer names for Linux RPM/DEB/AppImage, Windows x64 and macOS arm64/x64; automatic 1 GiB parts for installers over GitHub's 2 GiB limit, with `SHA256SUMS` and in-place part verification; WebView2 installed before files are copied on Windows; optional verified Authenticode and Apple signing; macOS Keychain credential storage.
+- Fixes: Windows Tesseract resource paths (`\\?\` verbatim paths); the real-model probe now uses the app's 300 s load budget; the native CI workflow no longer repeats the quality gates and caches models again.
+- Audit tooling: full-history/redacted secret checks, least-privilege pinned CI, documentation checks, complete-installer part/checksum tooling and contribution templates.
+
+### Known gates
+
+Current real inference accuracy/reliability, exact-candidate CI, Windows installers/runtime, signing, fresh-install acceptance and an approved native demo remain subject to [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md). Tasks/backups are not encrypted; primary SQLite storage, autostart and backup import are unfinished.
+
+## Historical progress
+
+Dated [development notes](DEVELOPMENT_REPORT.md), [local AI reliability](docs/LOCAL_AI_RELIABILITY.md), [Groq integration](docs/GROQ_BYOK.md), [Settings/Inbox report](docs/SETTINGS_INBOX_UX.md) and [evaluation evidence](docs/evaluation/reliability-v10-full.md) describe earlier work. Their results remain tied to their original commits, prompts and platforms.

@@ -68,7 +68,7 @@ export async function splitArtifact(file, directory, partBytes = PART_BYTES) {
   );
   return { manifestFile, manifest };
 }
-export async function joinArtifact(manifestFile, directory) {
+async function readManifest(manifestFile) {
   const metadata = await stat(manifestFile);
   if (metadata.size > 1024 * 1024) throw new Error('Manifest is too large.');
   const m = JSON.parse(await readFile(manifestFile, 'utf8'));
@@ -94,6 +94,27 @@ export async function joinArtifact(manifestFile, directory) {
     )
   )
     throw new Error('Invalid release manifest.');
+  return m;
+}
+/** Hashes every part in place without reassembling; used by CI before any upload. */
+export async function verifyParts(manifestFile) {
+  const m = await readManifest(manifestFile);
+  const whole = createHash('sha256');
+  for (const part of m.parts) {
+    const file = path.join(path.dirname(manifestFile), part.file);
+    if ((await stat(file)).size !== part.bytes) throw new Error('Release part size mismatch.');
+    const hash = createHash('sha256');
+    for await (const chunk of createReadStream(file)) {
+      hash.update(chunk);
+      whole.update(chunk);
+    }
+    if (hash.digest('hex') !== part.sha256) throw new Error('Release part checksum mismatch.');
+  }
+  if (whole.digest('hex') !== m.artifact.sha256) throw new Error('Installer checksum mismatch.');
+  return m;
+}
+export async function joinArtifact(manifestFile, directory) {
+  const m = await readManifest(manifestFile);
   await mkdir(directory, { recursive: true });
   const target = path.join(directory, m.artifact.file);
   // Exclusive creation preserves an existing installer, including a prior partial failure.
