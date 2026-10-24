@@ -32,7 +32,7 @@ try {
         $hashValue = $Matches[1]; $name = $Matches[2]
         if ($name -eq $Installer) {
             if ($whole) { throw 'Duplicate installer checksum' }; $whole = $hashValue
-        } elseif ($name.StartsWith("$Installer.part", [StringComparison]::Ordinal)) {
+        } elseif ($name.StartsWith("$Installer.part", [StringComparison]::Ordinal) -and $name -cne "$Installer.parts.json") {
             $expectedName = '{0}.part{1:D3}' -f $Installer, ($parts.Count + 1)
             if ($parts.Count -ge 32 -or $name -cne $expectedName) { throw 'Missing, duplicated or out-of-order part' }
             $parts += @{ Name = $name; Hash = $hashValue }

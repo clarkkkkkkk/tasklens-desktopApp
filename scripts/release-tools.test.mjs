@@ -22,10 +22,12 @@ test('native reconstruction verifies all parts and the complete installer and fa
   const source = path.join(dir, name);
   try {
     await writeFile(source, original);
-    const { manifest } = await splitArtifact(source, dir, 11);
+    const { manifest, manifestFile } = await splitArtifact(source, dir, 11);
     await rm(source);
+    const { sha256 } = await import('./release-artifacts.mjs');
     const sums =
       `${manifest.artifact.sha256}  ${name}\n` +
+      `${await sha256(manifestFile)}  ${path.basename(manifestFile)}\n` +
       manifest.parts.map((p) => `${p.sha256}  ${p.file}\n`).join('');
     await writeFile(path.join(dir, 'SHA256SUMS'), sums);
     const windows = process.platform === 'win32';

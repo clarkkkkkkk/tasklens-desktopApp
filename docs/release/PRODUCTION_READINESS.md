@@ -42,6 +42,10 @@ A component-only native run of `0d678fc` passed real Whisper WAV import/transcri
 
 Manual CI `40071624829` failed while extracting the macOS ARM native-input archive (`Truncated tar archive`); packaging was skipped. The revised workflow uses an explicit pax archive, approximately 1 GiB parts, per-part/complete reconstruction verification and model/sidecar verification after extraction. Static, frontend, browser, Rust, native preparation, packaging and artifact verification now have separate jobs. The transport fix requires its own CI run.
 
+## Real transport verification
+
+The complete 3,132,811,485-byte RPM was reconstructed locally from its three generated parts in a directory containing spaces and `é`. The first attempt correctly failed closed because the helper treated the checksum entry for `.parts.json` as a numbered part. Shell and PowerShell now exclude that exact metadata filename while still rejecting malformed/missing/out-of-order parts. The regression fixture includes the real checksum-inventory layout. The corrected shell reconstruction passed per-part and whole-file verification, producing SHA256 `f597230b8b44e29aaba7f26c0e3a05c761d5960967b8a87a7f7ae06e3b23f4d1`. Native Windows/macOS reruns with the updated fixture are pending CI. This is local transport verification of a failed application candidate, not release approval or an uploaded-download pass.
+
 ## Remaining blockers
 
 1. Complete native screenshot/text/voice, save/restart, failure recovery, reminders, export, upgrades and clean uninstall on every advertised OS. Current native checks use an extracted RPM and isolated profile, not a clean desktop VM.

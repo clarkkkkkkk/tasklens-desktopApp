@@ -31,7 +31,7 @@ fetch() {
 [ -f SHA256SUMS ] && [ ! -L SHA256SUMS ] && [ "$(wc -c < SHA256SUMS)" -le 1048576 ] || exit 1
 # Parse data, never evaluate a manifest or filename as shell code. Enforce exact order.
 awk -v name="$installer" '
-  $2 == name || index($2, name ".part") == 1 {
+  $2 == name || (index($2, name ".part") == 1 && $2 != name ".parts.json") {
     if (NF != 2 || length($1) != 64 || $1 ~ /[^a-f0-9]/) exit 1
     if ($2 == name) { if (whole++) exit 1; print $1 > "/dev/stderr" }
     else { count++; if (count > 32 || $2 != name sprintf(".part%03d", count)) exit 1; print $1 " " $2 }

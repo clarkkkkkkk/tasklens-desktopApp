@@ -56,6 +56,10 @@ Manual installer run `40071624829` **FAIL**: macOS ARM archive extraction report
 
 Native screenshot extraction is real Qwen inference; labelled browser demos remain mock evidence.
 
+## Real installer transport check
+
+Local shell reconstruction of the actual 3.13 GB RPM: initial **FAIL** on a `.parts.json` checksum-inventory parsing bug, then **PASS** after correcting both platform scripts and adding the metadata-layout regression fixture. The original complete RPM SHA256 matches. Windows/macOS updated-fixture CI and authenticated draft-download/reconstruction remain **NOT RUN**. No installer was automatically executed and no user file was overwritten.
+
 ## Required clean-machine protocol
 
 Use disposable accounts/VM snapshots. For each target record OS build, CPU flags, RAM, source commit, installer size/hash, commands, exit status and sanitized evidence. Never modify the developer's personal data to perform destructive tests.
