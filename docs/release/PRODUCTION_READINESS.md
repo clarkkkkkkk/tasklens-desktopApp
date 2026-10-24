@@ -4,13 +4,23 @@
 
 The owner authorized source pushes, a GitHub-only draft release and the website Download update. Public installer publication remains blocked until required build, security, checksum and advertised-platform acceptance checks pass. No stable release or verified publisher is claimed.
 
-## Candidate and preservation
+## Current candidate and blocking evidence
+
+The latest compiled production binary is `dfef55578349ed74d41ede73355d140dcbf57524`. Compilation passed, but its initial staged native screenshot extraction reported a model-response failure (previously recorded as a timeout without captured transport detail). A later screenshot repeat passed; text extraction and retry then failed with signal 9. The source lifetime fix and regression evidence are recorded below. Final installer generation was interrupted before a complete inventory; no final installer pass is recorded for this source. Quality CI run `40078422617` initially failed (111 browser tests passed, one failed). Current remote status and the push of report commit `5e3e912` could not be verified because GitHub connections fail with no route to host.
+
+The complete packages and passing CI below belong to the **earlier `0d678fc` candidate**, which failed strict native semantic acceptance and must not be promoted. They are historical evidence, not passing gates for the latest source. See the [current handoff](../evaluation/release-handoff-2026-10-24.json).
+
+A subsequent [tiny native-completion diagnostic](../evaluation/native-completion-smoke-2026-10-24.json) passed on that binary: six generated tokens, valid JSON, 2.459 seconds inference and 48.447 seconds including load/verification, using four CPU threads. This shows the native bridge can complete a small request; it does not resolve full-workflow performance or acceptance. The synthetic native harness now captures opt-in metadata-only stage diagnostics before closing on failure. CI retains synthetic browser failure context to diagnose the intermittent modal assertion.
+
+The Linux packaging wrapper now rejects sidecars before packaging, and the final application before inventory, if they require glibc newer than the Ubuntu 24.04 baseline (2.39) or private glibc symbols. All five current Fedora sidecars were rejected in the executed preflight. Four asset tests and four reconstruction/release tests pass; this guard prevents promotion of known-incompatible builds but does not replace Ubuntu builds or native acceptance.
+
+## Earlier candidate and preservation
 
 Compiled candidate: `0d678fca743fa62f253389d666528ae4f3d20352`, tree `aa89e900476ca2a5fd0bc3d2cbf7b52a2003fbb2`. Application/package/Tauri versions remain **0.1.0**. The prospective `v0.1.0-beta.1` draft is a prerelease designation, not a stable support claim. Final public version/tag metadata must be reviewed before publication.
 
 The initial baseline was `374f692afe22de55bb80472035006e67919ddf44`; latest merge then was `0bb4b72`. Collaborator `frenzzy` (`76bebcf`) was already integrated. The complete dirty baseline was backed up outside Git, including a binary patch, untracked archive, status and remote refs. Both developers' changes were preserved on a release branch. Work moved into an isolated managed checkout when other chats continued editing the original checkout. Published main through `19e41bf` was merged at `7c05610`; the combined candidate was pushed normally, without reset, force push or history rewriting.
 
-Qwen3-4B, Whisper Small, OCR resources, optional Groq BYOK, application identity, storage keys, logo and UI remain intact. Release work adds packaging/verification, macOS Keychain, Windows metadata/signing support and security fixes. The Zod 4.6.7 security migration preserves stored settings and legacy questions, with regression coverage. Later report/tooling commits do not change the recorded compiled candidate identity.
+Qwen3-4B, Whisper Small, OCR resources, optional Groq BYOK, application identity, storage keys, logo and UI remain intact. Release work adds packaging/verification, macOS Keychain, Windows metadata/signing support and security fixes. The Zod 4.6.7 security migration preserves stored settings and legacy questions, with regression coverage. Candidate identities are recorded separately; historical package results do not carry forward to later source.
 
 ## Completed evidence
 
@@ -65,3 +75,9 @@ The [platform matrix](PLATFORM_TEST_MATRIX.md), [distribution guide](DISTRIBUTIO
 Quality run [40078422617](https://github.com/clarkkkkkkk/tasklens-desktopApp/actions/runs/40078422617) initially failed the screenshot-result modal visibility test: **111 browser tests passed, 1 failed**. Repeated local full-modal tests recorded 2 passes and 1 overall test timeout; that is not a resolved CI failure. Rerun/current native-run status could not be verified reliably because GitHub access intermittently failed DNS/routing. No pending run is counted as passed.
 
 The last verified GitHub release remained a draft with no installer assets attached; no public installer was published by this work. Do not promote the earlier failed 0d678fc artifacts. Website source `98e6cc1` is independently deployed and HTTPS content-verified. See the [machine-readable handoff](../evaluation/release-handoff-2026-10-24.json). Source compilation, local transport verification, website deployment and desktop production acceptance remain separate results.
+
+## Linux process-lifetime continuation
+
+A repeat on staged `dfef555` passed strict screenshot extraction/save (292.98 seconds), including unresolved date/start and confirmed arrival. Subsequent text extraction and an explicitly assisted UI retry failed with signal 9; submitted text was retained. The test session was deliberately closed after those observed terminal errors; later steps are NOT RUN. Its final invalid-session harness error is cleanup evidence, not the original model failure.
+
+The spawning-thread bug was reproduced independently: Linux parent-death signals track the thread that created the process. The source fix starts reusable models from a permanent launcher thread, preserves checked OS parent-death cleanup, and passes worker-retirement plus abrupt-parent-crash regressions. Full Rust tests: 78 passed, 9 ignored; focused final process tests: 3 passed, 2 fixture tests ignored. Native acceptance of a rebuilt fixed binary is still NOT RUN. See [sanitized evidence](../evaluation/linux-process-lifetime-2026-10-24.json). Status remains NOT READY.

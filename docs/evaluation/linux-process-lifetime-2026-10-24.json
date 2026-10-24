@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-24",
+  "status": "NOT READY",
+  "testedBinarySource": "dfef55578349ed74d41ede73355d140dcbf57524",
+  "scope": "Staged native production ELF, unchanged pinned resources; private profile/D-Bus/network namespace, not final installation",
+  "nativeRepeat": {
+    "firstLaunch": "PASS",
+    "ocr": "PASS",
+    "strictScreenshot": "PASS",
+    "strictScreenshotSeconds": 292.978943779,
+    "uninterruptedTextExtraction": "FAIL",
+    "textSourceRetained": "PASS",
+    "assistedRetryRecovery": "FAIL",
+    "signal": 9,
+    "inferenceFailureDurationsMs": [11346, 10526],
+    "laterChecks": "NOT RUN: closed own failed session after observed retry failure; harness ends with invalid-session error from deliberate cleanup"
+  },
+  "rootCause": {
+    "status": "REPRODUCED",
+    "mechanism": "Linux PDEATHSIG targets the spawning thread; request worker exit kills a reusable model despite the app remaining alive",
+    "beforeCommand": "CARGO_BUILD_JOBS=2 cargo test --locked --manifest-path src-tauri/Cargo.toml platform::process_tests::persistent_model_survives_request_worker_retirement -- --exact",
+    "before": "FAIL as expected: child exited with signal 9 when spawning worker retired",
+    "after": "PASS: same regression survives worker exit",
+    "crashCleanup": "PASS: persistent child dies after own isolated parent process is killed",
+    "fullRustTests": "PASS: 78 passed, 9 ignored",
+    "finalFocusedProcessTests": "PASS: 3 passed, 2 fixture tests ignored",
+    "fixNativeAcceptance": "NOT RUN pending new production build"
+  },
+  "sources": [
+    "https://www.man7.org/linux/man-pages/man2/PR_SET_PDEATHSIG.2const.html",
+    "https://docs.rs/tokio/latest/tokio/runtime/struct.Builder.html#method.thread_keep_alive"
+  ]
+}

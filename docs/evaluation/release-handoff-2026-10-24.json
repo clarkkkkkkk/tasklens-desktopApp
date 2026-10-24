@@ -3,7 +3,7 @@
   "timezone": "Asia/Manila",
   "sourceCommit": "dfef55578349ed74d41ede73355d140dcbf57524",
   "status": "NOT READY",
-  "sourcePush": "PASS: main push confirmed",
+  "sourcePush": "PASS through dfef555; report commit 5e3e912 push BLOCKED by host network",
   "website": {
     "sourceCommit": "98e6cc1",
     "url": "https://www.tasklens.site/download",
@@ -36,11 +36,23 @@
     "assetUpload": "NOT RUN: candidate failed acceptance"
   },
   "blockers": [
-    "Offline native screenshot extraction timeout on available i5/16GB host",
+    "Offline native reliability: initial screenshot response failure; repeat screenshot passed but text and retry failed with SIGKILL. Spawning-thread cause reproduced and fixed in source; native reacceptance pending.",
     "Intermittent screenshot modal visibility CI failure",
     "Fedora-built sidecars require GLIBC_2.43 and fail Ubuntu24.04",
     "Final installer generation interrupted; Windows/macOS package and clean-machine acceptance incomplete",
     "Authorized live Groq key and native permission/upgrade acceptance unavailable",
     "Eight upstream Cargo warnings including GLib unsoundness remain open"
-  ]
+  ],
+  "nativeBridgeDiagnostic": {
+    "status": "PASS",
+    "sourceCommit": "dfef55578349ed74d41ede73355d140dcbf57524",
+    "evidence": "native-completion-smoke-2026-10-24.json",
+    "scope": "Small native JSON completion only; full screenshot timeout remains FAIL"
+  },
+  "nativeRepeat": {
+    "evidence": "linux-process-lifetime-2026-10-24.json",
+    "strictScreenshot": "PASS on repeat; does not erase initial failure",
+    "textExtraction": "FAIL: signal 9; UI source preserved, retry also failed",
+    "rootCause": "Reproduced spawning-thread lifetime bug; source fix and subprocess tests pass; new native build pending"
+  }
 }

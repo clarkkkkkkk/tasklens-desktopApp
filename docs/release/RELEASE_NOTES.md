@@ -24,3 +24,11 @@ No public download locations have been verified. Do not publish this draft with 
 See DISTRIBUTION.md for candidate installation instructions and troubleshooting, and PRODUCTION_READINESS.md for the final verdict and evidence. No automatic update channel, Homebrew tap, WinGet manifest or package repository is advertised.
 
 The compiled 0d678fc candidate failed strict native exam classification and omitted a required screenshot arrival. It must not be promoted. Native Whisper WAV transcription and manual-save/restart component checks passed; these do not pass voice-to-task extraction. Rebuild and rerun after the bounded-repair fixes.
+
+Latest compiled source `dfef555` includes bounded repair for those semantic omissions, but its native screenshot extraction timed out. Final packaging and all required platform acceptance remain incomplete. Do not publish it or inherit the earlier candidate’s CI passes.
+
+## Linux process-lifetime continuation
+
+A repeat on staged `dfef555` passed strict screenshot extraction/save (292.98 seconds), including unresolved date/start and confirmed arrival. Subsequent text extraction and an explicitly assisted UI retry failed with signal 9; submitted text was retained. The test session was deliberately closed after those observed terminal errors; later steps are NOT RUN. Its final invalid-session harness error is cleanup evidence, not the original model failure.
+
+The spawning-thread bug was reproduced independently: Linux parent-death signals track the thread that created the process. The source fix starts reusable models from a permanent launcher thread, preserves checked OS parent-death cleanup, and passes worker-retirement plus abrupt-parent-crash regressions. Full Rust tests: 78 passed, 9 ignored; focused final process tests: 3 passed, 2 fixture tests ignored. Native acceptance of a rebuilt fixed binary is still NOT RUN. See [sanitized evidence](../evaluation/linux-process-lifetime-2026-10-24.json). Status remains NOT READY.

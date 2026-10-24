@@ -8,7 +8,8 @@ Current verdict: **NOT READY**. The owner requested GitHub-only draft preparatio
 - [x] Create isolated release branch/worktree and merge current published main without rewriting history.
 - [x] Keep application identity, UI/logo, model pins, local-first defaults and optional Groq.
 - [x] Record exact compiled commit/tree and consistent 0.1.0 application versions.
-- [x] Exact-candidate quality and four-platform native compilation CI pass (`0d678fc`).
+- [x] Historical `0d678fc` quality and four-platform native compilation CI pass.
+- [ ] Latest-candidate full CI pass: `dfef555` quality initially failed; final native CI state unavailable.
 - [x] Patch Vitest and Zod; current npm audit has zero vulnerabilities.
 - [x] Redacted history/source/frontend scans; inspect extracted binaries/notices, triage public-license false positive.
 - [ ] Resolve/review open GLib unsoundness and maintenance warnings for production approval.
@@ -16,9 +17,14 @@ Current verdict: **NOT READY**. The owner requested GitHub-only draft preparatio
 
 ## Packaging and native acceptance
 
-- [x] Fedora candidate RPM, DEB and AppImage generated with models, runtimes, OCR data and notices.
+- [x] Add and execute glibc/ELF release preflight; all five incompatible local Fedora sidecars fail closed.
+- [ ] Build and accept matching Ubuntu-baseline inputs; the guard does not fix those existing binaries.
+
+- [x] Earlier `0d678fc` Fedora RPM, DEB and AppImage generated with all resources.
+- [ ] Latest-candidate final package inventory: interrupted during RPM generation.
 - [x] Fedora container install/library/sidecar/uninstall/data-sentinel checks pass.
-- [x] Native Fedora screenshot OCR, local extraction, evidence review and draft save pass.
+- [x] Earlier native Fedora structural screenshot/OCR/review/draft-save checks pass.
+- [ ] Latest strict screenshot extraction: `dfef555` native timeout.
 - [ ] Rebuild after verified exam-classification and required-arrival omissions; rerun strict real-model checks.
 - [ ] Complete all native workflows, restart, export, reminders, failure recovery and upgrade tests.
 - [ ] Replace Fedora-built Linux release inputs with Ubuntu-built candidates and verify both distributions. Fedora sidecars fail Ubuntu 24.04 with missing GLIBC_2.43.
@@ -50,3 +56,9 @@ Ordinary CI has read-only repository contents permissions and no real Groq/signi
 Quality run [40078422617](https://github.com/clarkkkkkkk/tasklens-desktopApp/actions/runs/40078422617) initially failed the screenshot-result modal visibility test: **111 browser tests passed, 1 failed**. Repeated local full-modal tests recorded 2 passes and 1 overall test timeout; that is not a resolved CI failure. Rerun/current native-run status could not be verified reliably because GitHub access intermittently failed DNS/routing. No pending run is counted as passed.
 
 The last verified GitHub release remained a draft with no installer assets attached; no public installer was published by this work. Do not promote the earlier failed 0d678fc artifacts. Website source `98e6cc1` is independently deployed and HTTPS content-verified. See the [machine-readable handoff](../evaluation/release-handoff-2026-10-24.json). Source compilation, local transport verification, website deployment and desktop production acceptance remain separate results.
+
+## Linux process-lifetime continuation
+
+A repeat on staged `dfef555` passed strict screenshot extraction/save (292.98 seconds), including unresolved date/start and confirmed arrival. Subsequent text extraction and an explicitly assisted UI retry failed with signal 9; submitted text was retained. The test session was deliberately closed after those observed terminal errors; later steps are NOT RUN. Its final invalid-session harness error is cleanup evidence, not the original model failure.
+
+The spawning-thread bug was reproduced independently: Linux parent-death signals track the thread that created the process. The source fix starts reusable models from a permanent launcher thread, preserves checked OS parent-death cleanup, and passes worker-retirement plus abrupt-parent-crash regressions. Full Rust tests: 78 passed, 9 ignored; focused final process tests: 3 passed, 2 fixture tests ignored. Native acceptance of a rebuilt fixed binary is still NOT RUN. See [sanitized evidence](../evaluation/linux-process-lifetime-2026-10-24.json). Status remains NOT READY.

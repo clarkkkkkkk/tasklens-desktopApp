@@ -66,6 +66,15 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - name: Retain synthetic browser failure context
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: browser-failure-context
+          path: test-results/**/error-context.md
+          if-no-files-found: ignore
+          retention-days: 3
+      # Only isolated browser fixture text; never upload native profiles or raw HTTP traces.
   rust-security:
     runs-on: ubuntu-24.04
     timeout-minutes: 30

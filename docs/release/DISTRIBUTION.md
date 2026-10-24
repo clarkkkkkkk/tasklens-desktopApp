@@ -12,6 +12,8 @@ The owner selected **GitHub Releases exclusively** on 2026-10-24. Complete insta
 
 See [ordinary-user GitHub reconstruction and installation](GITHUB_DOWNLOADS.md). Local and downloaded part checksums plus the reconstructed complete hash must pass before installation. Publication remains blocked until required security and advertised-platform acceptance pass. A draft release and authenticated draft-download checks are preparation evidence, not public deployment.
 
+The release wrapper now rejects x86_64 Linux inputs requiring glibc newer than 2.39 or private glibc symbols, using `readelf` from binutils. All five local Fedora-built sidecars were rejected as expected. Build the complete application and native resources on the Ubuntu 24.04 release runner, then perform clean Fedora/Ubuntu runtime acceptance; passing this ABI gate alone is insufficient.
+
 ## Candidate filenames
 
 | Target              | Required filename                      |

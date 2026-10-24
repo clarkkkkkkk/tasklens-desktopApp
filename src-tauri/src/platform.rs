@@ -12,6 +12,9 @@ use std::{
 };
 use tauri::Manager;
 
+#[cfg(target_os = "linux")]
+mod linux_lifetime;
+
 pub const GENERIC_ERROR: &str = "Local processing could not complete. Please try again.";
 
 pub fn app_data(app: &tauri::AppHandle) -> Result<PathBuf, String> {
@@ -177,7 +180,8 @@ pub fn tessdata_candidates(app: &tauri::AppHandle, tesseract: Option<&Path>) -> 
 }
 
 /// A child process that never opens a console window and never inherits stdin.
-/// Children started through `spawn` never outlive TaskLens, even after a crash.
+/// Persistent runtimes must use `spawn_persistent`: Linux's parent-death signal
+/// follows the creating thread, not the lifetime of the whole parent process.
 pub fn command(program: &Path) -> Command {
     let mut command = Command::new(program);
     command.stdin(Stdio::null());
@@ -190,10 +194,17 @@ pub fn command(program: &Path) -> Command {
     #[cfg(target_os = "linux")]
     {
         use std::os::unix::process::CommandExt;
-        // SAFETY: prctl is async-signal-safe; the closure only sets the parent-death signal.
+        let parent = std::process::id() as libc::pid_t;
+        // SAFETY: prctl/getppid are async-signal-safe; no allocation or locks after fork.
         unsafe {
-            command.pre_exec(|| {
-                libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL);
+            command.pre_exec(move || {
+                if libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL) != 0 {
+                    return Err(std::io::Error::last_os_error());
+                }
+                // Cover parent exit between fork and installing the death signal.
+                if libc::getppid() != parent {
+                    return Err(std::io::Error::from_raw_os_error(libc::ECHILD));
+                }
                 Ok(())
             });
         }
@@ -201,14 +212,28 @@ pub fn command(program: &Path) -> Command {
     command
 }
 
-/// Spawns a runtime and ties it to TaskLens's lifetime. On Windows the child joins a job
-/// object that the OS closes, killing the child, when TaskLens exits for any reason; on
-/// Linux `command` sets a parent-death signal. macOS relies on the normal exit cleanup.
+/// Starts a subprocess awaited by its calling thread. Windows uses a kill-on-close
+/// job; Linux uses the calling thread's parent-death signal; macOS uses exit cleanup.
+/// Reusable servers must use `spawn_persistent` instead.
 pub fn spawn(command: &mut Command) -> std::io::Result<Child> {
     let child = command.spawn()?;
     #[cfg(windows)]
     windows_job::assign(&child);
     Ok(child)
+}
+
+/// A reusable model outlives the blocking request that loaded it. A permanent
+/// Linux launcher thread keeps its parent-death signal tied to the app lifetime.
+pub fn spawn_persistent(command: Command) -> std::io::Result<Child> {
+    #[cfg(target_os = "linux")]
+    {
+        linux_lifetime::spawn(command)
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let mut command = command;
+        spawn(&mut command)
+    }
 }
 
 #[cfg(windows)]
@@ -490,6 +515,93 @@ mod runtime_selection_tests {
 #[cfg(test)]
 mod process_tests {
     use super::*;
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn persistent_model_survives_request_worker_retirement() {
+        let mut child = std::thread::spawn(|| {
+            let mut command = command(Path::new("/bin/sleep"));
+            command.arg("30");
+            spawn_persistent(command).unwrap()
+        })
+        .join()
+        .unwrap();
+        std::thread::sleep(Duration::from_millis(100));
+        let status = child.try_wait().unwrap();
+        let _ = child.kill();
+        let _ = child.wait();
+        assert!(
+            status.is_none(),
+            "Persistent model died with request worker: {status:?}"
+        );
+    }
+    #[cfg(target_os = "linux")]
+    #[test]
+    #[ignore = "Subprocess fixture for parent-crash cleanup"]
+    fn persistent_parent_fixture() {
+        let mut command = command(Path::new("/bin/sleep"));
+        command.arg("30");
+        let child = spawn_persistent(command).unwrap();
+        fs::write(
+            std::env::var_os("TASKLENS_TEST_CHILD_PID_FILE").unwrap(),
+            child.id().to_string(),
+        )
+        .unwrap();
+        std::thread::sleep(Duration::from_secs(30));
+    }
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn persistent_model_is_killed_when_app_process_crashes() {
+        let folder = tempfile::tempdir().unwrap();
+        let pid_file = folder.path().join("child.pid");
+        let mut parent = Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "platform::process_tests::persistent_parent_fixture",
+                "--ignored",
+            ])
+            .env("TASKLENS_TEST_CHILD_PID_FILE", &pid_file)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap();
+        let started = Instant::now();
+        let mut pid = None;
+        while started.elapsed() < Duration::from_secs(5) {
+            pid = fs::read_to_string(&pid_file)
+                .ok()
+                .and_then(|value| value.parse::<u32>().ok());
+            if pid.is_some() {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        // Kill only our isolated test parent, before any assertion can leave it running.
+        let _ = parent.kill();
+        let _ = parent.wait();
+        let pid = pid.expect("Test parent did not create its persistent child");
+        let running = || {
+            fs::read_to_string(format!("/proc/{pid}/stat"))
+                .ok()
+                .and_then(|stat| {
+                    stat.rsplit_once(')')
+                        .map(|(_, rest)| rest.trim().starts_with('Z'))
+                })
+                .is_some_and(|zombie| !zombie)
+        };
+        let started = Instant::now();
+        while running() && started.elapsed() < Duration::from_secs(3) {
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        let survived = running();
+        if survived {
+            // SAFETY: pid belongs to the isolated fixture's still-running sleep child.
+            unsafe { libc::kill(pid as libc::pid_t, libc::SIGKILL) };
+        }
+        assert!(
+            !survived,
+            "Model survived abrupt parent-process termination"
+        );
+    }
     #[test]
     #[ignore = "Child process fixture for cancellation/timeout tests"]
     fn sleep_fixture() {

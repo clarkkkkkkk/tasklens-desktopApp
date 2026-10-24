@@ -1,12 +1,14 @@
 # Platform acceptance matrix
 
-Date: 2026-10-24 (Asia/Manila). Compiled candidate: `0d678fca743fa62f253389d666528ae4f3d20352`, version 0.1.0 prerelease preparation.
+Date: 2026-10-24 (Asia/Manila). Latest compiled source: `dfef55578349ed74d41ede73355d140dcbf57524`: compilation, staged first launch and OCR PASS; screenshot repeat PASS; text extraction and retry FAIL (signal 9); final packaging NOT RUN to completion. Native component results below are historical and do not certify this candidate.
+
+Earlier complete-package candidate: `0d678fca743fa62f253389d666528ae4f3d20352`, version 0.1.0 prerelease preparation.
 
 **PASS** = executed successfully within its stated scope; **FAIL** = executed assertion/compatibility failed; **BLOCKED** = required host, credential or prerequisite unavailable; **NOT RUN** = no completed current-candidate execution. A passing source build or browser suite is not installed-app acceptance.
 
 | Platform    | Build                  | Fresh install                         | OCR                 | Local AI                             | Voice                     | Groq                    | Ready |
 | ----------- | ---------------------- | ------------------------------------- | ------------------- | ------------------------------------ | ------------------------- | ----------------------- | ----- |
-| Fedora x64  | PASS: production build | BLOCKED: clean desktop VM             | PASS: extracted RPM | FAIL: semantic fields; pipeline runs | PASS: Whisper import only | BLOCKED: authorized key | NO    |
+| Fedora x64  | PASS: production build | BLOCKED: clean desktop VM             | PASS: extracted RPM | FAIL: text/retry signal 9; screenshot repeat PASS | PASS: Whisper import only | BLOCKED: authorized key | NO    |
 | Ubuntu x64  | PASS: source CI        | BLOCKED: final Ubuntu-built installer | BLOCKED             | BLOCKED                              | BLOCKED                   | BLOCKED                 | NO    |
 | Windows x64 | PASS: source CI        | BLOCKED: clean Windows 10/11          | BLOCKED             | BLOCKED                              | BLOCKED                   | BLOCKED                 | NO    |
 | macOS ARM64 | PASS: source CI        | BLOCKED: clean macOS                  | BLOCKED             | BLOCKED                              | BLOCKED                   | BLOCKED                 | NO    |
@@ -93,3 +95,9 @@ No platform is production-ready from these results. Clean-machine GUI, microphon
 Quality run [40078422617](https://github.com/clarkkkkkkk/tasklens-desktopApp/actions/runs/40078422617) initially failed the screenshot-result modal visibility test: **111 browser tests passed, 1 failed**. Repeated local full-modal tests recorded 2 passes and 1 overall test timeout; that is not a resolved CI failure. Rerun/current native-run status could not be verified reliably because GitHub access intermittently failed DNS/routing. No pending run is counted as passed.
 
 The last verified GitHub release remained a draft with no installer assets attached; no public installer was published by this work. Do not promote the earlier failed 0d678fc artifacts. Website source `98e6cc1` is independently deployed and HTTPS content-verified. See the [machine-readable handoff](../evaluation/release-handoff-2026-10-24.json). Source compilation, local transport verification, website deployment and desktop production acceptance remain separate results.
+
+## Linux process-lifetime continuation
+
+A repeat on staged `dfef555` passed strict screenshot extraction/save (292.98 seconds), including unresolved date/start and confirmed arrival. Subsequent text extraction and an explicitly assisted UI retry failed with signal 9; submitted text was retained. The test session was deliberately closed after those observed terminal errors; later steps are NOT RUN. Its final invalid-session harness error is cleanup evidence, not the original model failure.
+
+The spawning-thread bug was reproduced independently: Linux parent-death signals track the thread that created the process. The source fix starts reusable models from a permanent launcher thread, preserves checked OS parent-death cleanup, and passes worker-retirement plus abrupt-parent-crash regressions. Full Rust tests: 78 passed, 9 ignored; focused final process tests: 3 passed, 2 fixture tests ignored. Native acceptance of a rebuilt fixed binary is still NOT RUN. See [sanitized evidence](../evaluation/linux-process-lifetime-2026-10-24.json). Status remains NOT READY.

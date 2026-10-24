@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-24",
+  "baseline": "Ubuntu 24.04 / glibc 2.39",
+  "command": "auditLinuxBinary(path.resolve(\"src-tauri/binaries\", sidecar(name))) for all five native runtimes; readelf --version-info --wide FILE",
+  "testResult": "PASS: gate rejects all five known-incompatible inputs",
+  "releaseStatus": "NOT READY: Ubuntu-built inputs and native acceptance still required",
+  "runtimes": [
+    {
+      "runtime": "llama-server",
+      "sha256": "2ceaf44d695c93dd8dbed82979cd673d453b6222283f2c55ccd2372f215a29c3",
+      "maximumRequiredGlibc": "2.43",
+      "gate": "REJECTED as expected",
+      "compatibility": "FAIL for Ubuntu 24.04"
+    },
+    {
+      "runtime": "whisper-cli",
+      "sha256": "271e50bf05cffbdbdf34a90a6fab4f2a6c81da4f30745f14bdb290119b97ab68",
+      "maximumRequiredGlibc": "2.43",
+      "gate": "REJECTED as expected",
+      "compatibility": "FAIL for Ubuntu 24.04"
+    },
+    {
+      "runtime": "tesseract",
+      "sha256": "5921c3351bac7c159b406b34326d5ced477485abe72ea0bcde52e2960a714cac",
+      "maximumRequiredGlibc": "2.43",
+      "gate": "REJECTED as expected",
+      "compatibility": "FAIL for Ubuntu 24.04"
+    },
+    {
+      "runtime": "llama-server-avx2",
+      "sha256": "aa273cccf82cea9aaca9ca6819e7e584cb1ad57540e2a4ac90e84885ee341f83",
+      "maximumRequiredGlibc": "2.43",
+      "gate": "REJECTED as expected",
+      "compatibility": "FAIL for Ubuntu 24.04"
+    },
+    {
+      "runtime": "whisper-cli-avx2",
+      "sha256": "766df2dc8c7ac6d06f39180cbb5fdfde25e2c082f2827798be981b7e0fb7c466",
+      "maximumRequiredGlibc": "2.43",
+      "gate": "REJECTED as expected",
+      "compatibility": "FAIL for Ubuntu 24.04"
+    }
+  ]
+}

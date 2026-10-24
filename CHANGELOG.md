@@ -13,6 +13,8 @@ This is not a published release. GitHub currently has no approved public release
 - Fixes: Windows Tesseract resource paths (`\\?\` verbatim paths); the real-model probe now uses the app's 300 s load budget; the native CI workflow no longer repeats the quality gates and caches models again.
 - Audit tooling: full-history/redacted secret checks, least-privilege pinned CI, documentation checks, complete-installer part/checksum tooling and contribution templates.
 
+- Linux release blocker: keep reusable Qwen processes alive across request-worker retirement while retaining OS crash cleanup; reject known-incompatible glibc inputs before release packaging. Native reacceptance remains required.
+
 ### Known gates
 
 Current real inference accuracy/reliability, exact-candidate CI, Windows installers/runtime, signing, fresh-install acceptance and an approved native demo remain subject to [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md). Tasks/backups are not encrypted; primary SQLite storage, autostart and backup import are unfinished.

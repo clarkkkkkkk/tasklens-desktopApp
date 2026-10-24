@@ -60,6 +60,8 @@ Task previews/transcripts, task JSON, delivery journal and exports are **unencry
 
 Local jobs use UUIDs, cancellation flags, bounded native subprocesses and retained preprocessing checkpoints. Unix OCR/audio jobs are private and cleaned; Windows ACL and actual installer acceptance remain platform gates. Native sidecars receive argument vectors, never shell-interpolated source text. Speech and local extraction share a gate to avoid concurrently loading two models.
 
+On Linux, reusable llama.cpp servers are spawned by a permanent launcher thread. `PR_SET_PDEATHSIG` follows the creating thread; a retiring Tokio request worker must not kill the shared model. Short subprocesses stay with their waiting caller. The OS still kills the persistent child when TaskLens exits or crashes; regression tests cover both worker retirement and abrupt parent termination.
+
 Native reminders are opt-in. Task mutation pauses scheduling durably, persists tasks, then reconciles. Reconciliation failure leaves delivery paused and shows a distinct warning. OS submission is not visibility or acknowledgment; interrupted delivery claims are not blindly retried. See [native reliability](docs/NATIVE_RELIABILITY.md).
 
 ## Build identity and honest evidence

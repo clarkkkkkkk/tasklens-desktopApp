@@ -5,7 +5,15 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { verify, prepare, validateFormat } from './ai-assets.mjs';
+import { assertLinuxGlibcVersions } from './linux-abi.mjs';
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
+test('release ABI gate rejects the observed Fedora/Ubuntu mismatch and private symbols', () => {
+  const needs = (name) => `0x0010: Name: ${name} Flags: none Version: 4`;
+  assert.deepEqual(assertLinuxGlibcVersions(needs('GLIBC_2.39')), ['2.39']);
+  assert.deepEqual(assertLinuxGlibcVersions(needs('GLIBC_2.9')), ['2.9']);
+  assert.throws(() => assertLinuxGlibcVersions(needs('GLIBC_2.43')), /rebuild.*Ubuntu/);
+  assert.throws(() => assertLinuxGlibcVersions(needs('GLIBC_PRIVATE')), /private/);
+});
 test('preparation rejects corruption, preserves a valid cache and cleans failed stages', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'tasklens-assets-'));
   const file = path.join(dir, 'asset');

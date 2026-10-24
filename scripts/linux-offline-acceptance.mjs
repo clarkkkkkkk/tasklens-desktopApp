@@ -124,6 +124,9 @@ try {
     }
   }
   await launch();
+  // The private synthetic acceptance profile opts into metadata-only native diagnostics.
+  // Capture these before closing the process so a timeout retains its stage evidence.
+  await invoke('local_diagnostics_session', { enabled: true });
   await check(
     process.env.TASKLENS_ACCEPTANCE_EXPECT_ERROR
       ? 'native resource corruption/missing recovery'
@@ -278,6 +281,10 @@ try {
         );
         let text = '';
         for (let i = 0; i < 1800; i++) {
+          const error = await sync(
+            `return document.querySelector('.voice-capture .error-state')?.textContent || ''`,
+          );
+          assert.equal(error, '', error);
           text = await sync('return document.body.innerText');
           if (
             text.includes('Review extracted actions') ||
@@ -533,6 +540,16 @@ try {
       return { persisted: true };
     });
   }
+} catch (error) {
+  results.push({ status: 'FAIL', error: String(error) });
+  writeFileSync(path.join(out, 'results.json'), JSON.stringify(results, null, 2));
+  if (session) {
+    const diagnostics = await invoke('local_diagnostics_session').catch((error) => ({
+      unavailable: String(error),
+    }));
+    writeFileSync(path.join(out, 'diagnostics.json'), JSON.stringify(diagnostics, null, 2));
+  }
+  throw error;
 } finally {
   if (session) await call(`/session/${session}`, undefined, 'DELETE').catch(() => {});
   driver.kill();

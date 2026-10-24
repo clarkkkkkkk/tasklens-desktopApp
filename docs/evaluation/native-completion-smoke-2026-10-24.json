@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-24",
+  "sourceCommit": "dfef55578349ed74d41ede73355d140dcbf57524",
+  "scope": "Native IPC tiny-completion diagnostic, not extraction acceptance",
+  "status": "PASS",
+  "isolation": "New private XDG profile and D-Bus session; unshare -Urn with loopback only",
+  "model": "Qwen3-4B-Q4_K_M",
+  "modelSha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+  "cpuVariant": "avx2",
+  "config": {
+    "contextSize": 8192,
+    "threads": 4,
+    "maxTokens": 64
+  },
+  "elapsedSecondsIncludingLoadAndVerification": 48.447,
+  "inferenceElapsedMs": 2459,
+  "response": {
+    "ok": true
+  },
+  "timings": {
+    "prompt_n": 34,
+    "predicted_per_token_ms": 181.6792,
+    "prompt_per_token_ms": 45.460235294117645,
+    "prompt_ms": 1545.648,
+    "predicted_n": 6,
+    "predicted_per_second": 5.504207416148904,
+    "cache_n": 0,
+    "predicted_ms": 908.396,
+    "prompt_per_second": 21.997246462325187
+  },
+  "limitations": [
+    "Not screenshot extraction, workflow acceptance, clean installation or full-load performance",
+    "Does not resolve the recorded native full-workflow timeout"
+  ],
+  "command": "unshare -Urn sh -c 'ip link set lo up; exec dbus-run-session -- node .local-ai/release-audit/tiny-native.mjs \"$1\"' sh \"$STAGED_NATIVE_EXECUTABLE\"",
+  "scriptSha256": "aad54c270b487e4080b07061fc343540d80826684561e1e1bda92dc52244abea"
+}

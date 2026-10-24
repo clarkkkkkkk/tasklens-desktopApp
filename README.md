@@ -153,3 +153,5 @@ The two model weights total **2,984,882,223 bytes** before OCR/runtime resources
 [Architecture](ARCHITECTURE.md) · [Technology choices](TECH_STACK.md) · [Local AI](LOCAL_AI.md) · [Voice](VOICE_CAPTURE.md) · [Groq](docs/GROQ_BYOK.md) · [Historical evaluation evidence](docs/evaluation/reliability-v10-full.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Code of conduct](CODE_OF_CONDUCT.md) · [Security](SECURITY.md)
 
 TaskLens source is [MIT licensed](LICENSE). Models, icons, fonts and native dependencies retain their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and bundled full notices. The original `TaskLens.png` logo is preserved.
+
+Release maintainers: official Linux packages target the Ubuntu 24.04 build baseline. The release wrapper requires binutils `readelf` and rejects newer glibc dependencies; Fedora-built development sidecars are not Ubuntu release inputs. See the [current readiness report](docs/release/PRODUCTION_READINESS.md).

@@ -60,3 +60,13 @@ Keep unresolved security warnings, signing limitations, distribution ownership a
 Quality run [40078422617](https://github.com/clarkkkkkkk/tasklens-desktopApp/actions/runs/40078422617) initially failed the screenshot-result modal visibility test: **111 browser tests passed, 1 failed**. Repeated local full-modal tests recorded 2 passes and 1 overall test timeout; that is not a resolved CI failure. Rerun/current native-run status could not be verified reliably because GitHub access intermittently failed DNS/routing. No pending run is counted as passed.
 
 The last verified GitHub release remained a draft with no installer assets attached; no public installer was published by this work. Do not promote the earlier failed 0d678fc artifacts. Website source `98e6cc1` is independently deployed and HTTPS content-verified. See the [machine-readable handoff](../evaluation/release-handoff-2026-10-24.json). Source compilation, local transport verification, website deployment and desktop production acceptance remain separate results.
+
+## Linux ABI promotion guard
+
+The release wrapper now checks ELF x86_64 architecture and glibc symbol requirements in all five sidecars before packaging, and checks the compiled main executable before creating the distribution inventory. Inputs requiring glibc newer than 2.39 or private glibc symbols fail closed. The [executed preflight](../evaluation/linux-abi-preflight-2026-10-24.json) rejected all five local Fedora inputs (2.43), matching the earlier Ubuntu runtime failure. This is an availability/promotion guard; it does not establish C++ ABI, GTK/WebKit or native workflow compatibility.
+
+## Linux process-lifetime continuation
+
+A repeat on staged `dfef555` passed strict screenshot extraction/save (292.98 seconds), including unresolved date/start and confirmed arrival. Subsequent text extraction and an explicitly assisted UI retry failed with signal 9; submitted text was retained. The test session was deliberately closed after those observed terminal errors; later steps are NOT RUN. Its final invalid-session harness error is cleanup evidence, not the original model failure.
+
+The spawning-thread bug was reproduced independently: Linux parent-death signals track the thread that created the process. The source fix starts reusable models from a permanent launcher thread, preserves checked OS parent-death cleanup, and passes worker-retirement plus abrupt-parent-crash regressions. Full Rust tests: 78 passed, 9 ignored; focused final process tests: 3 passed, 2 fixture tests ignored. Native acceptance of a rebuilt fixed binary is still NOT RUN. See [sanitized evidence](../evaluation/linux-process-lifetime-2026-10-24.json). Status remains NOT READY.

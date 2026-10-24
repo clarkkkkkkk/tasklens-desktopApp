@@ -307,14 +307,13 @@ impl Runtime {
         }
         let load_span =
             crate::diagnostics::Span::new("model_loading", trace, job).runtime("llama-server");
-        let mut child = platform::spawn(
-            platform::command(&binary)
-                .args(&args)
-                .current_dir(binary.parent().unwrap_or(std::path::Path::new(".")))
-                .stdout(Stdio::null())
-                .stderr(Stdio::piped()),
-        )
-        .map_err(|_| {
+        let mut command = platform::command(&binary);
+        command
+            .args(&args)
+            .current_dir(binary.parent().unwrap_or(std::path::Path::new(".")))
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped());
+        let mut child = platform::spawn_persistent(command).map_err(|_| {
             crate::diagnostics::Failure::wire(
                 "MODEL_LOAD_FAILED",
                 "SPAWN_FAILED",

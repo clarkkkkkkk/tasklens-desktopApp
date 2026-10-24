@@ -1,6 +1,7 @@
 import { splitArtifact } from './release-parts.mjs';
 import { assertReleaseEnvironment } from './release-policy.mjs';
 import { auditWindowsBinary } from './pe-dependencies.mjs';
+import { auditLinuxBinary } from './linux-abi.mjs';
 import { inventory, releaseNames, partsManifestPath, sha256 } from './release-artifacts.mjs';
 import { execFileSync } from 'node:child_process';
 import {
@@ -48,6 +49,16 @@ if (!process.argv.includes('--prepared')) {
 }
 // --prepared reuses preparation, never bypasses provenance/hash/dependency validation.
 run(npm, ['run', 'verify:assets']);
+if (process.platform === 'linux') {
+  for (const name of [
+    'llama-server',
+    'whisper-cli',
+    'tesseract',
+    'llama-server-avx2',
+    'whisper-cli-avx2',
+  ])
+    auditLinuxBinary(path.join(root, 'src-tauri/binaries', sidecar(name)));
+}
 run(npm, ['run', 'prepare:packaging']);
 const target = targetTriple();
 const release = path.join(root, 'src-tauri/target/release');
@@ -154,6 +165,7 @@ if (process.platform === 'win32') {
     process.platform === 'linux' ? 'rpm,deb,appimage' : 'app,dmg',
     ...extra,
   ]);
+  if (process.platform === 'linux') auditLinuxBinary(path.join(release, 'tasklens'));
   if (process.platform === 'darwin') {
     const apps = readdirSync(path.join(bundle, 'macos')).filter((name) => name.endsWith('.app'));
     if (apps.length !== 1) throw new Error('Expected one macOS application bundle');

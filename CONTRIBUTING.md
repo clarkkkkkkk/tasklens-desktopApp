@@ -50,3 +50,5 @@ For secret scanning install verified Gitleaks 8.30.1, then run `gitleaks git --l
 [Release instructions](docs/RELEASING.md) and the [release checklist](RELEASE_CHECKLIST.md) govern packaging. Do not publish, tag, sign with another person's identity, push to protected branches or bypass required checks without owner authorization. Test installed packages on their actual OS. A successful old PR is not evidence for current main.
 
 Follow [SECURITY.md](SECURITY.md) for private reports. Contributions are under the repository's [MIT license](LICENSE); dependencies retain their own license obligations. Do not add shared API keys, analytics, additional hosted infrastructure or generated models/binaries to Git.
+
+Official Linux release builds use Ubuntu 24.04 and binutils `readelf`. The packaging wrapper rejects newer-than-2.39 glibc requirements and private glibc symbols in native inputs and the final executable. Fedora development builds remain useful for development; they must not be promoted as Ubuntu-compatible packages. Validate GTK/WebKit, C++ libraries and actual installed workflows separately.
