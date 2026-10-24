@@ -3,6 +3,9 @@ import { createReadStream } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { lstat, readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { verifyParts } from './release-parts.mjs';
+export const GITHUB_ASSET_LIMIT = 2 ** 31;
+export const partsManifestPath = (filename) => `parts/${filename}/${filename}.parts.json`;
 export const releaseNames = (version, platform, arch) => {
   if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version))
     throw new Error('Invalid release version');
@@ -37,8 +40,8 @@ export async function inventory(
       sha256: await sha256(file),
       signing,
       githubReleaseEligible: info.size < 2 ** 31,
-      distribution:
-        info.size < 2 ** 31 ? 'github-or-approved-host' : 'approved-large-file-host-required',
+      distribution: info.size < GITHUB_ASSET_LIMIT ? 'github-release' : 'github-release-parts',
+      partsManifest: null,
       downloadUrl: null,
       downloadVerified: false,
     });
@@ -90,6 +93,18 @@ export async function verifyInventory(directory) {
       (await sha256(path.join(directory, entry.filename))) !== entry.sha256
     )
       throw new Error(`Installer integrity failure: ${entry.filename}`);
+    if (entry.partsManifest != null) {
+      if (entry.partsManifest !== partsManifestPath(entry.filename))
+        throw new Error('Unsafe parts manifest path');
+      const parts = await verifyParts(path.join(directory, ...entry.partsManifest.split('/')));
+      if (
+        parts.artifact.file !== entry.filename ||
+        parts.artifact.bytes !== entry.bytes ||
+        parts.artifact.sha256 !== entry.sha256
+      )
+        throw new Error('Parts differ from complete installer');
+    } else if (entry.bytes >= GITHUB_ASSET_LIMIT)
+      throw new Error('Oversized installer has no verified parts');
   }
   const first = report.artifacts[0];
   const expected = releaseNames(
@@ -105,11 +120,31 @@ export async function verifyInventory(directory) {
     )
   )
     throw new Error('Incomplete or mixed installer set');
+  const sums = [];
+  for (const entry of report.artifacts) {
+    sums.push(`${entry.sha256}  ${entry.filename}\n`);
+    if (entry.partsManifest) {
+      const parts = await verifyParts(path.join(directory, ...entry.partsManifest.split('/')));
+      sums.push(...parts.parts.map((part) => `${part.sha256}  ${part.file}\n`));
+    }
+  }
+  for (const file of report.supportFiles || []) {
+    if (
+      !['TaskLens-reconstruct.sh', 'TaskLens-reconstruct.ps1', 'THIRD_PARTY_NOTICES.md'].includes(
+        file.filename,
+      ) ||
+      seen.has(file.filename)
+    )
+      throw new Error('Unsafe support file');
+    seen.add(file.filename);
+    const target = path.join(directory, file.filename);
+    const info = await lstat(target);
+    if (!info.isFile() || info.size !== file.bytes || (await sha256(target)) !== file.sha256)
+      throw new Error('Support file integrity failure');
+    sums.push(`${file.sha256}  ${file.filename}\n`);
+  }
   const checksums = await readFile(path.join(directory, 'SHA256SUMS'), 'utf8');
-  if (
-    checksums !== report.artifacts.map((entry) => `${entry.sha256}  ${entry.filename}\n`).join('')
-  )
-    throw new Error('Checksum file differs from release inventory');
+  if (checksums !== sums.join('')) throw new Error('Checksum file differs from release inventory');
   return report;
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {

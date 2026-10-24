@@ -8,20 +8,20 @@ Preserve the complete offline installation: Qwen3-4B Q4_K_M (2,497,280,256 bytes
 
 [GitHub permits each release asset under 2 GiB](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases). Earlier Linux artifacts are already above this limit: RPM 3,117,766,141 bytes and AppImage 3,020,552,696 bytes. Those are historical builds, not this candidate. Measure every final installer after signing.
 
-The selected solution is a trusted large-file host with immutable versioned HTTPS download URLs and the complete ordinary installer as one file. **Host selection, owner approval, credentials, upload, retention/bandwidth policy and download verification are BLOCKED.** Do not invent a bucket, domain, download URL or free-host promise. GitHub hosts release notes, notices, checksums and manifests; eligible installers may also be attached directly. Existing split/join tools are retained but are not invoked by release packaging or offered as the selected distribution flow.
+The owner selected **GitHub Releases exclusively** on 2026-10-24. Complete installers at or above 2 GiB are automatically split into approximately 1 GiB parts. Every part is uploaded to the same official release with manifests, SHA256SUMS, notices and system shell/PowerShell reconstruction scripts. No external host or Git LFS is used. The original complete installer and bundled models remain unchanged.
 
-After separately approved upload, fetch every complete artifact to an empty directory, compare its byte size and SHA-256 with the locally verified final file, then populate `downloadUrl` and `downloadVerified` in the manifest. A manifest is not proof of authenticity by itself: distribute it through the official repository and verify code signatures where available. Redirect destinations and host ownership must be reviewed.
+See [ordinary-user GitHub reconstruction and installation](GITHUB_DOWNLOADS.md). Local and downloaded part checksums plus the reconstructed complete hash must pass before installation. Publication remains blocked until required security and advertised-platform acceptance pass. A draft release and authenticated draft-download checks are preparation evidence, not public deployment.
 
 ## Candidate filenames
 
-| Target | Required filename |
-| --- | --- |
-| Windows x64 | `TaskLens-Setup-0.1.0-windows-x64.exe` |
-| Fedora x64 | `TaskLens-0.1.0-linux-x86_64.rpm` |
-| Ubuntu x64 | `TaskLens-0.1.0-linux-x86_64.deb` |
-| Linux portable x64 | `TaskLens-0.1.0-linux-x86_64.AppImage` |
-| macOS Apple Silicon | `TaskLens-0.1.0-macos-arm64.dmg` |
-| macOS Intel | `TaskLens-0.1.0-macos-x64.dmg` |
+| Target              | Required filename                      |
+| ------------------- | -------------------------------------- |
+| Windows x64         | `TaskLens-Setup-0.1.0-windows-x64.exe` |
+| Fedora x64          | `TaskLens-0.1.0-linux-x86_64.rpm`      |
+| Ubuntu x64          | `TaskLens-0.1.0-linux-x86_64.deb`      |
+| Linux portable x64  | `TaskLens-0.1.0-linux-x86_64.AppImage` |
+| macOS Apple Silicon | `TaskLens-0.1.0-macos-arm64.dmg`       |
+| macOS Intel         | `TaskLens-0.1.0-macos-x64.dmg`         |
 
 Names are the packaging contract, not a claim that all artifacts exist. See [the platform matrix](PLATFORM_TEST_MATRIX.md). Public download commands must be generated only after actual published URLs resolve; none are supplied yet.
 

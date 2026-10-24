@@ -1,6 +1,7 @@
+import { splitArtifact } from './release-parts.mjs';
 import { assertReleaseEnvironment } from './release-policy.mjs';
 import { auditWindowsBinary } from './pe-dependencies.mjs';
-import { inventory, releaseNames } from './release-artifacts.mjs';
+import { inventory, releaseNames, partsManifestPath, sha256 } from './release-artifacts.mjs';
 import { execFileSync } from 'node:child_process';
 import {
   mkdirSync,
@@ -195,10 +196,34 @@ const report = await inventory(distribution, {
   signing,
 });
 report.target = target;
-writeFileSync(
-  path.join(distribution, 'SHA256SUMS'),
-  report.artifacts.map((a) => `${a.sha256}  ${a.filename}\n`).join(''),
-);
+const sums = [];
+for (const artifact of report.artifacts) {
+  sums.push(`${artifact.sha256}  ${artifact.filename}`);
+  if (artifact.githubReleaseEligible) continue;
+  const manifestFile = path.join(distribution, ...partsManifestPath(artifact.filename).split('/'));
+  const { manifest } = await splitArtifact(
+    path.join(distribution, artifact.filename),
+    path.dirname(manifestFile),
+  );
+  if (manifest.artifact.sha256 !== artifact.sha256)
+    throw new Error('Split changed the complete installer');
+  artifact.partsManifest = partsManifestPath(artifact.filename);
+  for (const part of manifest.parts) sums.push(`${part.sha256}  ${part.file}`);
+}
+report.supportFiles = [];
+for (const name of [
+  'TaskLens-reconstruct.sh',
+  'TaskLens-reconstruct.ps1',
+  'THIRD_PARTY_NOTICES.md',
+]) {
+  const source = name.endsWith('.md') ? path.join(root, name) : path.join(root, 'scripts', name);
+  const destination = path.join(distribution, name);
+  copyFileSync(source, destination);
+  const hash = await sha256(destination);
+  report.supportFiles.push({ filename: name, bytes: statSync(destination).size, sha256: hash });
+  sums.push(`${hash}  ${name}`);
+}
+writeFileSync(path.join(distribution, 'SHA256SUMS'), sums.join('\n') + '\n');
 writeFileSync(
   path.join(distribution, 'release-assets.json'),
   JSON.stringify(report, null, 2) + '\n',

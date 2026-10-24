@@ -141,7 +141,9 @@ export function ActionEditor({
     };
     const validated = actionSchema.safeParse(intent === 'confirm' ? confirmAction(value) : value);
     if (!validated.success) {
-      const message = validated.error.issues.map((i) => `${i.path[0]}: ${i.message}`).join('. ');
+      const message = validated.error.issues
+        .map((i) => `${String(i.path[0])}: ${i.message}`)
+        .join('. ');
       setError(message);
       throw new Error(message);
     }

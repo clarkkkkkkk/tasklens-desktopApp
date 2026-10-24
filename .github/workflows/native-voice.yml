@@ -69,6 +69,7 @@ jobs:
           EXPECTED_ARCH: ${{ matrix.arch }}
         run: node -e "if (process.arch !== process.env.EXPECTED_ARCH) throw new Error('Unexpected runner architecture')"
       - run: npm ci
+      - run: npm run test:release
       - run: npm run prepare:models
       - run: npm run build:runtimes
       - run: npm run prepare:notices
@@ -110,7 +111,12 @@ jobs:
         with:
           name: native-assets-${{ matrix.os }}
           path: ${{ runner.temp }}/native
-      - run: tar -xf "$RUNNER_TEMP/native/native-assets.tar" && rm "$RUNNER_TEMP/native/native-assets.tar"
+      - name: Extract native assets using a local archive path
+        run: |
+          archive="$RUNNER_TEMP/native/native-assets.tar"
+          if [[ "$RUNNER_OS" == "Windows" ]]; then archive="$(cygpath -u "$archive")"; fi
+          tar -xf "$archive"
+          rm "$archive"
       - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
   packaging:
     timeout-minutes: 120
@@ -147,11 +153,17 @@ jobs:
           EXPECTED_ARCH: ${{ matrix.arch }}
         run: node -e "if (process.arch !== process.env.EXPECTED_ARCH) throw new Error('Unexpected runner architecture')"
       - run: npm ci
+      - run: npm run test:release
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: native-assets-${{ matrix.os }}
           path: ${{ runner.temp }}/native
-      - run: tar -xf "$RUNNER_TEMP/native/native-assets.tar" && rm "$RUNNER_TEMP/native/native-assets.tar"
+      - name: Extract native assets using a local archive path
+        run: |
+          archive="$RUNNER_TEMP/native/native-assets.tar"
+          if [[ "$RUNNER_OS" == "Windows" ]]; then archive="$(cygpath -u "$archive")"; fi
+          tar -xf "$archive"
+          rm "$archive"
       - if: runner.os == 'Windows'
         shell: pwsh
         env:

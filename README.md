@@ -14,16 +14,18 @@ _Current application UI rendered in Chromium with a fresh synthetic demo profile
 
 [Official GitHub Releases](https://github.com/clarkkkkkkk/tasklens-desktopApp/releases)
 
+Distribution uses GitHub Releases only. Oversized complete offline installers use verified numbered parts and a system shell/PowerShell reconstruction script; no development tools or first-launch model downloads are required. See [download, checksum and installation instructions](docs/release/GITHUB_DOWNLOADS.md). Packages remain unavailable for public installation until the [production gates](docs/release/PRODUCTION_READINESS.md) pass.
+
 **No verified public installer is available yet.** The initial `v0.1.0-beta.1` prerelease is being prepared behind the [release gates](RELEASE_CHECKLIST.md). A draft is not a public download. Do not install build artifacts from an unrelated commit or treat source archives as offline installers.
 
-| Platform | Intended package | Current release limitation |
-| --- | --- | --- |
-| Windows x64 | Offline `.exe` | Final installer and installed-app acceptance pending |
-| Fedora x64 | `.rpm` | Earlier package inspected; final-commit native acceptance pending |
-| Ubuntu/Debian x64 | `.deb` | Packaging and installed-app acceptance not verified |
-| Linux x64 | `.AppImage` | Final-commit package and portable/native acceptance pending |
-| macOS Apple Silicon | `.dmg` | Installed-app acceptance, signing and notarization not verified |
-| macOS Intel | `.dmg` | Native build running; installed-app acceptance not verified |
+| Platform            | Intended package | Current release limitation                                        |
+| ------------------- | ---------------- | ----------------------------------------------------------------- |
+| Windows x64         | Offline `.exe`   | Final installer and installed-app acceptance pending              |
+| Fedora x64          | `.rpm`           | Earlier package inspected; final-commit native acceptance pending |
+| Ubuntu/Debian x64   | `.deb`           | Packaging and installed-app acceptance not verified               |
+| Linux x64           | `.AppImage`      | Final-commit package and portable/native acceptance pending       |
+| macOS Apple Silicon | `.dmg`           | Installed-app acceptance, signing and notarization not verified   |
+| macOS Intel         | `.dmg`           | Native build running; installed-app acceptance not verified       |
 
 Prepared offline installers include Qwen, Whisper, OCR data and native runtimes; installed users do not need Node.js, Rust or Python. Local inference requires several GB of **available** memory and can be slow on CPU; a reliable minimum specification has not been established. The model files alone occupy 2.98 GB. Allow additional space for the package, reassembly and installed copy. Manual tasks remain usable when local inference cannot run.
 

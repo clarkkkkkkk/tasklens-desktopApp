@@ -31,6 +31,43 @@ describe('snapshot migrations', () => {
     const data = current();
     expect(migrateSnapshot(data)).toEqual({ snapshot: data, fromVersion: SNAPSHOT_VERSION });
   });
+  it('preserves old settings defaults and upgrades repeated legacy questions without losing IDs', () => {
+    const data = current();
+    const saved = {
+      id: 'existing-question',
+      field: 'date',
+      question: 'When?',
+      options: [],
+      segmentIds: [],
+    };
+    const legacy = {
+      ...data,
+      actions: [{ ...data.actions[0], ambiguities: ['When?', 'When?', saved] }],
+      settings: { remindersEnabled: true, defaultReminders: ['hour'], theme: 'light' },
+    };
+    const { snapshot } = migrateSnapshot(legacy);
+    expect(snapshot.actions[0].id).toBe(data.actions[0].id);
+    expect(snapshot.actions[0].ambiguities).toEqual([
+      {
+        id: 'legacy-ambiguities-0',
+        field: 'general',
+        question: 'When?',
+        options: [],
+        segmentIds: [],
+      },
+      {
+        id: 'legacy-ambiguities-1',
+        field: 'general',
+        question: 'When?',
+        options: [],
+        segmentIds: [],
+      },
+      saved,
+    ]);
+    expect(snapshot.settings.localAI).toEqual(defaultSettings.localAI);
+    expect(snapshot.settings.ai).toEqual({ ...defaultSettings.ai, modeChoiceCompleted: true });
+    expect(migrateSnapshot(snapshot).snapshot).toEqual(snapshot);
+  });
   it('applies each step once, in order', () => {
     const seen: number[] = [];
     const step =

@@ -1,18 +1,19 @@
 # Release security audit
 
-Date: 2026-10-23 (Asia/Manila). Baseline: `374f692afe22de55bb80472035006e67919ddf44` plus the preserved candidate changes. This is a scoped engineering audit, not a security certification. Production approval remains **NOT READY**.
+Date: 2026-10-24 (Asia/Manila). Baseline: `374f692afe22de55bb80472035006e67919ddf44` plus the preserved candidate changes. This is a scoped engineering audit, not a security certification. Production approval remains **NOT READY**.
 
 ## Results and findings
 
-| Severity | Finding | Result / disposition |
-| --- | --- | --- |
-| High | Full native acceptance and verified distribution are incomplete | BLOCKED; no production support or verified download claims |
-| Medium | GLib `RUSTSEC-2024-0429` unsound iterator implementation in transitive GTK dependency | OPEN; Cargo classifies it as an `unsound` warning, not in its vulnerability count. Review reachability/upstream fix before production approval. Do not blindly upgrade incompatible GTK bindings. |
-| Medium | macOS native credential backend previously returned unavailable | Native Keychain backend added using keyring 3.6.3 `apple-native`; compilation/locked-store/persistence/removal acceptance on macOS remains BLOCKED |
-| Medium | Vitest development-tool advisory `GHSA-qxg6-89mg-rqv8` | Remediated by collaborator's preserved 4.1.12 update; subsequent npm audit reports zero vulnerabilities |
-| Medium | Oversized installers and unverified signing infrastructure | BLOCKED; no host selected, Windows signing/Apple notarization unavailable here |
-| Low | Cargo maintenance advisories | proc-macro-error (`RUSTSEC-2024-0370`), zbus_names (`RUSTSEC-2026-0371`), zvariant (`RUSTSEC-2026-0370`), zvariant_derive (`RUSTSEC-2026-0372`). Some occur at multiple versions; retain in risk register. |
-| Informational | Local task data, reminder journal and exports are unencrypted | Disclosed; no encryption, backup import or primary SQLite task-storage claim |
+| Severity      | Finding                                                                               | Result / disposition                                                                                                                                                                                                          |
+| ------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| High          | Full native acceptance and verified distribution are incomplete                       | BLOCKED; no production support or verified download claims                                                                                                                                                                    |
+| Medium        | GLib `RUSTSEC-2024-0429` unsound iterator implementation in transitive GTK dependency | OPEN; Cargo classifies it as an `unsound` warning, not in its vulnerability count. Review reachability/upstream fix before production approval. Do not blindly upgrade incompatible GTK bindings.                             |
+| Medium        | macOS native credential backend previously returned unavailable                       | Native Keychain backend added using keyring 3.6.3 `apple-native`; compilation/locked-store/persistence/removal acceptance on macOS remains BLOCKED                                                                            |
+| High          | Zod `GHSA-mrhx-c7xc-m3w5` collection-validation resource exhaustion                   | Found by fresh npm audit; upgraded from Zod 3 to pinned 4.6.7. Preserve nested defaults and legacy questions through explicit compatibility handling and migration regression coverage. Final validation recorded separately. |
+| Medium        | Vitest development-tool advisory `GHSA-qxg6-89mg-rqv8`                                | Remediated by collaborator's preserved 4.1.12 update; subsequent npm audit reports zero vulnerabilities                                                                                                                       |
+| Medium        | Oversized installers and unverified signing infrastructure                            | BLOCKED; GitHub-only split delivery selected; draft download/native reconstruction and Windows signing/Apple notarization remain unverified                                                                                   |
+| Low           | Cargo maintenance advisories                                                          | proc-macro-error (`RUSTSEC-2024-0370`), zbus_names (`RUSTSEC-2026-0371`), zvariant (`RUSTSEC-2026-0370`), zvariant_derive (`RUSTSEC-2026-0372`). Some occur at multiple versions; retain in risk register.                    |
+| Informational | Local task data, reminder journal and exports are unencrypted                         | Disclosed; no encryption, backup import or primary SQLite task-storage claim                                                                                                                                                  |
 
 ## Executed automated evidence
 

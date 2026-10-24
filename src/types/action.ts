@@ -55,19 +55,25 @@ const ambiguityObject = z.object({
   segmentIds: z.array(z.string().max(40)).max(50).default([]),
 });
 /** Structured open question. Legacy plain-string entries are upgraded on read. */
-export const ambiguitySchema = z.union([
-  ambiguityObject,
-  z
-    .string()
-    .max(2000)
-    .transform((question, ctx) => ({
-      id: `legacy-${ctx.path.join('-')}`,
-      field: 'general',
-      question,
-      options: [],
-      segmentIds: [],
-    })),
-]);
+export const ambiguitySchema = z.union([ambiguityObject, z.string().max(2000)]);
+// Zod 4 no longer exposes the parse path inside transforms. Upgrade legacy strings at
+// their list boundary so repeated questions keep distinct, deterministic local IDs.
+const ambiguitiesSchema = z
+  .array(ambiguitySchema)
+  .max(30)
+  .transform((entries) =>
+    entries.map((entry, index) =>
+      typeof entry === 'string'
+        ? {
+            id: `legacy-ambiguities-${index}`,
+            field: 'general',
+            question: entry,
+            options: [],
+            segmentIds: [],
+          }
+        : entry,
+    ),
+  );
 export type ExtractionAmbiguity = z.infer<typeof ambiguityObject>;
 export const actionSchema = z
   .object({
@@ -134,7 +140,7 @@ export const actionSchema = z
       )
       .max(100)
       .optional(),
-    ambiguities: z.array(ambiguitySchema).max(30).optional(),
+    ambiguities: ambiguitiesSchema.optional(),
     status: z.enum(['needs_review', 'confirmed', 'completed']),
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
@@ -177,18 +183,18 @@ export const localAISettingsSchema = z.object({
 export const aiRoutingSettingsSchema = z.object({
   modeChoiceCompleted: z.boolean().default(false),
   executionMode: z.enum(['local', 'groq']).catch('local').default('local'),
-  mode: z.enum(aiModes).catch('automatic'),
-  priority: z.enum(aiPriorities).catch('balanced'),
+  mode: z.enum(aiModes).catch('automatic').default('automatic'),
+  priority: z.enum(aiPriorities).catch('balanced').default('balanced'),
   /** `providerId/modelId` chosen in Manual mode. */
   manualModel: z.string().max(300).nullable().default(null),
-  ollama: z.object({ enabled: z.boolean().default(true) }).default({}),
+  ollama: z.object({ enabled: z.boolean().default(true) }).prefault({}),
 });
 export type AIRoutingSettings = z.infer<typeof aiRoutingSettingsSchema>;
 export const defaultAIRoutingSettings: AIRoutingSettings = aiRoutingSettingsSchema.parse({});
 export const settingsSchema = z.object({
   onboardingCompletedVersion: z.number().int().nonnegative().default(0),
-  localAI: localAISettingsSchema.default({}),
-  ai: aiRoutingSettingsSchema.default({}),
+  localAI: localAISettingsSchema.prefault({}),
+  ai: aiRoutingSettingsSchema.prefault({}),
   remindersEnabled: z.boolean(),
   defaultReminders: z.array(z.enum(['night', 'hour', 'quarter'])),
   theme: z.literal('light'),

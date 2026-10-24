@@ -30,15 +30,9 @@ Signing is optional and verified when configured. On Windows, `TASKLENS_SIGN_CER
 
 The bundled models total **2,984,882,223 bytes**, so every complete installer is around 3 GB. GitHub requires each individual release asset to be **under 2 GiB** ([official release limits](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)).
 
-The selected distribution method is a trusted large-file host for complete installers. Packaging does not split installers or download models on first launch. The retained split/reassembly helper is developer tooling and is not the approved end-user delivery method.
+The owner selected **GitHub Releases exclusively** on 2026-10-24. Packaging automatically splits complete oversized installers into approximately 1 GiB parts using the existing release-parts tooling. The original installers and bundled models remain unchanged. External hosting and Git LFS are not part of distribution.
 
-Verify the complete candidate directory before any upload:
-
-```sh
-npm run verify:release -- src-tauri/target/release/distribution
-```
-
-`SHA256SUMS` and `release-assets.json` record complete installer hashes, sizes, source commit/tree, architectures and signing status. Download locations remain unset until an approved host is configured and a complete downloaded copy passes size/hash verification. See [distribution gates](release/DISTRIBUTION.md).
+See [GitHub download and reconstruction instructions](release/GITHUB_DOWNLOADS.md) for the shell and PowerShell tools, exact integrity checks, ordinary-user installation and draft/publication gates. Verify local output with `npm run verify:release -- src-tauri/target/release/distribution`. All complete installers and all parts are hashed. Download URLs remain unset until assets actually exist and their downloaded bytes are verified.
 
 Installation commands for end users will be added here only after a published artifact has been installed and verified on its target OS.
 
